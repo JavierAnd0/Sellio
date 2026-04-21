@@ -1,0 +1,9 @@
+{
+  "extends": "@sellio/config/tsconfig/library.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM"]
+  },
+  "include": ["src/**/*"]
+}

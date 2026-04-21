@@ -1,0 +1,35 @@
+{
+  "name": "@sellio/cards",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3001",
+    "build": "next build",
+    "start": "next start --port 3001",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@sellio/db": "workspace:*",
+    "@sellio/domain": "workspace:*",
+    "@sellio/ui": "workspace:*",
+    "@sentry/nextjs": "^10.49.0",
+    "next": "^16.2.4",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@sellio/config": "workspace:*",
+    "@types/node": "^20.16.11",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^8.57.1",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.14",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.3"
+  }
+}

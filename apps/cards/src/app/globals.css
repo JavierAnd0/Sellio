@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg: 10 10 10;
+    --fg: 245 240 235;
+    --surface: 19 17 16;
+    --surface-2: 28 24 20;
+    --border: 245 240 235;
+    --muted: 107 101 96;
+    --subtle: 58 53 48;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: 245 240 235;
+      --fg: 10 10 10;
+      --surface: 237 232 225;
+      --surface-2: 227 221 214;
+      --border: 0 0 0;
+      --muted: 122 110 102;
+      --subtle: 208 200 192;
+    }
+  }
+
+  * { border-color: rgb(var(--border) / 0.08); }
+  html { -webkit-font-smoothing: antialiased; }
+  body {
+    background-color: rgb(var(--bg));
+    color: rgb(var(--fg));
+    font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  }
+}
