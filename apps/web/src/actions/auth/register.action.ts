@@ -22,6 +22,14 @@ export type RegisterResult =
   | { ok: true }
   | { ok: false; error: string; field?: string };
 
+function getErrorCode(error: unknown): string | undefined {
+  if (error && typeof error === 'object' && 'code' in error) {
+    const value = (error as { code?: unknown }).code;
+    if (typeof value === 'string') return value;
+  }
+  return undefined;
+}
+
 export async function registerAction(formData: FormData): Promise<RegisterResult> {
   const parsed = registerSchema.safeParse({
     email: formData.get('email'),
@@ -60,10 +68,31 @@ export async function registerAction(formData: FormData): Promise<RegisterResult
 
   try {
     await tryCreateOrg(baseSlug);
-  } catch (err) {
-    if ((err as { code?: string }).code !== 'slug_taken') throw err;
-    const suffix = Math.random().toString(36).slice(2, 5);
-    await tryCreateOrg(`${baseSlug.slice(0, 37)}-${suffix}`);
+  } catch (firstError) {
+    if (getErrorCode(firstError) === 'slug_taken') {
+      const suffix = Math.random().toString(36).slice(2, 5);
+      try {
+        await tryCreateOrg(`${baseSlug.slice(0, 37)}-${suffix}`);
+      } catch (secondError) {
+        const secondCode = getErrorCode(secondError);
+        if (secondCode === 'org_insert_blocked') {
+          return { ok: false, error: 'No hay permisos para crear organizaciones (RLS). Ejecuta migraciones y revisa políticas.' };
+        }
+        if (secondCode === 'org_members_bootstrap_blocked') {
+          return { ok: false, error: 'No se pudo vincular tu usuario al negocio. Aplica la migración de bootstrap de organization_members.' };
+        }
+        return { ok: false, error: 'No se pudo crear tu organización. Intenta de nuevo.' };
+      }
+    } else {
+      const firstCode = getErrorCode(firstError);
+      if (firstCode === 'org_insert_blocked') {
+        return { ok: false, error: 'No hay permisos para crear organizaciones (RLS). Ejecuta migraciones y revisa políticas.' };
+      }
+      if (firstCode === 'org_members_bootstrap_blocked') {
+        return { ok: false, error: 'No se pudo vincular tu usuario al negocio. Aplica la migración de bootstrap de organization_members.' };
+      }
+      return { ok: false, error: 'No se pudo crear tu organización. Intenta de nuevo.' };
+    }
   }
 
   redirect('/verify-email');

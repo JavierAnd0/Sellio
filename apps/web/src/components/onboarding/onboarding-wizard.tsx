@@ -61,12 +61,44 @@ export function OnboardingWizard({ orgName }: OnboardingWizardProps) {
 
   const slideClass =
     state.direction === 'forward' ? 'animate-slide-in-right' : 'animate-slide-in-left';
+  const isBuilderStep = state.step === 1;
+  const isDoneStep = state.step === 2;
+
+  if (isBuilderStep) {
+    return (
+      <div className="min-h-screen bg-[#0D0B09]">
+        <Step2Card
+          palette={state.palette}
+          cardName={state.cardName}
+          businessName={state.businessName}
+          onNext={handleStep2Next}
+          onBack={() => goToStep(0, 'back')}
+          onPaletteChange={(p) => setState((prev) => ({ ...prev, palette: p }))}
+          onCardNameChange={(n) => setState((prev) => ({ ...prev, cardName: n }))}
+        />
+      </div>
+    );
+  }
+
+  if (isDoneStep) {
+    return (
+      <Step3Done
+        businessName={state.businessName}
+        category={state.category}
+        cardName={state.cardName}
+        palette={state.palette}
+      />
+    );
+  }
 
   return (
     <div className="flex min-h-screen">
       {/* Left panel */}
-      <div className="flex w-full flex-col border-r border-border px-14 py-10 md:flex-[0_0_520px] md:overflow-y-auto">
-        {/* Header */}
+      <div
+        className={[
+          'flex w-full flex-col border-r border-border px-14 py-10 md:flex-[0_0_520px] md:overflow-y-auto',
+        ].join(' ')}
+      >
         <div className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-coral font-display text-sm font-extrabold text-white">
@@ -81,7 +113,6 @@ export function OnboardingWizard({ orgName }: OnboardingWizardProps) {
           </span>
         </div>
 
-        {/* Progress bar */}
         <div className="mb-8 flex gap-1.5">
           {([0, 1, 2] as const).map((i) => {
             let fillWidth: string;
@@ -109,13 +140,9 @@ export function OnboardingWizard({ orgName }: OnboardingWizardProps) {
           <div className={slideClass} key={state.step}>
             <h2 className="mb-1 font-display text-2xl font-extrabold tracking-tight text-fg">
               {state.step === 0 && 'Cuéntanos sobre tu negocio'}
-              {state.step === 1 && 'Crea tu primera tarjeta'}
-              {state.step === 2 && '¡Todo listo!'}
             </h2>
             <p className="mb-6 text-sm leading-relaxed text-muted">
               {state.step === 0 && 'Personaliza tu perfil para que tus clientes te reconozcan.'}
-              {state.step === 1 && 'Elige el nombre y la paleta de color de tu tarjeta de lealtad.'}
-              {state.step === 2 && 'Estamos guardando tu configuración.'}
             </p>
 
             {state.step === 0 && (
@@ -123,25 +150,6 @@ export function OnboardingWizard({ orgName }: OnboardingWizardProps) {
                 businessName={state.businessName}
                 category={state.category}
                 onNext={handleStep1Next}
-              />
-            )}
-
-            {state.step === 1 && (
-              <Step2Card
-                palette={state.palette}
-                cardName={state.cardName}
-                businessName={state.businessName}
-                onNext={handleStep2Next}
-                onBack={() => goToStep(0, 'back')}
-                onPaletteChange={(p) => setState((prev) => ({ ...prev, palette: p }))}
-                onCardNameChange={(n) => setState((prev) => ({ ...prev, cardName: n }))}
-              />
-            )}
-
-            {state.step === 2 && (
-              <Step3Done
-                businessName={state.businessName}
-                category={state.category}
               />
             )}
           </div>

@@ -14,6 +14,14 @@ export type CreateFirstCardResult =
   | { ok: true; cardId: string }
   | { ok: false; error: string };
 
+function getErrorCode(error: unknown): string | undefined {
+  if (error && typeof error === 'object' && 'code' in error) {
+    const value = (error as { code?: unknown }).code;
+    if (typeof value === 'string') return value;
+  }
+  return undefined;
+}
+
 /**
  * Updates the organization name during onboarding.
  */
@@ -73,11 +81,30 @@ export async function createFirstCardAction(input: {
     const baseSlug = deriveSlug(name);
     try {
       org = await orgRepo.create({ ownerId: user.id, name, slug: baseSlug });
-    } catch {
+    } catch (firstError) {
+      // Only retry when the collision is truly caused by a duplicate slug.
+      if (getErrorCode(firstError) !== 'slug_taken') {
+        console.error('createFirstCardAction org create failed (first attempt)', firstError);
+        if (getErrorCode(firstError) === 'org_members_bootstrap_blocked') {
+          return { ok: false, error: 'No se pudo vincular tu usuario al negocio. Ejecuta la migración de membresías y vuelve a intentar.' };
+        }
+        if (getErrorCode(firstError) === 'org_insert_blocked') {
+          return { ok: false, error: 'No hay permisos para crear organizaciones (RLS). Revisa políticas/migraciones.' };
+        }
+        return { ok: false, error: 'No se pudo crear la organización. Intenta de nuevo.' };
+      }
+
       const suffix = Math.random().toString(36).slice(2, 5);
       try {
         org = await orgRepo.create({ ownerId: user.id, name, slug: `${baseSlug.slice(0, 37)}-${suffix}` });
-      } catch {
+      } catch (secondError) {
+        console.error('createFirstCardAction org create failed (second attempt)', secondError);
+        if (getErrorCode(secondError) === 'org_members_bootstrap_blocked') {
+          return { ok: false, error: 'No se pudo vincular tu usuario al negocio. Ejecuta la migración de membresías y vuelve a intentar.' };
+        }
+        if (getErrorCode(secondError) === 'org_insert_blocked') {
+          return { ok: false, error: 'No hay permisos para crear organizaciones (RLS). Revisa políticas/migraciones.' };
+        }
         return { ok: false, error: 'No se pudo crear la organización. Intenta de nuevo.' };
       }
     }

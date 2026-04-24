@@ -4,10 +4,10 @@ import { notFound, redirect } from 'next/navigation';
 import { ChevronLeft, Users } from 'lucide-react';
 
 import { createClient } from '@sellio/db/server';
-import { SupabaseCardRepository, SupabaseOrganizationRepository } from '@sellio/db/repositories';
+import { SupabaseCardRepository, SupabaseMembershipRepository, SupabaseOrganizationRepository } from '@sellio/db/repositories';
 import { Button } from '@sellio/ui';
 
-import { CardForm } from '@/components/cards/card-form';
+import { CardDetailEdit } from '@/components/cards/card-detail-edit';
 
 export const metadata: Metadata = { title: 'Editar tarjeta' };
 
@@ -18,6 +18,11 @@ interface CardDetailPageProps {
 export default async function CardDetailPage({ params }: CardDetailPageProps) {
   const { id } = await params;
 
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!UUID_REGEX.test(id)) {
+    notFound();
+  }
+
   const db = await createClient();
   const {
     data: { user },
@@ -25,9 +30,10 @@ export default async function CardDetailPage({ params }: CardDetailPageProps) {
 
   if (!user) redirect('/login');
 
-  const [org, card] = await Promise.all([
+  const [org, card, memberCount] = await Promise.all([
     new SupabaseOrganizationRepository().findByOwner(user.id),
     new SupabaseCardRepository().findById(id),
+    new SupabaseMembershipRepository().countByCard(id),
   ]);
 
   if (!org) redirect('/app/dashboard');
@@ -56,7 +62,7 @@ export default async function CardDetailPage({ params }: CardDetailPageProps) {
             <h1 className="font-display text-2xl font-extrabold tracking-tight text-fg">
               {card.name}
             </h1>
-            <p className="mt-1 text-sm text-muted">Edita los ajustes de tu tarjeta.</p>
+            <p className="mt-1 text-sm text-muted">Ajustes de la tarjeta.</p>
           </div>
           <Link href={`/app/cards/${id}/customers`}>
             <Button variant="secondary" size="sm">
@@ -67,7 +73,7 @@ export default async function CardDetailPage({ params }: CardDetailPageProps) {
         </div>
       </div>
 
-      <CardForm card={card} primaryColor={primaryColor} />
+      <CardDetailEdit card={card} primaryColor={primaryColor} canDelete={memberCount === 0} />
     </div>
   );
 }

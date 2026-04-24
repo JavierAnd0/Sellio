@@ -23,7 +23,13 @@ const cardSchema = z.object({
     .optional()
     .transform((val) => (val && val !== '' ? parseInt(val, 10) : null))
     .pipe(z.number().int().positive().nullable()),
+  design: z.string().optional(),
 });
+
+function parseDesign(raw: string | undefined): Record<string, unknown> {
+  if (!raw) return {};
+  try { return JSON.parse(raw) as Record<string, unknown>; } catch { return {}; }
+}
 
 export type CardActionResult =
   | { ok: true }
@@ -37,6 +43,7 @@ export async function createCardAction(formData: FormData): Promise<never> {
     pointsForReward: formData.get('pointsForReward'),
     rewardDescription: formData.get('rewardDescription'),
     maxMembers: formData.get('maxMembers') || undefined,
+    design: formData.get('design') || undefined,
   });
 
   if (!parsed.success) {
@@ -54,7 +61,7 @@ export async function createCardAction(formData: FormData): Promise<never> {
   const org = await new SupabaseOrganizationRepository().findByOwner(user.id);
   if (!org) throw new Error('Organización no encontrada');
 
-  const { name, description, pointsPerCheckin, pointsForReward, rewardDescription, maxMembers } =
+  const { name, description, pointsPerCheckin, pointsForReward, rewardDescription, maxMembers, design } =
     parsed.data;
 
   const card = await new SupabaseCardRepository().create({
@@ -65,10 +72,10 @@ export async function createCardAction(formData: FormData): Promise<never> {
     pointsForReward,
     rewardDescription,
     maxMembers: maxMembers ?? null,
-    design: { primaryColor: org.primaryColor },
+    design: { primaryColor: org.primaryColor, ...parseDesign(design) },
   });
 
-  redirect(`/app/cards/${card.id}`);
+  redirect(`/app/cards/${card.id}/builder`);
 }
 
 export async function updateCardAction(
@@ -82,6 +89,7 @@ export async function updateCardAction(
     pointsForReward: formData.get('pointsForReward'),
     rewardDescription: formData.get('rewardDescription'),
     maxMembers: formData.get('maxMembers') || undefined,
+    design: formData.get('design') || undefined,
   });
 
   if (!parsed.success) {
@@ -108,7 +116,7 @@ export async function updateCardAction(
   const org = await new SupabaseOrganizationRepository().findByOwner(user.id);
   if (!org || card.orgId !== org.id) return { ok: false, error: 'Sin permisos.' };
 
-  const { name, description, pointsPerCheckin, pointsForReward, rewardDescription, maxMembers } =
+  const { name, description, pointsPerCheckin, pointsForReward, rewardDescription, maxMembers, design } =
     parsed.data;
 
   try {
@@ -119,8 +127,10 @@ export async function updateCardAction(
       pointsForReward,
       rewardDescription,
       maxMembers: maxMembers ?? null,
+      design: parseDesign(design),
     });
-  } catch {
+  } catch (err) {
+    console.error('[updateCardAction]', err);
     return { ok: false, error: 'Error al guardar los cambios. Intenta de nuevo.' };
   }
 

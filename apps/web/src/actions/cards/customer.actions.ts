@@ -11,8 +11,14 @@ import {
 } from '@sellio/db/repositories';
 import type { Membership } from '@sellio/domain';
 
+const PHONE_RE = /^\+?[0-9\s\-().]{7,20}$/;
+
 const addCustomerSchema = z.object({
-  phone: z.string().min(7, 'Teléfono inválido').max(20),
+  phone: z
+    .string()
+    .min(7, 'Teléfono inválido')
+    .max(20, 'Teléfono inválido')
+    .regex(PHONE_RE, 'Teléfono inválido — solo dígitos, espacios, +, - y paréntesis'),
   name: z.string().max(100).optional(),
 });
 
@@ -70,7 +76,8 @@ export async function addCustomerAction(
 
     const membership = await membershipRepo.create(cardId, customer.id);
     return { ok: true, membership };
-  } catch {
+  } catch (err) {
+    console.error('[addCustomerAction]', err);
     return { ok: false, error: 'Error al agregar el cliente. Intenta de nuevo.' };
   }
 }

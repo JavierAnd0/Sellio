@@ -28,26 +28,39 @@ export function orgRowToEntity(row: OrgRow): Organization {
 export class SupabaseOrganizationRepository implements IOrganizationRepository {
   async create(input: CreateOrganizationInput): Promise<Organization> {
     const db = await createClient();
+    const orgId = crypto.randomUUID();
 
-    const { data: org, error: orgError } = await db
+    const { error: orgError } = await db
       .from('organizations')
-      .insert({ name: input.name, slug: input.slug })
-      .select()
-      .single();
+      .insert({ id: orgId, name: input.name, slug: input.slug });
 
     if (orgError) {
       if (orgError.code === '23505') {
         throw Object.assign(new Error('Slug already taken'), { code: 'slug_taken' });
       }
-      throw new Error(orgError.message);
+      throw Object.assign(new Error(orgError.message), {
+        code: orgError.code === '42501' ? 'org_insert_blocked' : 'org_insert_failed',
+      });
     }
 
     const { error: memberError } = await db
       .from('organization_members')
-      .insert({ org_id: org.id, user_id: input.ownerId, role: 'owner' });
+      .insert({ org_id: orgId, user_id: input.ownerId, role: 'owner' });
 
     if (memberError) {
-      throw new Error(memberError.message);
+      throw Object.assign(new Error(memberError.message), {
+        code: memberError.code === '42501' ? 'org_members_bootstrap_blocked' : 'org_member_insert_failed',
+      });
+    }
+
+    const { data: org, error: fetchError } = await db
+      .from('organizations')
+      .select()
+      .eq('id', orgId)
+      .single();
+
+    if (fetchError) {
+      throw Object.assign(new Error(fetchError.message), { code: 'org_fetch_failed' });
     }
 
     return orgRowToEntity(org);

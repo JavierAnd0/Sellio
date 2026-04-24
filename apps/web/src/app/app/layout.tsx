@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 
 import { createClient } from '@sellio/db/server';
-import { SupabaseCardRepository, SupabaseOrganizationRepository } from '@sellio/db/repositories';
+import { SupabaseCardRepository, SupabaseCustomerRepository, SupabaseOrganizationRepository } from '@sellio/db/repositories';
 
 import { Sidebar } from '@/components/dashboard/sidebar';
 import { Topbar } from '@/components/dashboard/topbar';
@@ -27,14 +27,23 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   if (cards.length === 0) {
     redirect('/onboarding');
   }
+  
+  const customerRepo = new SupabaseCustomerRepository();
+  const totalCustomers = await customerRepo.countByOrg(org.id);
 
   const userMeta = user.user_metadata as { full_name?: string } | undefined;
 
   return (
-    <div className="flex min-h-screen bg-bg">
-      <Sidebar orgName={org?.name} />
+    <div className="flex h-screen overflow-hidden bg-bg">
+      <Sidebar 
+        orgName={org?.name}
+        plan={org.plan}
+        totalCards={cards.length}
+        totalCustomers={totalCustomers}
+        firstCardId={cards[0]?.id}
+      />
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
         <Topbar
           userEmail={user.email}
           userFullName={userMeta?.full_name ?? null}

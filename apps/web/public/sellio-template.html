@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Selio — Loyalty Cards para tu negocio</title>
+<style>/* vietnamese */
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("6ee0d2ec-5653-4287-8b13-88f2be2b811e") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("543bae4f-63a7-4f4c-bfab-4eaa160bfb4e") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("b91491d5-8932-43e0-906d-31db570e6e45") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("6ee0d2ec-5653-4287-8b13-88f2be2b811e") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("543bae4f-63a7-4f4c-bfab-4eaa160bfb4e") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("b91491d5-8932-43e0-906d-31db570e6e45") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("6ee0d2ec-5653-4287-8b13-88f2be2b811e") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("543bae4f-63a7-4f4c-bfab-4eaa160bfb4e") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("b91491d5-8932-43e0-906d-31db570e6e45") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("6ee0d2ec-5653-4287-8b13-88f2be2b811e") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("543bae4f-63a7-4f4c-bfab-4eaa160bfb4e") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("b91491d5-8932-43e0-906d-31db570e6e45") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("6ee0d2ec-5653-4287-8b13-88f2be2b811e") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("543bae4f-63a7-4f4c-bfab-4eaa160bfb4e") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("b91491d5-8932-43e0-906d-31db570e6e45") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* greek */
+@font-face {
+  font-family: 'Syne';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("72cdf254-7248-4ccc-a629-d583ae533765") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Syne';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("89efd336-87a3-407c-acb5-f5aa38404d3f") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Syne';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("01197b01-2044-47de-8825-2afa4a53c98c") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* greek */
+@font-face {
+  font-family: 'Syne';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("72cdf254-7248-4ccc-a629-d583ae533765") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Syne';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("89efd336-87a3-407c-acb5-f5aa38404d3f") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Syne';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("01197b01-2044-47de-8825-2afa4a53c98c") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* greek */
+@font-face {
+  font-family: 'Syne';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("72cdf254-7248-4ccc-a629-d583ae533765") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Syne';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("89efd336-87a3-407c-acb5-f5aa38404d3f") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Syne';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("01197b01-2044-47de-8825-2afa4a53c98c") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* greek */
+@font-face {
+  font-family: 'Syne';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("72cdf254-7248-4ccc-a629-d583ae533765") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Syne';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("89efd336-87a3-407c-acb5-f5aa38404d3f") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Syne';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("01197b01-2044-47de-8825-2afa4a53c98c") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+</style>
+<script src="01973e60-1cfd-414d-b5ca-cf77e44f1001" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="a2d40118-5bc5-4457-b80b-8d2b8e92893e" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="e56f9243-ccbb-4dba-8a27-250515a9611d" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+:root {
+  --coral: #E8341A;
+  --coral-dim: #C42A12;
+  --black: #0A0A0A;
+  --white: #F5F0EB;
+  --gray: #6B6560;
+  --border: rgba(255,255,255,0.08);
+  --surface: #131110;
+  --surface2: #1A1714;
+  --bg: #0A0A0A;
+  --fg: #F5F0EB;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --border: rgba(0,0,0,0.08);
+    --surface: #F0EBE4;
+    --surface2: #E8E0D6;
+    --bg: #F5F0EB;
+    --fg: #0A0A0A;
+    --gray: #7A6E66;
+  }
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: 'Space Grotesk', sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+
+/* Animations */
+@keyframes float {
+  0%,100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-12px) rotate(-4deg); }
+}
+@keyframes floatB {
+  0%,100% { transform: translateY(0) rotate(3deg); }
+  50% { transform: translateY(-8px) rotate(3deg); }
+}
+@keyframes fadeUp {
+  from { opacity:0; transform: translateY(24px); }
+  to { opacity:1; transform: translateY(0); }
+}
+@keyframes pulse {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.fade-up { animation: fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) both; }
+.delay-1 { animation-delay: 0.1s; }
+.delay-2 { animation-delay: 0.2s; }
+.delay-3 { animation-delay: 0.35s; }
+.delay-4 { animation-delay: 0.5s; }
+
+/* Tweaks */
+.tweaks-panel {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 14px; padding: 20px; width: 240px; z-index: 500;
+  display: none; box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+.tweaks-panel.visible { display: block; }
+.tweaks-title { font-size: 10px; font-weight: 600; letter-spacing: 0.15em; color: var(--gray); text-transform: uppercase; margin-bottom: 14px; }
+.tweak-label { font-size: 11px; color: var(--fg); margin-bottom: 8px; font-weight: 500; }
+.tweak-row { margin-bottom: 14px; }
+.tweak-opts { display: flex; gap: 6px; flex-wrap: wrap; }
+.tweak-btn {
+  padding: 5px 11px; border-radius: 6px; border: 1.5px solid var(--border);
+  font-size: 11px; cursor: pointer; background: transparent; font-family: 'Space Grotesk', sans-serif;
+  font-weight: 500; color: var(--fg); transition: all 0.15s;
+}
+.tweak-btn.active { background: var(--coral); color: #fff; border-color: var(--coral); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div class="tweaks-panel" id="tweaksPanel">
+  <div class="tweaks-title">Tweaks</div>
+  <div class="tweak-row">
+    <div class="tweak-label">Color acento</div>
+    <div class="tweak-opts">
+      <button class="tweak-btn active" onclick="setAccent('#E8341A','#C42A12',this)">Coral</button>
+      <button class="tweak-btn" onclick="setAccent('#5B3FE8','#4530C2',this)">Índigo</button>
+      <button class="tweak-btn" onclick="setAccent('#1A8C5B','#127040',this)">Verde</button>
+    </div>
+  </div>
+  <div class="tweak-row">
+    <div class="tweak-label">Headline hero</div>
+    <div class="tweak-opts">
+      <button class="tweak-btn active" onclick="setHeadline(0,this)">ES</button>
+      <button class="tweak-btn" onclick="setHeadline(1,this)">EN</button>
+    </div>
+  </div>
+</div>
+<script>
+function setAccent(c, dim, btn) {
+  document.documentElement.style.setProperty('--coral', c);
+  document.documentElement.style.setProperty('--coral-dim', dim);
+  document.querySelectorAll('.tweak-opts')[0].querySelectorAll('.tweak-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function setHeadline(idx, btn) {
+  const headlines = ['Fideliza a tus clientes.', 'Keep them coming back.'];
+  const sub = ['Crea tarjetas de lealtad digitales en minutos — sin código, sin complicaciones.', 'Create digital loyalty cards in minutes — no code, no complexity.'];
+  document.getElementById('hero-headline').textContent = headlines[idx];
+  document.getElementById('hero-sub').textContent = sub[idx];
+  document.querySelectorAll('.tweak-opts')[1].querySelectorAll('.tweak-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+window.addEventListener('message', e => {
+  if (e.data?.type === '__activate_edit_mode') document.getElementById('tweaksPanel').classList.add('visible');
+  if (e.data?.type === '__deactivate_edit_mode') document.getElementById('tweaksPanel').classList.remove('visible');
+});
+window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+</script>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const C = {
+  coral: 'var(--coral)', black: 'var(--black)', white: 'var(--white)',
+  gray: 'var(--gray)', bg: 'var(--bg)', fg: 'var(--fg)',
+  surface: 'var(--surface)', surface2: 'var(--surface2)', border: 'var(--border)',
+};
+
+// ── Mini loyalty card ─────────────────────────────────────────
+function MiniCard({ name, business, points, rotate = 0, accent = '#E8341A', style = {} }) {
+  return (
+    <div style={{
+      width: 300, background: `linear-gradient(135deg, #0F0C08 0%, #2A1A0E 60%, ${accent} 100%)`,
+      borderRadius: 18, padding: '22px 24px', boxShadow: '0 32px 80px rgba(0,0,0,0.5)',
+      transform: `rotate(${rotate}deg)`, position: 'relative', overflow: 'hidden', ...style,
+    }}>
+      <div style={{ position:'absolute', right:-30, top:-30, width:140, height:140, borderRadius:'50%', border:`1px solid ${accent}30` }}/>
+      <div style={{ position:'absolute', right:-60, top:-60, width:200, height:200, borderRadius:'50%', border:`1px solid ${accent}15` }}/>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom: 24, position:'relative' }}>
+        <div>
+          <div style={{ fontFamily:'Syne', fontWeight:800, fontSize:14, color: accent, letterSpacing:'0.04em' }}>{business}</div>
+          <div style={{ fontSize:9, color:'rgba(255,255,255,0.35)', letterSpacing:'0.15em', textTransform:'uppercase', marginTop:3 }}>Member Card</div>
+        </div>
+        <div style={{ width:32, height:32, borderRadius:8, background: accent, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Syne', fontWeight:800, fontSize:12, color:'#fff' }}>S</div>
+      </div>
+      <div style={{ position:'relative' }}>
+        <div style={{ fontFamily:'Syne', fontWeight:800, fontSize:38, color:'#fff', lineHeight:1 }}>{points.toLocaleString()}</div>
+        <div style={{ fontSize:9, color:'rgba(255,255,255,0.4)', letterSpacing:'0.15em', textTransform:'uppercase', marginTop:4 }}>puntos acumulados</div>
+      </div>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginTop:24, position:'relative' }}>
+        <div>
+          <div style={{ fontSize:8, color:'rgba(255,255,255,0.3)', letterSpacing:'0.1em', textTransform:'uppercase' }}>Miembro</div>
+          <div style={{ fontSize:12, fontWeight:500, color:'#fff', marginTop:2 }}>{name}</div>
+        </div>
+        <svg width={44} height={44} viewBox="0 0 44 44">
+          <rect x="2" y="2" width="16" height="16" rx="3" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5"/>
+          <rect x="6" y="6" width="8" height="8" rx="1" fill="rgba(255,255,255,0.5)"/>
+          <rect x="26" y="2" width="16" height="16" rx="3" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5"/>
+          <rect x="30" y="6" width="8" height="8" rx="1" fill="rgba(255,255,255,0.5)"/>
+          <rect x="2" y="26" width="16" height="16" rx="3" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5"/>
+          <rect x="6" y="30" width="8" height="8" rx="1" fill="rgba(255,255,255,0.5)"/>
+          <rect x="26" y="26" width="4" height="4" fill="rgba(255,255,255,0.5)"/>
+          <rect x="32" y="26" width="4" height="4" fill="rgba(255,255,255,0.5)"/>
+          <rect x="38" y="26" width="4" height="4" fill="rgba(255,255,255,0.5)"/>
+          <rect x="26" y="32" width="4" height="10" fill="rgba(255,255,255,0.5)"/>
+          <rect x="32" y="32" width="10" height="4" fill="rgba(255,255,255,0.5)"/>
+          <rect x="38" y="38" width="4" height="4" fill="rgba(255,255,255,0.5)"/>
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+// ── Nav ───────────────────────────────────────────────────────
+function Nav() {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const h = () => setScrolled(window.scrollY > 40);
+    window.addEventListener('scroll', h);
+    return () => window.removeEventListener('scroll', h);
+  }, []);
+  return (
+    <nav style={{
+      position:'fixed', top:0, left:0, right:0, zIndex:100,
+      padding: scrolled ? '14px 60px' : '24px 60px',
+      display:'flex', alignItems:'center', justifyContent:'space-between',
+      background: scrolled ? 'rgba(10,10,10,0.85)' : 'transparent',
+      backdropFilter: scrolled ? 'blur(16px)' : 'none',
+      borderBottom: scrolled ? '1px solid rgba(255,255,255,0.06)' : 'none',
+      transition: 'all 0.3s cubic-bezier(0.16,1,0.3,1)',
+    }}>
+      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+        <div style={{ width:32, height:32, borderRadius:8, background:'var(--coral)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Syne', fontWeight:800, fontSize:14, color:'#fff' }}>S</div>
+        <span style={{ fontFamily:'Syne', fontWeight:800, fontSize:18, color:'var(--fg)', letterSpacing:'-0.02em' }}>Selio<span style={{color:'var(--coral)'}}>.</span></span>
+      </div>
+      <div style={{ display:'flex', gap:36, alignItems:'center' }}>
+        {['Producto','Precios','Empresas'].map(l => (
+          <a key={l} href="#" style={{ fontSize:13, fontWeight:500, color:'rgba(245,240,235,0.6)', transition:'color 0.15s' }}
+            onMouseEnter={e=>e.target.style.color='var(--fg)'}
+            onMouseLeave={e=>e.target.style.color='rgba(245,240,235,0.6)'}
+          >{l}</a>
+        ))}
+        <a href="#" style={{
+          background:'var(--coral)', color:'#fff', padding:'9px 20px',
+          borderRadius:8, fontFamily:'Syne', fontWeight:700, fontSize:13,
+          transition:'opacity 0.15s', letterSpacing:'0.01em',
+        }}
+          onMouseEnter={e=>e.target.style.opacity='0.85'}
+          onMouseLeave={e=>e.target.style.opacity='1'}
+        >Empezar gratis</a>
+      </div>
+    </nav>
+  );
+}
+
+// ── Hero ──────────────────────────────────────────────────────
+function Hero() {
+  return (
+    <section style={{
+      minHeight:'100vh', padding:'160px 60px 100px',
+      display:'flex', alignItems:'center', justifyContent:'space-between',
+      gap:60, position:'relative', overflow:'hidden',
+    }}>
+      {/* BG grain texture */}
+      <div style={{
+        position:'absolute', inset:0, zIndex:0,
+        backgroundImage:`radial-gradient(ellipse 80% 60% at 70% 50%, rgba(232,52,26,0.08) 0%, transparent 70%)`,
+        pointerEvents:'none',
+      }}/>
+
+      {/* Left — copy */}
+      <div style={{ flex:'0 0 560px', position:'relative', zIndex:1 }}>
+        <div className="fade-up" style={{
+          display:'inline-flex', alignItems:'center', gap:8,
+          background:'rgba(232,52,26,0.12)', border:'1px solid rgba(232,52,26,0.25)',
+          borderRadius:100, padding:'6px 14px', marginBottom:32,
+        }}>
+          <div style={{ width:6, height:6, borderRadius:'50%', background:'var(--coral)', animation:'pulse 2s infinite' }}/>
+          <span style={{ fontSize:11, fontWeight:600, color:'var(--coral)', letterSpacing:'0.1em', textTransform:'uppercase' }}>Beta abierta · Gratis para empezar</span>
+        </div>
+
+        <h1 id="hero-headline" className="fade-up delay-1" style={{
+          fontFamily:'Syne', fontWeight:800, fontSize:72, lineHeight:1.0,
+          letterSpacing:'-0.03em', color:'var(--fg)', marginBottom:28,
+        }}>Fideliza a tus<br/>clientes.</h1>
+
+        <p id="hero-sub" className="fade-up delay-2" style={{
+          fontSize:18, lineHeight:1.7, color:'var(--gray)',
+          maxWidth:440, marginBottom:44,
+        }}>Crea tarjetas de lealtad digitales en minutos — sin código, sin complicaciones.</p>
+
+        <div className="fade-up delay-3" style={{ display:'flex', gap:14, flexWrap:'wrap' }}>
+          <a href="#" style={{
+            background:'var(--coral)', color:'#fff', padding:'16px 32px',
+            borderRadius:10, fontFamily:'Syne', fontWeight:800, fontSize:15,
+            display:'inline-flex', alignItems:'center', gap:10,
+            transition:'all 0.2s', letterSpacing:'0.01em',
+            boxShadow:'0 8px 32px rgba(232,52,26,0.35)',
+          }}
+            onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-2px)';e.currentTarget.style.boxShadow='0 12px 40px rgba(232,52,26,0.45)'}}
+            onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.boxShadow='0 8px 32px rgba(232,52,26,0.35)'}}
+          >Crear mi tarjeta gratis <span style={{fontSize:18}}>→</span></a>
+          <a href="#como" style={{
+            background:'transparent', color:'var(--fg)', padding:'16px 28px',
+            borderRadius:10, fontFamily:'Syne', fontWeight:700, fontSize:15,
+            border:'1.5px solid var(--border)', transition:'border-color 0.2s',
+          }}
+            onMouseEnter={e=>e.currentTarget.style.borderColor='rgba(245,240,235,0.3)'}
+            onMouseLeave={e=>e.currentTarget.style.borderColor='var(--border)'}
+          >Ver demo</a>
+        </div>
+
+        <div className="fade-up delay-4" style={{ marginTop:48, display:'flex', gap:32 }}>
+          {[['500+','Negocios'],['50k+','Clientes activos'],['100%','Sin comisión']].map(([n,l]) => (
+            <div key={l}>
+              <div style={{ fontFamily:'Syne', fontWeight:800, fontSize:22, color:'var(--fg)' }}>{n}</div>
+              <div style={{ fontSize:11, color:'var(--gray)', marginTop:2 }}>{l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Right — floating cards */}
+      <div style={{ flex:'0 0 480px', position:'relative', height:460, zIndex:1 }}>
+        <div style={{ position:'absolute', top:60, left:80, animation:'float 6s ease-in-out infinite' }}>
+          <MiniCard business="Café Central" name="Ana García" points={847} rotate={-4} />
+        </div>
+        <div style={{ position:'absolute', top:200, left:0, animation:'floatB 7s ease-in-out infinite 1s' }}>
+          <MiniCard business="Panadería Doña Rosa" name="Carlos López" points={1243} rotate={3} accent="#C17D3C" />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── Logo bar ──────────────────────────────────────────────────
+function LogoBar() {
+  const biz = ['Café Central','Panadería Artesanal','Salón Nova','Tech Store','Ropa Bonita','Clínica Vita','Gym Force','Librería Sur'];
+  return (
+    <div style={{ borderTop:'1px solid var(--border)', borderBottom:'1px solid var(--border)', padding:'20px 60px', overflow:'hidden', position:'relative' }}>
+      <div style={{ display:'flex', gap:64, alignItems:'center', whiteSpace:'nowrap' }}>
+        <span style={{ fontSize:10, letterSpacing:'0.15em', textTransform:'uppercase', color:'var(--gray)', flexShrink:0 }}>Usado por</span>
+        {biz.map(b => (
+          <span key={b} style={{ fontFamily:'Syne', fontWeight:700, fontSize:13, color:'rgba(245,240,235,0.25)', letterSpacing:'-0.01em', flexShrink:0 }}>{b}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── How it works ──────────────────────────────────────────────
+function HowItWorks() {
+  const steps = [
+    { n:'01', title:'Crea tu tarjeta', desc:'Personaliza colores, tipografía y logo de tu negocio. Tu tarjeta lista en menos de 5 minutos.' },
+    { n:'02', title:'Comparte con tus clientes', desc:'Genera un QR único. Tus clientes escanean y se unen a tu programa de lealtad al instante.' },
+    { n:'03', title:'Valida y premia', desc:'Usa la app de Selio para validar visitas y sumar puntos. Sin hardware adicional.' },
+  ];
+  return (
+    <section id="como" style={{ padding:'120px 60px', borderTop:'1px solid var(--border)' }}>
+      <div style={{ maxWidth:1200, margin:'0 auto' }}>
+        <div style={{ display:'flex', alignItems:'flex-end', justifyContent:'space-between', marginBottom:80 }}>
+          <div>
+            <div style={{ fontSize:10, letterSpacing:'0.2em', color:'var(--coral)', textTransform:'uppercase', fontWeight:600, marginBottom:12 }}>Cómo funciona</div>
+            <h2 style={{ fontFamily:'Syne', fontWeight:800, fontSize:52, letterSpacing:'-0.03em', color:'var(--fg)', lineHeight:1.05 }}>Simple por diseño.</h2>
+          </div>
+          <p style={{ fontSize:15, color:'var(--gray)', maxWidth:320, lineHeight:1.6, textAlign:'right' }}>De cero a tu primer cliente fidelizado en menos de 10 minutos.</p>
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:2 }}>
+          {steps.map((s, i) => (
+            <div key={i} style={{
+              background: i===1 ? 'var(--coral)' : 'var(--surface)',
+              padding:'48px 40px',
+              borderRadius: i===0 ? '16px 0 0 16px' : i===2 ? '0 16px 16px 0' : '0',
+              position:'relative', overflow:'hidden',
+            }}>
+              <div style={{
+                fontFamily:'Syne', fontWeight:800, fontSize:80,
+                color: i===1 ? 'rgba(255,255,255,0.15)' : 'rgba(245,240,235,0.05)',
+                position:'absolute', right:24, top:16, lineHeight:1,
+              }}>{s.n}</div>
+              <div style={{
+                fontFamily:'Syne', fontWeight:800, fontSize:13, letterSpacing:'0.1em',
+                color: i===1 ? 'rgba(255,255,255,0.6)' : 'var(--coral)',
+                marginBottom:24,
+              }}>{s.n}</div>
+              <h3 style={{
+                fontFamily:'Syne', fontWeight:800, fontSize:26, letterSpacing:'-0.02em',
+                color: i===1 ? '#fff' : 'var(--fg)', marginBottom:16, lineHeight:1.2,
+              }}>{s.title}</h3>
+              <p style={{ fontSize:14, lineHeight:1.7, color: i===1 ? 'rgba(255,255,255,0.75)' : 'var(--gray)' }}>{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── Pricing ───────────────────────────────────────────────────
+const TIERS = [
+  {
+    name:'Free', price:0, priceY:0, label:'Para empezar',
+    features:['1 tarjeta de lealtad','Hasta 50 clientes','QR simple','Impresión física incluida','Soporte por email'],
+    cta:'Empezar gratis', highlight:false,
+  },
+  {
+    name:'Basic', price:9.99, priceY:7.99, label:'Para negocios pequeños',
+    features:['Hasta 5 tarjetas','Hasta 500 clientes','QR + código numérico','Analytics básico','Exportar CSV','Personalización avanzada','Soporte prioritario'],
+    cta:'Empezar Basic', highlight:false,
+  },
+  {
+    name:'Pro', price:24.99, priceY:19.99, label:'El más popular',
+    features:['Tarjetas ilimitadas','Hasta 5,000 clientes','Analytics avanzado','Marca blanca (sin logo Selio)','Webhooks + API','Múltiples admins','NFC (próximamente)','Soporte chat 24/7'],
+    cta:'Empezar Pro', highlight:true,
+  },
+  {
+    name:'Enterprise', price:null, priceY:null, label:'Para cadenas y franquicias',
+    features:['Clientes ilimitados','Multi-sucursal','SSO + SAML','SLA garantizado','Onboarding dedicado','API ilimitada','Reportes custom'],
+    cta:'Contactar ventas', highlight:false,
+  },
+];
+
+function Pricing() {
+  const [annual, setAnnual] = useState(false);
+  return (
+    <section id="precios" style={{ padding:'120px 60px', borderTop:'1px solid var(--border)', background:'var(--surface)' }}>
+      <div style={{ maxWidth:1200, margin:'0 auto' }}>
+        <div style={{ textAlign:'center', marginBottom:64 }}>
+          <div style={{ fontSize:10, letterSpacing:'0.2em', color:'var(--coral)', textTransform:'uppercase', fontWeight:600, marginBottom:12 }}>Precios</div>
+          <h2 style={{ fontFamily:'Syne', fontWeight:800, fontSize:52, letterSpacing:'-0.03em', color:'var(--fg)', marginBottom:32 }}>Sin sorpresas.</h2>
+          <div style={{ display:'inline-flex', alignItems:'center', gap:12, background:'var(--surface2)', borderRadius:100, padding:'6px 8px' }}>
+            {['Mensual','Anual'].map((l, i) => (
+              <button key={l} onClick={() => setAnnual(i===1)} style={{
+                padding:'8px 20px', borderRadius:100, border:'none', cursor:'pointer',
+                fontFamily:'Syne', fontWeight:700, fontSize:12, letterSpacing:'0.02em',
+                background: annual===(i===1) ? 'var(--coral)' : 'transparent',
+                color: annual===(i===1) ? '#fff' : 'var(--gray)',
+                transition:'all 0.2s',
+              }}>{l}</button>
+            ))}
+            {annual && <span style={{ fontSize:11, color:'var(--coral)', fontWeight:600, paddingRight:8 }}>−20%</span>}
+          </div>
+        </div>
+
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:2, alignItems:'stretch' }}>
+          {TIERS.map((t, i) => (
+            <div key={t.name} style={{
+              background: t.highlight ? 'var(--coral)' : 'var(--bg)',
+              padding:'36px 28px', position:'relative', overflow:'hidden',
+              borderRadius: i===0 ? '16px 0 0 16px' : i===3 ? '0 16px 16px 0' : '0',
+              display:'flex', flexDirection:'column',
+            }}>
+              {t.highlight && (
+                <div style={{ position:'absolute', top:16, right:16, background:'rgba(255,255,255,0.2)', borderRadius:100, padding:'3px 10px', fontSize:9, fontWeight:700, color:'#fff', letterSpacing:'0.1em', textTransform:'uppercase' }}>Popular</div>
+              )}
+              <div style={{ marginBottom:28 }}>
+                <div style={{ fontFamily:'Syne', fontWeight:800, fontSize:11, letterSpacing:'0.15em', textTransform:'uppercase', color: t.highlight ? 'rgba(255,255,255,0.6)' : 'var(--gray)', marginBottom:8 }}>{t.label}</div>
+                <div style={{ fontFamily:'Syne', fontWeight:800, fontSize:22, color: t.highlight ? '#fff' : 'var(--fg)', marginBottom:16 }}>{t.name}</div>
+                {t.price === null ? (
+                  <div style={{ fontFamily:'Syne', fontWeight:800, fontSize:36, color: t.highlight ? '#fff' : 'var(--fg)' }}>Custom</div>
+                ) : (
+                  <div style={{ display:'flex', alignItems:'baseline', gap:4 }}>
+                    <span style={{ fontFamily:'Syne', fontWeight:800, fontSize:t.price===0?36:42, color: t.highlight ? '#fff' : 'var(--fg)' }}>
+                      {t.price===0 ? 'Gratis' : `$${annual ? t.priceY : t.price}`}
+                    </span>
+                    {t.price>0 && <span style={{ fontSize:12, color: t.highlight ? 'rgba(255,255,255,0.6)' : 'var(--gray)' }}>/mes</span>}
+                  </div>
+                )}
+              </div>
+
+              <ul style={{ listStyle:'none', marginBottom:32, flex:1 }}>
+                {t.features.map(f => (
+                  <li key={f} style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:12 }}>
+                    <span style={{ color: t.highlight ? 'rgba(255,255,255,0.8)' : 'var(--coral)', fontSize:14, marginTop:1, flexShrink:0 }}>✓</span>
+                    <span style={{ fontSize:13, color: t.highlight ? 'rgba(255,255,255,0.85)' : 'var(--gray)', lineHeight:1.4 }}>{f}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <a href="#" style={{
+                display:'block', textAlign:'center', padding:'13px',
+                borderRadius:8, fontFamily:'Syne', fontWeight:800, fontSize:13,
+                letterSpacing:'0.02em', transition:'all 0.2s',
+                background: t.highlight ? 'rgba(255,255,255,0.2)' : 'var(--coral)',
+                color: '#fff',
+                border: t.highlight ? '1.5px solid rgba(255,255,255,0.3)' : 'none',
+              }}
+                onMouseEnter={e=>e.currentTarget.style.opacity='0.85'}
+                onMouseLeave={e=>e.currentTarget.style.opacity='1'}
+              >{t.cta}</a>
+            </div>
+          ))}
+        </div>
+        <p style={{ textAlign:'center', marginTop:24, fontSize:12, color:'var(--gray)' }}>Sin tarjeta de crédito requerida · Cancela cuando quieras · Impresión de tarjetas física incluida en todos los planes</p>
+      </div>
+    </section>
+  );
+}
+
+// ── Features ──────────────────────────────────────────────────
+function Features() {
+  const feats = [
+    { icon:'✦', title:'Editor visual', desc:'Arrastra, suelta y personaliza. Colores, tipografías y logos — todo sin código.' },
+    { icon:'⬡', title:'QR inteligente', desc:'Cada tarjeta genera un QR único con seguridad HMAC. Anti-fraude desde el día 1.' },
+    { icon:'◈', title:'Impresión física', desc:'Descarga tu tarjeta en formato estándar (85×54mm). Lista para imprimir en casa o imprenta.' },
+    { icon:'◉', title:'Analytics real', desc:'Entiende cuándo vienen, cuánto gastan y qué los hace volver.' },
+    { icon:'⬟', title:'Multi-sucursal', desc:'Gestiona varias ubicaciones desde un solo dashboard. Perfecto para cadenas.' },
+    { icon:'◇', title:'API + Webhooks', desc:'Conecta Selio con tu POS o e-commerce. Documentación clara, SDKs listos.' },
+  ];
+  return (
+    <section style={{ padding:'120px 60px', borderTop:'1px solid var(--border)' }}>
+      <div style={{ maxWidth:1200, margin:'0 auto' }}>
+        <div style={{ display:'flex', alignItems:'flex-end', justifyContent:'space-between', marginBottom:80 }}>
+          <div>
+            <div style={{ fontSize:10, letterSpacing:'0.2em', color:'var(--coral)', textTransform:'uppercase', fontWeight:600, marginBottom:12 }}>Funcionalidades</div>
+            <h2 style={{ fontFamily:'Syne', fontWeight:800, fontSize:52, letterSpacing:'-0.03em', color:'var(--fg)', lineHeight:1.05 }}>Todo lo que<br/>necesitas.</h2>
+          </div>
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:2 }}>
+          {feats.map((f, i) => (
+            <div key={i} style={{
+              background:'var(--surface)', padding:'40px 36px',
+              borderRadius: i===0?'16px 0 0 0': i===2?'0 16px 0 0': i===3?'0 0 0 16px': i===5?'0 0 16px 0':'0',
+              transition:'background 0.2s',
+              cursor:'default',
+            }}
+              onMouseEnter={e=>e.currentTarget.style.background='var(--surface2)'}
+              onMouseLeave={e=>e.currentTarget.style.background='var(--surface)'}
+            >
+              <div style={{ fontFamily:'Syne', fontSize:24, color:'var(--coral)', marginBottom:20 }}>{f.icon}</div>
+              <h3 style={{ fontFamily:'Syne', fontWeight:800, fontSize:18, color:'var(--fg)', marginBottom:12, letterSpacing:'-0.01em' }}>{f.title}</h3>
+              <p style={{ fontSize:13, color:'var(--gray)', lineHeight:1.7 }}>{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── CTA final ─────────────────────────────────────────────────
+function CTAFinal() {
+  return (
+    <section style={{ padding:'120px 60px', borderTop:'1px solid var(--border)', background:'var(--surface)' }}>
+      <div style={{ maxWidth:800, margin:'0 auto', textAlign:'center' }}>
+        <div style={{ width:56, height:56, borderRadius:14, background:'var(--coral)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Syne', fontWeight:800, fontSize:24, color:'#fff', margin:'0 auto 32px' }}>S</div>
+        <h2 style={{ fontFamily:'Syne', fontWeight:800, fontSize:60, letterSpacing:'-0.03em', color:'var(--fg)', lineHeight:1.05, marginBottom:24 }}>Tu primera tarjeta,<br/>en 5 minutos.</h2>
+        <p style={{ fontSize:16, color:'var(--gray)', lineHeight:1.7, marginBottom:48, maxWidth:500, margin:'0 auto 48px' }}>Sin comisiones. Sin tarjeta de crédito. Solo tú, tus clientes y su lealtad.</p>
+        <a href="#" style={{
+          background:'var(--coral)', color:'#fff', padding:'18px 44px',
+          borderRadius:12, fontFamily:'Syne', fontWeight:800, fontSize:16,
+          display:'inline-flex', alignItems:'center', gap:12,
+          boxShadow:'0 8px 40px rgba(232,52,26,0.4)',
+          transition:'all 0.2s', letterSpacing:'0.01em',
+        }}
+          onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-3px)';e.currentTarget.style.boxShadow='0 16px 56px rgba(232,52,26,0.5)'}}
+          onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.boxShadow='0 8px 40px rgba(232,52,26,0.4)'}}
+        >Crear cuenta gratis <span style={{fontSize:20}}>→</span></a>
+      </div>
+    </section>
+  );
+}
+
+// ── Footer ────────────────────────────────────────────────────
+function Footer() {
+  return (
+    <footer style={{ padding:'48px 60px', borderTop:'1px solid var(--border)' }}>
+      <div style={{ maxWidth:1200, margin:'0 auto', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+          <div style={{ width:28, height:28, borderRadius:7, background:'var(--coral)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Syne', fontWeight:800, fontSize:12, color:'#fff' }}>S</div>
+          <span style={{ fontFamily:'Syne', fontWeight:800, fontSize:16, color:'var(--fg)' }}>Selio<span style={{color:'var(--coral)'}}>.</span></span>
+        </div>
+        <div style={{ display:'flex', gap:32 }}>
+          {['Producto','Precios','API','Blog','Términos','Privacidad'].map(l => (
+            <a key={l} href="#" style={{ fontSize:12, color:'var(--gray)', transition:'color 0.15s' }}
+              onMouseEnter={e=>e.target.style.color='var(--fg)'}
+              onMouseLeave={e=>e.target.style.color='var(--gray)'}
+            >{l}</a>
+          ))}
+        </div>
+        <div style={{ fontSize:12, color:'var(--gray)' }}>© 2026 Selio. Hecho en LATAM.</div>
+      </div>
+    </footer>
+  );
+}
+
+function App() {
+  return (
+    <div>
+      <Nav />
+      <Hero />
+      <LogoBar />
+      <HowItWorks />
+      <Features />
+      <Pricing />
+      <CTAFinal />
+      <Footer />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+
+
+
+
+</body></html>

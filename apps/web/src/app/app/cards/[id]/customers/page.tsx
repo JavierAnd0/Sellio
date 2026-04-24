@@ -25,6 +25,11 @@ export default async function CardCustomersPage({ params, searchParams }: Custom
   const { id } = await params;
   const { modal } = await searchParams;
 
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!UUID_REGEX.test(id)) {
+    notFound();
+  }
+
   const db = await createClient();
   const {
     data: { user },
@@ -44,27 +49,27 @@ export default async function CardCustomersPage({ params, searchParams }: Custom
   const closeHref = `/app/cards/${id}/customers`;
 
   return (
-    <div>
-      <div className="mb-8">
+    <div className="flex flex-col gap-6 sm:gap-8 pb-12 w-full max-w-6xl mx-auto">
+      <div className="mb-2">
         <Link
           href={`/app/cards/${id}`}
-          className="mb-4 inline-flex items-center gap-1 text-sm text-muted transition-colors hover:text-fg"
+          className="mb-6 inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.15em] text-muted transition-colors hover:text-fg"
         >
-          <ChevronLeft size={14} />
+          <ChevronLeft size={14} strokeWidth={3} />
           {card.name}
         </Link>
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6">
           <div>
-            <h1 className="font-display text-2xl font-extrabold tracking-tight text-fg">
+            <h1 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-fg">
               Clientes
             </h1>
-            <p className="mt-1 text-sm text-muted">
-              {customers.length} {customers.length === 1 ? 'cliente' : 'clientes'} en esta tarjeta.
+            <p className="mt-2 text-sm sm:text-base text-muted max-w-lg leading-relaxed">
+              Administra los {customers.length} {customers.length === 1 ? 'cliente' : 'clientes'} asociados a tu tarjeta de lealtad.
             </p>
           </div>
           <Link href={`/app/cards/${id}/customers?modal=add-customer`}>
-            <Button size="md">
-              <UserPlus size={16} />
+            <Button size="lg" className="bg-[#E8341A] hover:bg-[#D02B13] text-white rounded-xl shadow-lg shadow-coral/20 font-bold px-6 sm:px-8 border-0 transition-transform active:scale-95 flex items-center gap-2">
+              <UserPlus size={18} />
               Agregar cliente
             </Button>
           </Link>

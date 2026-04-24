@@ -47,6 +47,16 @@ export class SupabaseMembershipRepository implements IMembershipRepository {
     return membershipRowToEntity(data);
   }
 
+  async countByCard(cardId: string): Promise<number> {
+    const db = await createClient();
+    const { count, error } = await db
+      .from('memberships')
+      .select('*', { count: 'exact', head: true })
+      .eq('card_id', cardId);
+    if (error) throw new Error(error.message);
+    return count ?? 0;
+  }
+
   async findByCardAndCustomer(cardId: string, customerId: string): Promise<Membership | null> {
     const db = await createClient();
 
