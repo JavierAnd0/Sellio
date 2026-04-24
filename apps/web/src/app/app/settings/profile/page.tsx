@@ -19,5 +19,7 @@ export default async function ProfilePage() {
     new SupabaseOrganizationRepository().findByOwner(user.id),
   ]);
 
-  return <ProfileForm initialProfile={profile} initialOrg={org} />;
+  const fallbackName = user.user_metadata?.full_name ?? '';
+
+  return <ProfileForm initialProfile={profile} initialOrg={org} fallbackName={fallbackName} />;
 }

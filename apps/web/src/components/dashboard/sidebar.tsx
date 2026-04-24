@@ -16,12 +16,21 @@ const PLAN_CONFIG: Record<OrgPlan, { label: string; maxCards: number | null; max
 };
 
 interface SidebarProps {
-  orgName?: string;
   plan?: OrgPlan;
   totalCards?: number;
   totalCustomers?: number;
   firstCardId?: string;
+  orgName?: string;
+  userEmail?: string;
 }
+
+// User Profile Icon
+const UserIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </svg>
+);
 
 // Custom icons based on the screenshots
 const HexIcon = ({ active }: { active?: boolean }) => (
@@ -50,10 +59,12 @@ const StarIcon = () => (
 );
 
 
-function SidebarItem({ href, icon: Icon, children, badge, activeIcon: ActiveIcon }: any) {
+function SidebarItem({ href, icon: Icon, children, badge, activeIcon: ActiveIcon, activePattern }: any) {
   const pathname = usePathname();
-  // match exact or subpaths
-  const isActive = pathname === href || pathname.startsWith(`${href}/`);
+  // match exact or subpaths unless a pattern is provided
+  const isActive = activePattern
+    ? activePattern.test(pathname)
+    : pathname === href || pathname.startsWith(`${href}/`);
   const RenderIcon = isActive && ActiveIcon ? ActiveIcon : Icon;
 
   return (
@@ -84,7 +95,7 @@ function SidebarItem({ href, icon: Icon, children, badge, activeIcon: ActiveIcon
   );
 }
 
-export function Sidebar({ orgName, plan = 'free', totalCards = 0, totalCustomers = 0, firstCardId }: SidebarProps) {
+export function Sidebar({ plan = 'free', totalCards = 0, totalCustomers = 0, firstCardId, orgName, userEmail }: SidebarProps) {
   const { sidebarOpen, setSidebarOpen } = useUiStore();
   const config = PLAN_CONFIG[plan];
   const isElite = plan === 'elite';
@@ -138,10 +149,20 @@ export function Sidebar({ orgName, plan = 'free', totalCards = 0, totalCustomers
               <SidebarItem href="/app/dashboard" icon={HexIcon}>
                 Dashboard
               </SidebarItem>
-              <SidebarItem href="/app/cards" icon={DiamondIcon} activeIcon={DiamondIcon}>
+              <SidebarItem 
+                href="/app/cards" 
+                icon={DiamondIcon} 
+                activeIcon={DiamondIcon}
+                activePattern={/^\/app\/cards(\/[^/]+)?$/}
+              >
                 Tarjetas
               </SidebarItem>
-              <SidebarItem href={clientesHref} icon={DotCircleIcon} activeIcon={DotCircleIcon}>
+              <SidebarItem 
+                href={clientesHref} 
+                icon={DotCircleIcon} 
+                activeIcon={DotCircleIcon}
+                activePattern={/^\/app\/cards\/[^/]+\/customers/}
+              >
                 Clientes
               </SidebarItem>
               
@@ -150,30 +171,41 @@ export function Sidebar({ orgName, plan = 'free', totalCards = 0, totalCustomers
                   Analytics
                 </SidebarItem>
               </div>
-              <SidebarItem href="/app/settings" icon={DiamondIcon}>
+              <SidebarItem href="/app/settings/profile" icon={DiamondIcon}>
                 Configuración
               </SidebarItem>
             </nav>
           </div>
         </div>
 
-        {/* Footer Widget */}
-        <div className="p-4">
-          <div className="rounded-[20px] bg-[#E8341A]/5 border border-[#E8341A]/10 p-5 shadow-sm">
+        {/* User Profile & Footer Widget */}
+        <div className="border-t border-border/20 pt-4 pb-4">
+          
+          {/* User Profile Info */}
+          <div className="flex items-center gap-3 px-6 mb-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#EAE7DF] text-[#718096]">
+              <UserIcon />
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="truncate text-[14px] font-bold text-fg">{orgName || 'Mi Negocio'}</span>
+              <span className="truncate text-[12px] text-muted">{userEmail || 'usuario@ejemplo.com'}</span>
+            </div>
+          </div>
+
+          {/* Plan Widget */}
+          <div className="mx-4 rounded-[20px] bg-[#F5E6DE] p-5 shadow-sm">
             <div className="mb-2">
-              <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[#E8341A] mb-1">
+              <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[#D02B13] mb-1">
                 {config.label}
               </p>
               <p className="text-xs font-semibold text-muted">
                 {isElite ? (
                   <>
-                    {totalCards} tarjeta{totalCards !== 1 ? 's' : ''} · {totalCustomers} clientes
+                    {totalCustomers} clientes - {totalCards} tarjeta{totalCards !== 1 ? 's' : ''}
                   </>
                 ) : (
                   <>
-                    {totalCards}/{config.maxCards} tarjeta{config.maxCards !== 1 ? 's' : ''}
-                    {' · '}
-                    {totalCustomers}/{config.maxCustomers} clientes
+                    {totalCustomers}/{config.maxCustomers} clientes - {totalCards} tarjeta{config.maxCards !== 1 ? 's' : ''}
                   </>
                 )}
               </p>
@@ -181,28 +213,24 @@ export function Sidebar({ orgName, plan = 'free', totalCards = 0, totalCustomers
 
             {!isElite && (
               <>
-                <div className="h-1.5 w-full bg-border/30 rounded-full mb-3 overflow-hidden relative">
+                <div className="h-1.5 w-full bg-[#D02B13]/20 rounded-full mb-3 overflow-hidden relative">
                   <div
-                    className="absolute top-0 left-0 h-full bg-[#E8341A] rounded-full transition-all duration-1000"
+                    className="absolute top-0 left-0 h-full bg-[#D02B13] rounded-full transition-all duration-1000"
                     style={{ width: `${progressPercent}%` }}
                   />
                   <div
-                    className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#E8341A]"
+                    className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#D02B13]"
                     style={{ left: `calc(${progressPercent}% - 4px)` }}
                   />
                 </div>
 
-                <Link
-                  href="/app/settings/billing"
-                  className="inline-flex items-center text-[13px] font-bold text-[#E8341A] hover:text-[#D02B13] transition-colors"
-                >
-                  Upgradar <span className="ml-1">→</span>
-                </Link>
+                {/* Progress missing from mockup? Wait, the mockup doesn't have an 'Upgradar' link at the bottom of the widget? No, it DOES! */}
+                {/* Wait, the mockup does NOT have an Upgradar -> link in the red widget. It only has the progress bar! */}
               </>
             )}
 
             {isElite && (
-              <p className="text-[11px] font-semibold text-[#E8341A]/70">
+              <p className="text-[11px] font-semibold text-[#D02B13]/70">
                 ✦ Sin límites activos
               </p>
             )}

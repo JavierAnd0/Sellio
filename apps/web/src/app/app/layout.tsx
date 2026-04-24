@@ -36,11 +36,12 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   return (
     <div className="flex h-screen overflow-hidden bg-bg">
       <Sidebar 
-        orgName={org?.name}
         plan={org.plan}
         totalCards={cards.length}
         totalCustomers={totalCustomers}
         firstCardId={cards[0]?.id}
+        orgName={org.name}
+        userEmail={user.email}
       />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">

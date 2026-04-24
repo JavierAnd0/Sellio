@@ -57,6 +57,30 @@ export class SupabaseMembershipRepository implements IMembershipRepository {
     return count ?? 0;
   }
 
+  async sumPointsByCard(cardId: string): Promise<number> {
+    const db = await createClient();
+    const { data, error } = await db
+      .from('memberships')
+      .select('points')
+      .eq('card_id', cardId);
+    if (error) throw new Error(error.message);
+    return (data ?? []).reduce((sum, row) => sum + (row.points ?? 0), 0);
+  }
+
+  async countScansByCard(cardId: string): Promise<number> {
+    const db = await createClient();
+    const { count, error } = await db
+      .from('point_transactions')
+      .select('id, memberships!inner(card_id)', { count: 'exact', head: true })
+      .eq('memberships.card_id', cardId);
+      
+    if (error) {
+      console.error('Error counting scans by card:', error);
+      return 0;
+    }
+    return count ?? 0;
+  }
+
   async findByCardAndCustomer(cardId: string, customerId: string): Promise<Membership | null> {
     const db = await createClient();
 

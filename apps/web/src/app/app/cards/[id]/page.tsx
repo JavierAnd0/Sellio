@@ -1,13 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { ChevronLeft, Users } from 'lucide-react';
 
 import { createClient } from '@sellio/db/server';
 import { SupabaseCardRepository, SupabaseMembershipRepository, SupabaseOrganizationRepository } from '@sellio/db/repositories';
-import { Button } from '@sellio/ui';
 
-import { CardDetailEdit } from '@/components/cards/card-detail-edit';
+import { CardDetailView } from '@/components/cards/card-detail-view';
 
 export const metadata: Metadata = { title: 'Editar tarjeta' };
 
@@ -30,10 +28,12 @@ export default async function CardDetailPage({ params }: CardDetailPageProps) {
 
   if (!user) redirect('/login');
 
+  const membershipRepo = new SupabaseMembershipRepository();
+
   const [org, card, memberCount] = await Promise.all([
     new SupabaseOrganizationRepository().findByOwner(user.id),
     new SupabaseCardRepository().findById(id),
-    new SupabaseMembershipRepository().countByCard(id),
+    membershipRepo.countByCard(id),
   ]);
 
   if (!org) redirect('/app/dashboard');
@@ -48,32 +48,37 @@ export default async function CardDetailPage({ params }: CardDetailPageProps) {
       : org.primaryColor;
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <div className="mb-8">
+    <div>
+      <div className="mb-10 flex items-center justify-between border-b border-border/30 pb-6">
         <Link
           href="/app/cards"
-          className="mb-4 inline-flex items-center gap-1 text-sm text-muted transition-colors hover:text-fg"
+          className="flex w-[150px] items-center gap-2 text-[14px] font-bold text-muted transition-colors hover:text-fg"
         >
-          <ChevronLeft size={14} />
-          Tarjetas
+          <span>←</span> Mis tarjetas
         </Link>
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="font-display text-2xl font-extrabold tracking-tight text-fg">
-              {card.name}
-            </h1>
-            <p className="mt-1 text-sm text-muted">Ajustes de la tarjeta.</p>
-          </div>
-          <Link href={`/app/cards/${id}/customers`}>
-            <Button variant="secondary" size="sm">
-              <Users size={14} />
-              Ver clientes
-            </Button>
+        
+        <div className="flex flex-col items-center justify-center text-center">
+          <h1 className="font-display text-4xl font-black uppercase tracking-wider text-fg">
+            {card.name}
+          </h1>
+          <p className="mt-1 text-[16px] font-medium text-muted">
+            Café Central · {memberCount} clientes
+          </p>
+        </div>
+
+        <div className="flex w-[150px] justify-end">
+          <Link href={`/app/cards/${id}/builder`}>
+            <button className="flex items-center gap-2 rounded-xl border border-border/40 bg-[#E1DED5]/40 px-4 py-2.5 text-[14px] font-bold text-fg transition-colors hover:bg-[#E1DED5]/80 dark:bg-surface">
+              <span>✏️</span> Editar diseño
+            </button>
           </Link>
         </div>
       </div>
 
-      <CardDetailEdit card={card} primaryColor={primaryColor} canDelete={memberCount === 0} />
+      <CardDetailView
+        card={card}
+        primaryColor={primaryColor}
+      />
     </div>
   );
 }

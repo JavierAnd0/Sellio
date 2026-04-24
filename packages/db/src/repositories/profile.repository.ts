@@ -35,15 +35,16 @@ export class SupabaseProfileRepository implements IProfileRepository {
   async update(id: string, updates: UpdateProfileInput): Promise<Profile> {
     const db = await createClient();
 
-    const dbUpdates: Partial<ProfileRow> = {};
-    if (updates.fullName !== undefined) dbUpdates.full_name = updates.fullName;
-    if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
-    if (updates.avatarUrl !== undefined) dbUpdates.avatar_url = updates.avatarUrl;
+    const dbUpdates = {
+      id,
+      ...(updates.fullName !== undefined && { full_name: updates.fullName }),
+      ...(updates.phone !== undefined && { phone: updates.phone }),
+      ...(updates.avatarUrl !== undefined && { avatar_url: updates.avatarUrl }),
+    };
 
     const { data, error } = await db
       .from('profiles')
-      .update(dbUpdates)
-      .eq('id', id)
+      .upsert(dbUpdates)
       .select()
       .single();
 

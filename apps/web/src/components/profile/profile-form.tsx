@@ -10,12 +10,14 @@ import { updateProfileAction } from '@/actions/profile/update-profile.action';
 interface ProfileFormProps {
   initialProfile: Profile | null;
   initialOrg: Organization | null;
+  fallbackName?: string;
 }
 
-export function ProfileForm({ initialProfile, initialOrg }: ProfileFormProps) {
+export function ProfileForm({ initialProfile, initialOrg, fallbackName = '' }: ProfileFormProps) {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [color, setColor] = useState(initialOrg?.primaryColor ?? '#E8341A');
   const [isPending, startTransition] = useTransition();
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -71,26 +73,9 @@ export function ProfileForm({ initialProfile, initialOrg }: ProfileFormProps) {
                 name="fullName"
                 type="text"
                 autoComplete="name"
-                defaultValue={initialProfile?.fullName ?? ''}
+                defaultValue={initialProfile?.fullName || fallbackName}
                 placeholder="Tu nombre"
                 error={!!fieldErrors.fullName}
-              />
-            </FormField>
-
-            <FormField
-              label="Teléfono"
-              htmlFor="phone"
-              error={fieldErrors.phone}
-              hint="Solo para contacto. No se muestra públicamente."
-            >
-              <Input
-                id="phone"
-                name="phone"
-                type="tel"
-                autoComplete="tel"
-                defaultValue={initialProfile?.phone ?? ''}
-                placeholder="+57 300 000 0000"
-                error={!!fieldErrors.phone}
               />
             </FormField>
           </div>
@@ -125,12 +110,13 @@ export function ProfileForm({ initialProfile, initialOrg }: ProfileFormProps) {
                     id="primaryColor"
                     name="primaryColor"
                     type="color"
-                    defaultValue={initialOrg.primaryColor}
+                    value={color}
+                    onChange={(e) => setColor(e.target.value)}
                     className="h-11 w-14 cursor-pointer rounded-lg border border-border/20 bg-surface-2 p-1"
                   />
                   <Input
                     readOnly
-                    value={initialOrg.primaryColor}
+                    value={color}
                     className="w-32 font-mono text-sm"
                   />
                 </div>
