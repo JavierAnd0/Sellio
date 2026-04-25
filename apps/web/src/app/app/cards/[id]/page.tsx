@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 
+import { ChevronLeft, Pencil } from 'lucide-react';
+
 import { createClient } from '@sellio/db/server';
 import { SupabaseCardRepository, SupabaseMembershipRepository, SupabaseOrganizationRepository } from '@sellio/db/repositories';
 
@@ -54,7 +56,7 @@ export default async function CardDetailPage({ params }: CardDetailPageProps) {
           href="/app/cards"
           className="flex w-[150px] items-center gap-2 text-[14px] font-bold text-muted transition-colors hover:text-fg"
         >
-          <span>←</span> Mis tarjetas
+          <ChevronLeft size={16} /> Mis tarjetas
         </Link>
         
         <div className="flex flex-col items-center justify-center text-center">
@@ -69,7 +71,7 @@ export default async function CardDetailPage({ params }: CardDetailPageProps) {
         <div className="flex w-[150px] justify-end">
           <Link href={`/app/cards/${id}/builder`}>
             <button className="flex items-center gap-2 rounded-xl border border-border/40 bg-[#E1DED5]/40 px-4 py-2.5 text-[14px] font-bold text-fg transition-colors hover:bg-[#E1DED5]/80 dark:bg-surface">
-              <span>✏️</span> Editar diseño
+              <Pencil size={15} /> Editar diseño
             </button>
           </Link>
         </div>
@@ -78,6 +80,7 @@ export default async function CardDetailPage({ params }: CardDetailPageProps) {
       <CardDetailView
         card={card}
         primaryColor={primaryColor}
+        memberCount={memberCount}
       />
     </div>
   );

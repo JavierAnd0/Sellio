@@ -1,7 +1,9 @@
 'use client';
 
-import { type FormEvent, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
+
+import { Lock, ChevronLeft, Download as DownloadIcon, Printer as PrinterIcon } from 'lucide-react';
 
 import { Alert, Button } from '@sellio/ui';
 import type { Card } from '@sellio/domain';
@@ -9,9 +11,9 @@ import type { Card } from '@sellio/domain';
 import { createCardAction, updateCardAction } from '@/actions/cards/card.actions';
 import {
   type Tier, type TabId, type TemplateId, type PointsStyleId,
-  type CustomGradient, type BuilderState,
-  canUse, BASE_PALETTES, CUSTOM_GRADIENTS, PATTERNS, FONTS, TEMPLATES,
-  BADGE_OPTIONS, POINTS_STYLES, DEFAULT_BUILDER, QR, ClassicCard, CARD_RENDERERS,
+  type CustomGradient, type BuilderState, type StampIconId,
+  canUse, BASE_PALETTES, PATTERNS, FONTS, TEMPLATES,
+  BADGE_OPTIONS, POINTS_STYLES, STAMP_CATEGORIES, STAMP_ICONS_EXTENDED, DEFAULT_BUILDER, QR, ClassicCard, CARD_RENDERERS,
 } from './card-renderer';
 
 // ── Types ──────────────────────────────────────────────────────
@@ -21,6 +23,7 @@ interface CardFormProps {
   primaryColor?: string;
   autoSave?: boolean;
   exitHref?: string;
+  orgTier?: Tier;
 }
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
@@ -34,7 +37,7 @@ function LockPill({ tier, onUpgrade }: { tier: string; onUpgrade: () => void }) 
       onClick={onUpgrade}
       style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(255,179,71,0.1)', border: '1px solid rgba(255,179,71,0.2)', borderRadius: 100, padding: '3px 8px', fontSize: 10, color: '#FFB347', fontWeight: 600, cursor: 'pointer' }}
     >
-      🔒 {tier === 'basic' ? 'Basic' : 'Elite'}
+      <Lock size={9} /> {tier === 'basic' ? 'Basic' : 'Elite'}
     </button>
   );
 }
@@ -55,7 +58,7 @@ function UpgradeBanner({ tier, label, onUpgrade }: { tier: string; label: string
   const isElite = tier === 'elite';
   return (
     <div style={{ background: 'linear-gradient(135deg,rgba(255,179,71,0.08),rgba(255,179,71,0.04))', border: '1px solid rgba(255,179,71,0.18)', borderRadius: 10, padding: '12px 14px', marginTop: 10 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: '#FFB347', marginBottom: 4, fontFamily: 'Syne,sans-serif' }}>🔒 Requiere {isElite ? 'Elite' : 'Basic'}</div>
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#FFB347', marginBottom: 4, fontFamily: 'Syne,sans-serif', display: 'flex', alignItems: 'center', gap: 5 }}><Lock size={11} /> Requiere {isElite ? 'Elite' : 'Basic'}</div>
       <div style={{ fontSize: 11, color: '#6B6560', lineHeight: 1.5, marginBottom: 10 }}>{label}</div>
       <button
         type="button"
@@ -91,27 +94,40 @@ function CtrlInput({ label, value, onChange, type = 'text', placeholder, maxLeng
 
 // ── CardForm ──────────────────────────────────────────────────
 
-export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exitHref }: CardFormProps) {
+export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exitHref, orgTier = 'elite' }: CardFormProps) {
   const isEdit = !!card;
 
-  // Restore builder state from saved design if editing
-  const savedDesign = card?.design as Record<string, unknown> | null | undefined;
-  const initialBuilder: BuilderState = {
-    ...DEFAULT_BUILDER,
-    cardName: (savedDesign?.cardName as string) ?? card?.name ?? DEFAULT_BUILDER.cardName,
-    template: (savedDesign?.template as TemplateId) ?? DEFAULT_BUILDER.template,
-    palette: (savedDesign?.palette as string) ?? DEFAULT_BUILDER.palette,
-    customGradient: (savedDesign?.customGradient as CustomGradient | null) ?? null,
-    font: (savedDesign?.font as string) ?? DEFAULT_BUILDER.font,
-    pattern: (savedDesign?.pattern as string) ?? DEFAULT_BUILDER.pattern,
-    pointsStyle: (savedDesign?.pointsStyle as PointsStyleId) ?? DEFAULT_BUILDER.pointsStyle,
-    showBadge: (savedDesign?.showBadge as boolean) ?? false,
-    badgeText: (savedDesign?.badgeText as string) ?? DEFAULT_BUILDER.badgeText,
-    showMemberNum: (savedDesign?.showMemberNum as boolean) ?? false,
-    qrStyle: (savedDesign?.qrStyle as BuilderState['qrStyle']) ?? 'simple',
-  };
+  // Restore builder state from saved design if editing — wrapped in useRef to run only once
+  const initialBuilderRef = useRef<BuilderState | null>(null);
+  if (!initialBuilderRef.current) {
+    const savedDesign = card?.design as Record<string, unknown> | null | undefined;
+    initialBuilderRef.current = {
+      ...DEFAULT_BUILDER,
+      cardName: (savedDesign?.cardName as string) ?? card?.name ?? DEFAULT_BUILDER.cardName,
+      template: (savedDesign?.template as TemplateId) ?? DEFAULT_BUILDER.template,
+      palette: (savedDesign?.palette as string) ?? DEFAULT_BUILDER.palette,
+      customGradient: (savedDesign?.customGradient as CustomGradient | null) ?? null,
+      customPrimary: (savedDesign?.customPrimary as string) ?? undefined,
+      font: (savedDesign?.font as string) ?? DEFAULT_BUILDER.font,
+      pattern: (savedDesign?.pattern as string) ?? DEFAULT_BUILDER.pattern,
+      pointsStyle: (savedDesign?.pointsStyle as PointsStyleId) ?? DEFAULT_BUILDER.pointsStyle,
+      showBadge: (savedDesign?.showBadge as boolean) ?? false,
+      badgeText: (savedDesign?.badgeText as string) ?? DEFAULT_BUILDER.badgeText,
+      showMemberNum: (savedDesign?.showMemberNum as boolean) ?? false,
+      qrStyle: (savedDesign?.qrStyle as BuilderState['qrStyle']) ?? 'simple',
+      stampIcon: (savedDesign?.stampIcon as StampIconId) ?? DEFAULT_BUILDER.stampIcon,
+      customStampUrl: (savedDesign?.customStampUrl as string) ?? undefined,
+      customLayout: (savedDesign?.customLayout as BuilderState['customLayout']) ?? 'stack',
+      customElemBiz:      (savedDesign?.customElemBiz      as boolean) ?? true,
+      customElemCardName: (savedDesign?.customElemCardName as boolean) ?? true,
+      customElemPoints:   (savedDesign?.customElemPoints   as boolean) ?? true,
+      customElemMember:   (savedDesign?.customElemMember   as boolean) ?? true,
+      customElemQr:       (savedDesign?.customElemQr       as boolean) ?? true,
+      customElemLogo:     (savedDesign?.customElemLogo     as boolean) ?? true,
+    };
+  }
 
-  const [tier, setTier] = useState<Tier>('free');
+  const [tier, setTier] = useState<Tier>(orgTier);
   const [activeTab, setActiveTab] = useState<TabId>('templates');
   const [saved, setSaved] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -123,8 +139,21 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [leftWidth, setLeftWidth] = useState(260);
   const [isDragging, setIsDragging] = useState(false);
+  const [iconSearch, setIconSearch] = useState('');
+  const [showIconPicker, setShowIconPicker] = useState(false);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const cardRef = useRef<HTMLDivElement>(null);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  // 3D tilt handler
+  const handleCardMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientY - rect.top) / rect.height - 0.5) * -16;
+    const y = ((e.clientX - rect.left) / rect.width - 0.5) * 16;
+    setTilt({ x, y });
+  }, []);
+  const handleCardMouseLeave = useCallback(() => setTilt({ x: 0, y: 0 }), []);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     setIsDragging(true);
 
@@ -153,17 +182,17 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-  };
+  }, [leftWidth]);
 
-  const [s, setS] = useState<BuilderState>(initialBuilder);
-  const [description, setDescription] = useState(card?.description ?? '');
-  const [pointsPerCheckin, setPointsPerCheckin] = useState(card?.pointsPerCheckin ?? 1);
-  const [rewardDescription, setRewardDescription] = useState(card?.rewardDescription ?? '');
-  const [pointsForReward, setPointsForReward] = useState(card?.pointsForReward ?? 10);
-  const [maxMembers, setMaxMembers] = useState(card?.maxMembers?.toString() ?? '');
+  const [s, setS] = useState<BuilderState>(() => initialBuilderRef.current!);
+  const [description, setDescription] = useState(() => card?.description ?? '');
+  const [pointsPerCheckin, setPointsPerCheckin] = useState(() => card?.pointsPerCheckin ?? 1);
+  const [rewardDescription, setRewardDescription] = useState(() => card?.rewardDescription ?? '');
+  const [pointsForReward, setPointsForReward] = useState(() => card?.pointsForReward ?? 10);
+  const [maxMembers, setMaxMembers] = useState(() => card?.maxMembers?.toString() ?? '');
 
-  const set = <K extends keyof BuilderState>(k: K, v: BuilderState[K]) =>
-    setS((prev) => ({ ...prev, [k]: v }));
+  const set = useCallback(<K extends keyof BuilderState>(k: K, v: BuilderState[K]) =>
+    setS((prev) => ({ ...prev, [k]: v })), []);
 
   // Override coral palette with org's primary color
   const palettes = useMemo(
@@ -178,26 +207,37 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
 
   const pal = useMemo((): { primary: string; bg: string } => {
     if (s.customGradient) return s.customGradient;
+    if (s.customPrimary) {
+      return { primary: s.customPrimary, bg: `linear-gradient(135deg,#1A0806 0%,#3A1006 55%,${s.customPrimary} 100%)` };
+    }
     return palettes.find((p) => p.id === s.palette) ?? palettes[0]!;
-  }, [s.customGradient, s.palette, palettes]);
+  }, [s.customGradient, s.customPrimary, s.palette, palettes]);
 
-  const font = (FONTS.find((f) => f.id === s.font) ?? FONTS[0])!;
-  const pattern = (PATTERNS.find((p) => p.id === s.pattern) ?? PATTERNS[0])!;
-  const CardComp = CARD_RENDERERS[s.template] ?? ClassicCard;
+  const font = useMemo(() => (FONTS.find((f) => f.id === s.font) ?? FONTS[0])!, [s.font]);
+  const pattern = useMemo(() => (PATTERNS.find((p) => p.id === s.pattern) ?? PATTERNS[0])!, [s.pattern]);
+  const CardComp = useMemo(() => CARD_RENDERERS[s.template] ?? ClassicCard, [s.template]);
 
-  const upgrade = (required: string) => {
+  const upgrade = useCallback((required: string) => {
     window.confirm(
       `Esta función requiere el plan ${required === 'basic' ? 'Basic ($9.99/mes)' : 'Elite ($29.99/mes)'}. ¿Ver planes?`,
     );
-  };
+  }, []);
 
-  const designPayload = {
-    template: s.template, palette: s.palette, customGradient: s.customGradient,
+  // Single source of truth for design payload — used by both hidden form input and auto-save
+  const designPayload = useMemo(() => ({
+    template: s.template, palette: s.palette, customGradient: s.customGradient, customPrimary: s.customPrimary,
     font: s.font, pattern: s.pattern, pointsStyle: s.pointsStyle,
     showBadge: s.showBadge, badgeText: s.badgeText,
     showMemberNum: s.showMemberNum, qrStyle: s.qrStyle,
+    stampIcon: s.stampIcon, customStampUrl: s.customStampUrl,
     cardName: s.cardName, businessName: s.businessName,
-  };
+    customLayout: s.customLayout,
+    customElemBiz: s.customElemBiz, customElemCardName: s.customElemCardName,
+    customElemPoints: s.customElemPoints, customElemMember: s.customElemMember,
+    customElemQr: s.customElemQr, customElemLogo: s.customElemLogo,
+  }), [s]);
+
+  const designPayloadJSON = useMemo(() => JSON.stringify(designPayload), [designPayload]);
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -234,13 +274,6 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
       isFirstRender.current = false;
       return;
     }
-    const payload = {
-      template: s.template, palette: s.palette, customGradient: s.customGradient,
-      font: s.font, pattern: s.pattern, pointsStyle: s.pointsStyle,
-      showBadge: s.showBadge, badgeText: s.badgeText,
-      showMemberNum: s.showMemberNum, qrStyle: s.qrStyle,
-      cardName: s.cardName, businessName: s.businessName,
-    };
     const timer = setTimeout(async () => {
       setSaveStatus('saving');
       const fd = new FormData();
@@ -250,7 +283,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
       fd.set('pointsForReward', String(pointsForReward));
       fd.set('rewardDescription', rewardDescription);
       if (maxMembers) fd.set('maxMembers', maxMembers);
-      fd.set('design', JSON.stringify(payload));
+      fd.set('design', designPayloadJSON);
       const result = await updateCardAction(card.id, fd);
       if (result.ok) {
         setSaveStatus('saved');
@@ -261,7 +294,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
     }, 1500);
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [s, description, pointsPerCheckin, rewardDescription, pointsForReward, maxMembers]);
+  }, [s, designPayloadJSON, description, pointsPerCheckin, rewardDescription, pointsForReward, maxMembers]);
 
   const tabs: Array<{ id: TabId; label: string }> = [
     { id: 'templates', label: 'Plantillas' },
@@ -274,23 +307,16 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
   const cardSlug = card ? `sellio.app/c/${card.id.slice(0, 8)}` : null;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', background: '#0D0B09', color: '#F5F0EB', borderRadius: exitHref ? 0 : 16, border: exitHref ? 'none' : '1px solid rgba(245,240,235,0.07)', overflow: 'hidden', boxShadow: exitHref ? 'none' : '0 20px 60px rgba(0,0,0,0.5)', fontFamily: 'Space Grotesk,sans-serif', height: exitHref ? '100vh' : undefined }}>
-      <style jsx>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&family=Cabinet+Grotesk:wght@400;500;700;800&display=swap');
-        ::-webkit-scrollbar { width: 3px; height: 3px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #2E2A26; border-radius: 2px; }
-      `}</style>
-
+    <div className="sellio-builder" style={{ display: 'flex', flexDirection: 'column', background: '#0D0B09', color: '#F5F0EB', borderRadius: exitHref ? 0 : 16, border: exitHref ? 'none' : '1px solid rgba(245,240,235,0.07)', overflow: 'hidden', boxShadow: exitHref ? 'none' : '0 20px 60px rgba(0,0,0,0.5)', fontFamily: 'Space Grotesk,sans-serif', height: exitHref ? '100vh' : undefined }}>
       {/* Hidden form inputs */}
       <form id="card-builder-form" onSubmit={handleSubmit}>
-        <input name="name"             value={s.cardName}                    readOnly aria-hidden className="hidden" />
-        <input name="description"      value={description}                   readOnly aria-hidden className="hidden" />
-        <input name="pointsPerCheckin" value={pointsPerCheckin}              readOnly aria-hidden className="hidden" />
-        <input name="pointsForReward"  value={pointsForReward}               readOnly aria-hidden className="hidden" />
-        <input name="rewardDescription" value={rewardDescription}            readOnly aria-hidden className="hidden" />
-        <input name="maxMembers"       value={maxMembers}                    readOnly aria-hidden className="hidden" />
-        <input name="design"           value={JSON.stringify(designPayload)} readOnly aria-hidden className="hidden" />
+        <input name="name"              value={s.cardName}          readOnly aria-hidden className="hidden" />
+        <input name="description"       value={description}          readOnly aria-hidden className="hidden" />
+        <input name="pointsPerCheckin"  value={pointsPerCheckin}     readOnly aria-hidden className="hidden" />
+        <input name="pointsForReward"   value={pointsForReward}      readOnly aria-hidden className="hidden" />
+        <input name="rewardDescription" value={rewardDescription}    readOnly aria-hidden className="hidden" />
+        <input name="maxMembers"        value={maxMembers}           readOnly aria-hidden className="hidden" />
+        <input name="design"            value={designPayloadJSON}    readOnly aria-hidden className="hidden" />
       </form>
 
       {/* Top bar */}
@@ -301,7 +327,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
               onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = '#F5F0EB'; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = '#6B6560'; }}
             >
-              ← Salir
+              <ChevronLeft size={14} /> Salir
             </Link>
             <div style={{ width: 1, height: 24, background: 'rgba(245,240,235,0.12)' }} />
           </>
@@ -404,7 +430,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                               {locked && (
                                 <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)' }}>
                                   <div style={{ background: 'rgba(10,10,10,0.8)', padding: '6px 14px', borderRadius: 100, fontSize: 11, fontWeight: 600, color: '#F5F0EB', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <span>🔒</span> Desbloquear
+                                    <Lock size={10} /> Desbloquear
                                   </div>
                                 </div>
                               )}
@@ -414,6 +440,52 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                       );
                     })}
                   </div>
+
+                  {/* ── Controles de plantilla personalizada ── */}
+                  {s.template === 'custom' && (
+                    <div style={{ marginTop: 20, background: '#0A0A0A', border: '1px solid rgba(245,240,235,0.08)', borderRadius: 12, padding: 14 }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: '#F5F0EB', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 14 }}>Personalizar tarjeta</div>
+
+                      {/* Layout */}
+                      <div style={{ marginBottom: 16 }}>
+                        <div style={{ fontSize: 10, color: '#6B6560', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Distribución</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6 }}>
+                          {([
+                            { id: 'stack',    label: 'Vertical',  desc: 'Clásico' },
+                            { id: 'centered', label: 'Centrado',  desc: 'Minimal' },
+                            { id: 'split',    label: 'Acento',    desc: 'División' },
+                          ] as const).map(({ id, label }) => (
+                            <button
+                              key={id}
+                              type="button"
+                              onClick={() => set('customLayout', id)}
+                              style={{ padding: '8px 4px', borderRadius: 8, fontSize: 10, fontWeight: 700, cursor: 'pointer', background: s.customLayout === id ? 'rgba(232,52,26,0.15)' : 'transparent', border: `1.5px solid ${s.customLayout === id ? '#E8341A' : 'rgba(245,240,235,0.12)'}`, color: s.customLayout === id ? '#E8341A' : '#6B6560', letterSpacing: '0.04em', transition: 'all 0.15s' }}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Elementos visibles */}
+                      <div>
+                        <div style={{ fontSize: 10, color: '#6B6560', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>Elementos visibles</div>
+                        {([
+                          { key: 'customElemBiz'      as const, label: 'Nombre del negocio' },
+                          { key: 'customElemCardName' as const, label: 'Nombre de tarjeta'  },
+                          { key: 'customElemPoints'   as const, label: 'Contador de puntos' },
+                          { key: 'customElemMember'   as const, label: 'Nombre del cliente' },
+                          { key: 'customElemQr'       as const, label: 'Código QR'           },
+                          { key: 'customElemLogo'     as const, label: 'Logo / badge'        },
+                        ]).map(({ key, label }) => (
+                          <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 9 }}>
+                            <span style={{ fontSize: 12, color: s[key] ? '#F5F0EB' : '#4A4540', transition: 'color 0.15s' }}>{label}</span>
+                            <Toggle on={s[key]} onChange={() => set(key, !s[key])} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })()}
@@ -425,26 +497,23 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 5 }}>
                     {palettes.map((p) => (
                       <div key={p.id}
-                        onClick={() => { set('palette', p.id); set('customGradient', null); }}
-                        style={{ aspectRatio: '1', borderRadius: 5, cursor: 'pointer', background: p.bg, border: `2px solid ${s.palette === p.id && !s.customGradient ? '#fff' : 'transparent'}`, transform: s.palette === p.id && !s.customGradient ? 'scale(1.15)' : 'scale(1)', transition: 'all 0.15s' }}
+                        onClick={() => { set('palette', p.id); set('customGradient', null); set('customPrimary', undefined); }}
+                        style={{ aspectRatio: '1', borderRadius: 5, cursor: 'pointer', background: p.bg, border: `2px solid ${s.palette === p.id && !s.customGradient && !s.customPrimary ? '#fff' : 'transparent'}`, transform: s.palette === p.id && !s.customGradient && !s.customPrimary ? 'scale(1.15)' : 'scale(1)', transition: 'all 0.15s' }}
                         title={p.name}
                       />
                     ))}
                   </div>
                 </Section>
 
-                <Section label="Gradientes custom" action={!canUse(tier, 'basic') ? <LockPill tier="basic" onUpgrade={() => upgrade('basic')} /> : undefined}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 5 }}>
-                    {CUSTOM_GRADIENTS.map((p) => (
-                      <div key={p.id}
-                        onClick={() => canUse(tier, 'basic') ? (set('customGradient', p)) : upgrade('basic')}
-                        style={{ aspectRatio: '1', borderRadius: 5, cursor: canUse(tier, 'basic') ? 'pointer' : 'not-allowed', background: p.bg, border: `2px solid ${s.customGradient?.id === p.id ? '#fff' : 'transparent'}`, opacity: !canUse(tier, 'basic') ? 0.35 : 1, transform: s.customGradient?.id === p.id ? 'scale(1.15)' : 'scale(1)', transition: 'all 0.15s' }}
-                        title={p.name}
-                      />
-                    ))}
-                  </div>
-                  {!canUse(tier, 'basic') && <UpgradeBanner tier="basic" label="Accede a gradientes exclusivos con el plan Basic." onUpgrade={() => upgrade('basic')} />}
+                <Section label="Fondo personalizado (Color libre)" action={!canUse(tier, 'basic') ? <LockPill tier="basic" onUpgrade={() => upgrade('basic')} /> : undefined}>
+                  {canUse(tier, 'basic') ? (
+                    <input type="color" value={s.customPrimary ?? primaryColor} onChange={(e) => { set('customPrimary', e.target.value); set('customGradient', null); }} style={{ width: '100%', height: 40, borderRadius: 8, border: '1px solid rgba(245,240,235,0.12)', background: 'none', cursor: 'pointer', padding: 2 }} />
+                  ) : (
+                    <UpgradeBanner tier="basic" label="Elige el color exacto para generar tu fondo degradado." onUpgrade={() => upgrade('basic')} />
+                  )}
                 </Section>
+
+
 
                 <Section label="Patrón overlay" action={!canUse(tier, 'elite') ? <LockPill tier="elite" onUpgrade={() => upgrade('elite')} /> : undefined}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
@@ -466,45 +535,23 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
               </>
             )}
 
-            {/* Colors */}
+            {/* Colors → solo estilo del QR */}
             {activeTab === 'colors' && (
-              <>
-                <Section label="Color primario">
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 5 }}>
-                    {palettes.map((p) => (
-                      <div key={p.id}
-                        onClick={() => { set('palette', p.id); set('customGradient', null); }}
-                        style={{ aspectRatio: '1', borderRadius: 5, cursor: 'pointer', background: p.primary, border: `2px solid ${s.palette === p.id && !s.customGradient ? '#fff' : 'transparent'}`, transform: s.palette === p.id && !s.customGradient ? 'scale(1.15)' : 'scale(1)', transition: 'all 0.15s' }}
-                        title={p.name}
-                      />
-                    ))}
-                  </div>
-                </Section>
-
-                <Section label="Color personalizado" action={!canUse(tier, 'basic') ? <LockPill tier="basic" onUpgrade={() => upgrade('basic')} /> : undefined}>
-                  {canUse(tier, 'basic') ? (
-                    <input type="color" style={{ width: '100%', height: 40, borderRadius: 8, border: '1px solid rgba(245,240,235,0.12)', background: 'none', cursor: 'pointer', padding: 2 }} />
-                  ) : (
-                    <UpgradeBanner tier="basic" label="Elige cualquier color para tu tarjeta con el selector libre." onUpgrade={() => upgrade('basic')} />
-                  )}
-                </Section>
-
-                <Section label="Estilo del QR" action={!canUse(tier, 'basic') ? <LockPill tier="basic" onUpgrade={() => upgrade('basic')} /> : undefined}>
-                  {(['simple', 'colored', 'logo'] as const).map((qs) => {
-                    const locked = qs !== 'simple' && !canUse(tier, 'basic');
-                    return (
-                      <div key={qs}
-                        onClick={() => locked ? upgrade('basic') : set('qrStyle', qs)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 7, cursor: locked ? 'not-allowed' : 'pointer', marginBottom: 4, background: s.qrStyle === qs ? '#201D18' : 'transparent', border: `1px solid ${s.qrStyle === qs ? 'rgba(245,240,235,0.12)' : 'transparent'}`, opacity: locked ? 0.4 : 1 }}
-                      >
-                        <QR size={28} color={qs === 'colored' ? pal.primary : qs === 'logo' ? '#A78BFA' : 'rgba(255,255,255,0.6)'} />
-                        <span style={{ fontSize: 12 }}>{qs === 'simple' ? 'Simple (blanco)' : qs === 'colored' ? 'A color' : 'Con logo'}</span>
-                        {s.qrStyle === qs && <span style={{ marginLeft: 'auto', color: '#E8341A', fontSize: 12 }}>✓</span>}
-                      </div>
-                    );
-                  })}
-                </Section>
-              </>
+              <Section label="Estilo del QR" action={!canUse(tier, 'basic') ? <LockPill tier="basic" onUpgrade={() => upgrade('basic')} /> : undefined}>
+                {(['simple', 'colored', 'logo'] as const).map((qs) => {
+                  const locked = qs !== 'simple' && !canUse(tier, 'basic');
+                  return (
+                    <div key={qs}
+                      onClick={() => locked ? upgrade('basic') : set('qrStyle', qs)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 7, cursor: locked ? 'not-allowed' : 'pointer', marginBottom: 4, background: s.qrStyle === qs ? '#201D18' : 'transparent', border: `1px solid ${s.qrStyle === qs ? 'rgba(245,240,235,0.12)' : 'transparent'}`, opacity: locked ? 0.4 : 1 }}
+                    >
+                      <QR size={28} color={qs === 'colored' ? pal.primary : qs === 'logo' ? '#A78BFA' : 'rgba(255,255,255,0.6)'} />
+                      <span style={{ fontSize: 12 }}>{qs === 'simple' ? 'Simple (blanco)' : qs === 'colored' ? 'A color' : 'Con logo'}</span>
+                      {s.qrStyle === qs && <span style={{ marginLeft: 'auto', color: '#E8341A', fontSize: 12 }}>✓</span>}
+                    </div>
+                  );
+                })}
+              </Section>
             )}
 
             {/* Typography */}
@@ -512,22 +559,51 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
               <Section label="Tipografía">
                 {FONTS.map((f) => {
                   const locked = !canUse(tier, f.tier);
+                  const isActive = s.font === f.id;
+                  // Per-font display customization for visual distinction
+                  const displayStyle: React.CSSProperties = f.id === 'syne'
+                    ? { fontFamily: `'Syne', sans-serif`, fontWeight: 800, fontSize: 26, color: '#F5F0EB', letterSpacing: '-0.02em', lineHeight: 1 }
+                    : f.id === 'outfit'
+                    ? { fontFamily: `'Outfit', sans-serif`, fontWeight: 800, fontSize: 24, color: '#F5F0EB', lineHeight: 1 }
+                    : f.id === 'playfair'
+                    ? { fontFamily: `'Playfair Display', serif`, fontWeight: 700, fontSize: 22, color: '#F5F0EB', lineHeight: 1.1 }
+                    : f.id === 'cormorant'
+                    ? { fontFamily: `'Cormorant Garamond', serif`, fontWeight: 600, fontSize: 26, color: '#F5F0EB', fontStyle: 'italic', lineHeight: 1.1 }
+                    : f.id === 'cabinet'
+                    ? { fontFamily: `'Plus Jakarta Sans', sans-serif`, fontWeight: 800, fontSize: 22, color: '#F5F0EB', lineHeight: 1 }
+                    : f.id === 'bebas'
+                    ? { fontFamily: `'Bebas Neue', sans-serif`, fontWeight: 400, fontSize: 32, color: '#F5F0EB', letterSpacing: '0.08em', lineHeight: 1 }
+                    : f.id === 'josefin'
+                    ? { fontFamily: `'Josefin Sans', sans-serif`, fontWeight: 700, fontSize: 20, color: '#F5F0EB', letterSpacing: '0.12em', textTransform: 'uppercase' }
+                    : { fontFamily: `'Space Grotesk', monospace`, fontWeight: 500, fontSize: 18, color: '#F5F0EB', letterSpacing: '0.04em' };
+
+                  const bodyStyle: React.CSSProperties = {
+                    fontFamily: `'${f.body}', sans-serif`,
+                    fontSize: 11,
+                    color: '#6B6560',
+                    marginTop: 4,
+                    fontStyle: f.id === 'cormorant' ? 'normal' : undefined,
+                    letterSpacing: f.id === 'josefin' ? '0.04em' : undefined,
+                  };
+
                   return (
                     <div key={f.id}
                       onClick={() => locked ? upgrade(f.tier) : set('font', f.id)}
-                      style={{ padding: 12, borderRadius: 8, marginBottom: 6, cursor: locked ? 'not-allowed' : 'pointer', border: `1.5px solid ${s.font === f.id ? '#E8341A' : 'rgba(245,240,235,0.07)'}`, background: s.font === f.id ? '#201D18' : 'transparent', opacity: locked ? 0.45 : 1, transition: 'all 0.15s' }}
+                      style={{ padding: 12, borderRadius: 8, marginBottom: 6, cursor: locked ? 'not-allowed' : 'pointer', border: `1.5px solid ${isActive ? '#E8341A' : 'rgba(245,240,235,0.07)'}`, background: isActive ? '#201D18' : 'transparent', opacity: locked ? 0.45 : 1, transition: 'all 0.15s' }}
                     >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                        <span style={{ fontSize: 10, color: '#6B6560', fontWeight: 600, letterSpacing: '0.06em' }}>{f.name}</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                        <span style={{ fontSize: 9, color: isActive ? '#E8341A' : '#4A4540', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{f.name}</span>
                         {locked && <LockPill tier={f.tier} onUpgrade={() => {}} />}
+                        {isActive && !locked && <span style={{ fontSize: 9, color: '#E8341A', fontWeight: 700 }}>✓ Activa</span>}
                       </div>
-                      <div style={{ fontFamily: `'${f.display}', sans-serif`, fontWeight: 800, fontSize: 20, color: '#F5F0EB' }}>Aa Bb 123</div>
-                      <div style={{ fontFamily: `'${f.body}', sans-serif`, fontSize: 11, color: '#6B6560', marginTop: 2 }}>Texto descriptivo del negocio</div>
+                      <div style={displayStyle}>Aa Bb 123</div>
+                      <div style={bodyStyle}>Texto descriptivo del negocio</div>
                     </div>
                   );
                 })}
               </Section>
             )}
+
 
             {/* Elements */}
             {activeTab === 'elements' && (
@@ -549,6 +625,131 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                     );
                   })}
                 </Section>
+
+                {(s.pointsStyle === 'stamps' || s.template === 'stamp') && (
+                  <Section label="Diseño de sellos">
+                    {(() => {
+                      const currentScenario = STAMP_CATEGORIES.find(c => c.icons.some(i => i.id === s.stampIcon))?.id || 'generic';
+                      return (
+                        <>
+                          <div style={{ marginBottom: 12 }}>
+                            <span style={{ fontSize: 11, color: '#6B6560', marginBottom: 5, display: 'block', fontWeight: 500 }}>Escenario / Rubro</span>
+                            <select
+                              value={currentScenario}
+                              onChange={(e) => {
+                                const newScenario = e.target.value;
+                                const firstIcon = STAMP_CATEGORIES.find(c => c.id === newScenario)?.icons[0];
+                                if (firstIcon) {
+                                  if (!canUse(tier, firstIcon.tier)) {
+                                    upgrade(firstIcon.tier);
+                                  } else {
+                                    set('stampIcon', firstIcon.id as StampIconId);
+                                  }
+                                }
+                              }}
+                              style={{ width: '100%', background: '#201D18', border: '1px solid rgba(245,240,235,0.12)', borderRadius: 7, padding: '8px 10px', fontSize: 12, color: '#F5F0EB', outline: 'none' }}
+                            >
+                              {STAMP_CATEGORIES.map(cat => (
+                                <option key={cat.id} value={cat.id}>{cat.label}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {currentScenario !== 'custom' && (
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+                              {STAMP_CATEGORIES.find(c => c.id === currentScenario)?.icons.map(si => {
+                                const locked = !canUse(tier, si.tier);
+                                const IconComp = si.icon;
+                                return (
+                                  <button
+                                    key={si.id}
+                                    type="button"
+                                    onClick={() => locked ? upgrade(si.tier) : set('stampIcon', si.id as StampIconId)}
+                                    style={{
+                                      aspectRatio: '1', borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, cursor: locked ? 'not-allowed' : 'pointer', background: s.stampIcon === si.id ? 'rgba(232,52,26,0.15)' : 'transparent', border: `1px solid ${s.stampIcon === si.id ? '#E8341A' : 'rgba(245,240,235,0.12)'}`, opacity: locked ? 0.45 : 1, position: 'relative'
+                                    }}
+                                    title={si.label}
+                                  >
+                                    <IconComp size={18} color={s.stampIcon === si.id ? '#E8341A' : '#A39D98'} />
+                                    <span style={{ fontSize: 9, color: s.stampIcon === si.id ? '#E8341A' : '#6B6560', fontWeight: 600 }}>{si.label}</span>
+                                    {locked && <Lock size={8} style={{ position: 'absolute', top: 4, right: 4, color: '#FFB347' }} />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* Ver todos / búsqueda extendida */}
+                          {currentScenario !== 'custom' && (
+                            <button
+                              type="button"
+                              onClick={() => setShowIconPicker(v => !v)}
+                              style={{ marginTop: 8, fontSize: 10, color: '#E8341A', background: 'none', border: '1px solid rgba(232,52,26,0.25)', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', width: '100%', fontWeight: 600, letterSpacing: '0.04em' }}
+                            >
+                              {showIconPicker ? '▲ Ocultar librería' : '▼ Ver todos los íconos'}
+                            </button>
+                          )}
+
+                          {showIconPicker && currentScenario !== 'custom' && (() => {
+                            const filtered = STAMP_ICONS_EXTENDED.filter(ic =>
+                              ic.id !== 'custom' &&
+                              (!iconSearch || ic.label.toLowerCase().includes(iconSearch.toLowerCase()) || ic.category.toLowerCase().includes(iconSearch.toLowerCase()))
+                            );
+                            return (
+                              <div style={{ marginTop: 8, background: '#0A0A0A', border: '1px solid rgba(245,240,235,0.08)', borderRadius: 10, padding: 10 }}>
+                                <input
+                                  type="text"
+                                  placeholder="Buscar ícono..."
+                                  value={iconSearch}
+                                  onChange={e => setIconSearch(e.target.value)}
+                                  style={{ width: '100%', background: '#1A1713', border: '1px solid rgba(245,240,235,0.12)', borderRadius: 6, padding: '6px 10px', fontSize: 11, color: '#F5F0EB', outline: 'none', marginBottom: 10, boxSizing: 'border-box' }}
+                                />
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 5, maxHeight: 220, overflowY: 'auto' }}>
+                                  {filtered.map(ic => {
+                                    const locked = !canUse(tier, ic.tier);
+                                    const IconComp = ic.icon;
+                                    const isActive = s.stampIcon === ic.id;
+                                    return (
+                                      <button
+                                        key={ic.id}
+                                        type="button"
+                                        title={`${ic.label} · ${ic.category}`}
+                                        onClick={() => {
+                                          if (locked) { upgrade(ic.tier); return; }
+                                          set('stampIcon', ic.id as StampIconId);
+                                          setShowIconPicker(false);
+                                        }}
+                                        style={{ aspectRatio: '1', borderRadius: 7, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, cursor: locked ? 'not-allowed' : 'pointer', background: isActive ? 'rgba(232,52,26,0.15)' : 'rgba(255,255,255,0.03)', border: `1px solid ${isActive ? '#E8341A' : 'rgba(245,240,235,0.08)'}`, opacity: locked ? 0.4 : 1, transition: 'all 0.12s', position: 'relative' }}
+                                      >
+                                        <IconComp size={16} color={isActive ? '#E8341A' : '#6B6560'} />
+                                        <span style={{ fontSize: 8, color: isActive ? '#E8341A' : '#4A4540', textAlign: 'center', lineHeight: 1.2 }}>{ic.label}</span>
+                                        {locked && <Lock size={7} style={{ position: 'absolute', top: 2, right: 2, color: '#FFB347' }} />}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })()}
+
+                          {currentScenario === 'custom' && canUse(tier, 'elite') && (
+                            <div style={{ marginTop: 10, padding: '10px', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 8 }}>
+                              <CtrlInput
+                                label="URL del Sello (Imagen)"
+                                value={s.customStampUrl ?? ''}
+                                onChange={(v) => set('customStampUrl', v)}
+                                placeholder="https://ejemplo.com/sello.png"
+                              />
+                              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 4 }}>
+                                Pega la URL de una imagen PNG con fondo transparente.
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </Section>
+                )}
 
                 <Section label="Elementos adicionales">
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
@@ -623,8 +824,15 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
         </div>
 
         {/* ── Canvas ── */}
-        <div style={{ background: '#0D0B09', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', pointerEvents: isDragging ? 'none' : 'auto' }}>
+        <div
+          style={{ background: '#0D0B09', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', pointerEvents: isDragging ? 'none' : 'auto' }}
+          onMouseMove={handleCardMouseMove}
+          onMouseLeave={handleCardMouseLeave}
+        >
+          {/* Dot grid background */}
           <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(#2E2A26 1px, transparent 1px)', backgroundSize: '24px 24px', opacity: 0.4, pointerEvents: 'none' }} />
+          {/* Ambient glow */}
+          <div style={{ position: 'absolute', width: 320, height: 160, borderRadius: '50%', background: `radial-gradient(ellipse, ${pal.primary}18 0%, transparent 70%)`, pointerEvents: 'none', transition: 'background 0.5s' }} />
           {/* Panel toggle button */}
           <button
             type="button"
@@ -636,10 +844,170 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
           >
             {leftCollapsed ? '›' : '‹'}
           </button>
-          <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-            <CardComp s={s} pal={pal} font={font} pattern={pattern} W={380} H={230} />
-            <div style={{ fontSize: 10, color: '#6B6560', letterSpacing: '0.08em' }}>85.6 × 54mm · Estándar ISO</div>
+
+          <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 32, overflowY: 'auto', padding: '32px 24px' }}>
+            {/* ── Card with 3D tilt ── */}
+            <div
+              ref={cardRef}
+              style={{
+                perspective: 800,
+                transformStyle: 'preserve-3d',
+              }}
+            >
+              <div style={{
+                transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
+                transition: tilt.x === 0 && tilt.y === 0 ? 'transform 0.6s cubic-bezier(0.16,1,0.3,1)' : 'transform 0.1s ease-out',
+                animation: tilt.x === 0 && tilt.y === 0 ? 'cardFloat 5s ease-in-out infinite' : 'none',
+                filter: `drop-shadow(0 24px 40px ${pal.primary}30)`,
+                willChange: 'transform',
+              }}>
+                <CardComp s={s} pal={pal} font={font} pattern={pattern} W={380} H={230} />
+              </div>
+            </div>
+            <div style={{ fontSize: 10, color: '#6B6560', letterSpacing: '0.08em', marginTop: -16 }}>85.6 × 54mm · Estándar ISO</div>
+
+            {/* ── Apple Wallet-style device preview ── */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+              <div style={{ fontSize: 9, fontWeight: 600, color: '#4A4540', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Vista en Wallet</div>
+              {/* iPhone shell */}
+              <div style={{
+                width: 230,
+                height: 460,
+                borderRadius: 42,
+                background: '#000',
+                border: '7px solid #1C1C1E',
+                boxShadow: '0 0 0 1px rgba(255,255,255,0.08), inset 0 0 0 1px rgba(255,255,255,0.04), 0 40px 80px rgba(0,0,0,0.8)',
+                position: 'relative',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+              }}>
+                {/* Status bar */}
+                <div style={{ height: 28, background: '#000', display: 'flex', alignItems: 'center', padding: '0 16px', flexShrink: 0 }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: '#fff', fontFamily: 'Syne,sans-serif' }}>1:21</span>
+                  <div style={{ marginLeft: 'auto', display: 'flex', gap: 4, alignItems: 'center' }}>
+                    <span style={{ fontSize: 7, color: '#fff' }}>▪▪▪</span>
+                    <span style={{ fontSize: 7, color: '#fff' }}>WiFi</span>
+                    <span style={{ fontSize: 7, color: '#fff', background: '#4ADE80', borderRadius: 3, padding: '1px 3px' }}>77</span>
+                  </div>
+                </div>
+
+                {/* Wallet pass area */}
+                <div style={{ flex: 1, background: '#000', display: 'flex', flexDirection: 'column', padding: '0 10px 0', gap: 0, overflowY: 'auto' }}>
+                  {/* The pass card — full width, native wallet style */}
+                  <div style={{ borderRadius: 18, overflow: 'hidden', position: 'relative', flexShrink: 0, marginBottom: 0 }}>
+                    {/* Pass background — uses card's palette */}
+                    <div style={{ background: pal.primary, padding: '14px 14px 10px', position: 'relative' }}>
+                      {/* Business name */}
+                      <div style={{ marginBottom: 10 }}>
+                        <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 16, color: '#fff', letterSpacing: '-0.02em' }}>
+                          {s.businessName || 'Tu Negocio'}
+                        </div>
+                        <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 1 }}>
+                          {s.cardName || 'Loyalty Card'}
+                        </div>
+                      </div>
+
+                      {/* Stamp grid — 2 rows of 5 */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 5, marginBottom: 12 }}>
+                        {Array.from({ length: 10 }, (_, i) => {
+                          const isStamped = i < 2;
+                          return (
+                            <div key={i} style={{
+                              aspectRatio: '1',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            }}>
+                              <div style={{
+                                width: 28, height: 28,
+                                borderRadius: '50%',
+                                background: isStamped ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.2)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              }}>
+                                {(() => {
+                                  const match = STAMP_ICONS_EXTENDED.find(x => x.id === s.stampIcon);
+                                  const IconComp = (match ?? STAMP_ICONS_EXTENDED[0])?.icon ?? (() => null);
+                                  return <IconComp size={14} color={isStamped ? pal.primary : 'rgba(255,255,255,0.7)'} />;
+                                })()}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Stamps counter */}
+                      <div style={{ marginBottom: 12 }}>
+                        <div style={{ fontSize: 7, fontWeight: 700, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                          STAMPS REQUIRED UNTIL NEXT REWARD
+                        </div>
+                        <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', fontFamily: 'Syne,sans-serif', lineHeight: 1.1, marginTop: 2 }}>8</div>
+                      </div>
+
+                      {/* Barcode area */}
+                      <div style={{ background: '#fff', borderRadius: 10, padding: '10px 8px 6px', textAlign: 'center' }}>
+                        {/* Fake barcode visual */}
+                        <div style={{ display: 'flex', gap: 1.5, justifyContent: 'center', alignItems: 'flex-end', height: 38, marginBottom: 4 }}>
+                          {Array.from({ length: 38 }, (_, i) => (
+                            <div key={i} style={{
+                              width: i % 3 === 0 ? 3 : i % 5 === 0 ? 4 : 2,
+                              height: i % 7 === 0 ? 38 : i % 4 === 0 ? 30 : 24,
+                              background: '#000',
+                              borderRadius: 1,
+                              flexShrink: 0,
+                            }} />
+                          ))}
+                        </div>
+                        <div style={{ fontSize: 8, color: '#555', fontFamily: 'Space Grotesk,sans-serif' }}>
+                          Tap ··· for details
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Info button */}
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 4px' }}>
+                    <div style={{ width: 22, height: 22, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: 700 }}>i</span>
+                    </div>
+                  </div>
+
+                  {/* Stacked other cards at bottom */}
+                  <div style={{ position: 'relative', height: 44, marginTop: 'auto' }}>
+                    {[['#A855F7', 'redBus'], ['#22C55E', 'Rewards'], ['#3B82F6', 'Coffee']].map(([color, label], i) => (
+                      <div key={label} style={{
+                        position: 'absolute',
+                        bottom: i * 10,
+                        left: 0, right: 0,
+                        height: 44,
+                        borderRadius: 12,
+                        background: color,
+                        display: 'flex', alignItems: 'center', padding: '0 12px',
+                        zIndex: i,
+                        boxShadow: '0 -4px 12px rgba(0,0,0,0.4)',
+                      }}>
+                        <span style={{ fontSize: 9, fontWeight: 700, color: '#fff', fontFamily: 'Syne,sans-serif' }}>{label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Home indicator */}
+                <div style={{ height: 22, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <div style={{ width: 70, height: 3.5, background: 'rgba(255,255,255,0.25)', borderRadius: 2 }} />
+                </div>
+              </div>
+            </div>
+
           </div>
+
+          {/* Floating card animation keyframe injection */}
+          <style>{`
+            @keyframes cardFloat {
+              0%, 100% { transform: translateY(0px) rotateX(0deg) rotateY(0deg); }
+              25% { transform: translateY(-6px) rotateX(1deg) rotateY(-1deg); }
+              50% { transform: translateY(-10px) rotateX(-1deg) rotateY(1deg); }
+              75% { transform: translateY(-4px) rotateX(0.5deg) rotateY(-0.5deg); }
+            }
+          `}</style>
         </div>
 
         {/* ── Right panel ── */}
@@ -673,7 +1041,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                     <div style={{ fontSize: 12, fontWeight: 600 }}>{fmt}</div>
                     <div style={{ fontSize: 10, color: '#6B6560' }}>{desc}</div>
                   </div>
-                  {locked ? <span style={{ fontSize: 10, color: '#FFB347' }}>🔒</span> : <button type="button" style={{ fontSize: 10, color: '#E8341A', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>↓</button>}
+                  {locked ? <Lock size={10} style={{ color: '#FFB347', flexShrink: 0 }} /> : <button type="button" style={{ display: 'flex', alignItems: 'center', color: '#E8341A', background: 'none', border: 'none', cursor: 'pointer' }}><DownloadIcon size={10} /></button>}
                 </div>
               );
             })}
@@ -703,7 +1071,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
               type="button"
               style={{ width: '100%', background: '#201D18', border: '1px solid rgba(245,240,235,0.12)', borderRadius: 7, padding: 9, fontSize: 12, color: '#F5F0EB', cursor: 'pointer', fontFamily: 'Space Grotesk,sans-serif', fontWeight: 600 }}
             >
-              🖨 Descargar para imprimir
+              <PrinterIcon size={12} style={{ display: 'inline', marginRight: 5, verticalAlign: 'middle' }} /> Descargar para imprimir
             </button>
           </RightSection>
         </div>

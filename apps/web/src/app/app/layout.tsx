@@ -22,11 +22,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     redirect('/onboarding');
   }
 
-  // Redirect to onboarding if the user hasn't created their first card yet
   const cards = await new SupabaseCardRepository().findByOrg(org.id);
-  if (cards.length === 0) {
-    redirect('/onboarding');
-  }
   
   const customerRepo = new SupabaseCustomerRepository();
   const totalCustomers = await customerRepo.countByOrg(org.id);

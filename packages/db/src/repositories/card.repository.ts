@@ -105,14 +105,41 @@ export class SupabaseCardRepository implements ICardRepository {
     return cardRowToEntity(data);
   }
 
+  /**
+   * Returns true if the card has ever had member activity
+   * (scans or point transactions), meaning it has been "live".
+   */
+  async hasMemberActivity(id: string): Promise<boolean> {
+    const db = await createClient();
+    const { count } = await db
+      .from('memberships')
+      .select('id', { count: 'exact', head: true })
+      .eq('card_id', id);
+    return (count ?? 0) > 0;
+  }
+
+  /**
+   * Hard-deletes cards that were never used (no scans / transactions).
+   * Soft-deletes cards that have member history to preserve referential integrity.
+   */
   async delete(id: string): Promise<void> {
     const db = await createClient();
+    const hasActivity = await this.hasMemberActivity(id);
 
-    const { error } = await db
-      .from('cards')
-      .update({ active: false })
-      .eq('id', id);
-
-    if (error) throw new Error(error.message);
+    if (hasActivity) {
+      // Preserve history — just deactivate
+      const { error } = await db
+        .from('cards')
+        .update({ active: false })
+        .eq('id', id);
+      if (error) throw new Error(error.message);
+    } else {
+      // Never used — wipe completely
+      const { error } = await db
+        .from('cards')
+        .delete()
+        .eq('id', id);
+      if (error) throw new Error(error.message);
+    }
   }
 }

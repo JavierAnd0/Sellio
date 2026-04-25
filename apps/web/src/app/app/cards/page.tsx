@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Plus } from 'lucide-react';
+import { Plus, Printer, Download, Lock } from 'lucide-react';
 
 import { createClient } from '@sellio/db/server';
 import { SupabaseCardRepository, SupabaseMembershipRepository, SupabaseOrganizationRepository } from '@sellio/db/repositories';
@@ -64,7 +64,7 @@ export default async function CardsPage() {
             href="/app/settings/profile"
             className="inline-flex items-center gap-1.5 rounded-full border border-[#E9C38F]/50 bg-[#F4D9B2]/30 px-4 py-2 text-sm font-bold text-[#D08F27] transition-all hover:bg-[#F4D9B2]/50"
           >
-            🔒 Upgradar para más
+            <Lock size={14} /> Upgradar para más
           </Link>
         )}
       </div>
@@ -72,7 +72,7 @@ export default async function CardsPage() {
       {/* Plan banner */}
       <div className="mb-10 flex flex-col items-start justify-between gap-4 rounded-[20px] border border-[#F3D7B0] bg-[#FCF6ED] p-6 shadow-sm sm:flex-row sm:items-center dark:border-[#524021] dark:bg-[#2C210C]">
         <div className="flex items-start gap-4">
-          <span className="text-3xl">🔒</span>
+          <Lock size={28} className="text-[#D08F27] shrink-0 mt-0.5" />
           <div>
             <p className="mb-1 text-[15px] font-bold text-[#E59D27]">
               Plan Free: 1 tarjeta
@@ -130,18 +130,18 @@ export default async function CardsPage() {
           <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
             <div className="max-w-xl">
               <h3 className="mb-2 flex items-center gap-2 font-display text-2xl font-black text-fg">
-                <span>🖨</span> Impresión física
+                <Printer size={22} /> Impresión física
               </h3>
               <p className="text-[15px] font-medium leading-relaxed text-muted">
                 Descarga tu tarjeta en formato estándar ISO (85×54mm) para imprimir en casa o imprenta. Gratis en todos los planes.
               </p>
             </div>
             <div className="flex w-full shrink-0 flex-col gap-3 md:w-auto md:flex-row">
-              <button className="rounded-xl border border-border/40 bg-[#E1DED5]/40 px-5 py-3 text-[14px] font-bold text-fg transition-colors hover:bg-[#E1DED5]/80 dark:bg-surface">
-                ↓ PDF anverso
+              <button className="flex items-center gap-2 rounded-xl border border-border/40 bg-[#E1DED5]/40 px-5 py-3 text-[14px] font-bold text-fg transition-colors hover:bg-[#E1DED5]/80 dark:bg-surface">
+                <Download size={15} /> PDF anverso
               </button>
-              <button className="rounded-xl border border-border/40 bg-[#E1DED5]/40 px-5 py-3 text-[14px] font-bold text-fg transition-colors hover:bg-[#E1DED5]/80 dark:bg-surface">
-                ↓ PDF doble cara
+              <button className="flex items-center gap-2 rounded-xl border border-border/40 bg-[#E1DED5]/40 px-5 py-3 text-[14px] font-bold text-fg transition-colors hover:bg-[#E1DED5]/80 dark:bg-surface">
+                <Download size={15} /> PDF doble cara
               </button>
             </div>
           </div>

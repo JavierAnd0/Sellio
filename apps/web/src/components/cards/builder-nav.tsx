@@ -112,7 +112,7 @@ function NavLink({
   label,
 }: {
   href: string;
-  icon: React.ComponentType<{ size?: number; strokeWidth?: number }>;
+  icon: React.ComponentType<{ size?: number | string; strokeWidth?: number | string; className?: string }>;
   label: string;
 }) {
   return (

@@ -33,12 +33,16 @@ export default async function DashboardPage() {
   ]);
 
   // Total points issued across all cards
-  const { data: pointsRaw } = await db
-    .from('memberships')
-    .select('points')
-    .in('card_id', cards.map((c) => c.id));
+  let pointsRaw: { points: number }[] = [];
+  if (cards.length > 0) {
+    const { data } = await db
+      .from('memberships')
+      .select('points')
+      .in('card_id', cards.map((c) => c.id));
+    if (data) pointsRaw = data;
+  }
 
-  const totalPoints = (pointsRaw ?? []).reduce((sum, r) => sum + r.points, 0);
+  const totalPoints = pointsRaw.reduce((sum, r) => sum + r.points, 0);
   const activeCard = cards[0];
   const hasCards = cards.length > 0;
 
@@ -63,7 +67,7 @@ export default async function DashboardPage() {
           </p>
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             {hasCards ? (
-              <Link href={`/app/cards/${activeCard.id}`}>
+              <Link href={`/app/cards/${activeCard?.id}`}>
                 <Button size="lg" className="bg-[#E8341A] hover:bg-[#D02B13] text-white rounded-xl shadow-lg shadow-coral/20 font-bold px-6 sm:px-8 border-0">
                   Ver mi tarjeta <span className="ml-2 font-black">→</span>
                 </Button>

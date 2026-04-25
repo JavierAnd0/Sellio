@@ -85,13 +85,10 @@ export async function createFirstCardAction(input: {
       // Only retry when the collision is truly caused by a duplicate slug.
       if (getErrorCode(firstError) !== 'slug_taken') {
         console.error('createFirstCardAction org create failed (first attempt)', firstError);
-        if (getErrorCode(firstError) === 'org_members_bootstrap_blocked') {
-          return { ok: false, error: 'No se pudo vincular tu usuario al negocio. Ejecuta la migración de membresías y vuelve a intentar.' };
+        if (getErrorCode(firstError) === 'org_members_bootstrap_blocked' || getErrorCode(firstError) === 'org_insert_blocked') {
+          return { ok: false, error: 'Ocurrió un error interno al configurar tu cuenta. Por favor, contacta a soporte.' };
         }
-        if (getErrorCode(firstError) === 'org_insert_blocked') {
-          return { ok: false, error: 'No hay permisos para crear organizaciones (RLS). Revisa políticas/migraciones.' };
-        }
-        return { ok: false, error: 'No se pudo crear la organización. Intenta de nuevo.' };
+        return { ok: false, error: 'No se pudo crear el negocio. Intenta de nuevo.' };
       }
 
       const suffix = Math.random().toString(36).slice(2, 5);
@@ -99,13 +96,10 @@ export async function createFirstCardAction(input: {
         org = await orgRepo.create({ ownerId: user.id, name, slug: `${baseSlug.slice(0, 37)}-${suffix}` });
       } catch (secondError) {
         console.error('createFirstCardAction org create failed (second attempt)', secondError);
-        if (getErrorCode(secondError) === 'org_members_bootstrap_blocked') {
-          return { ok: false, error: 'No se pudo vincular tu usuario al negocio. Ejecuta la migración de membresías y vuelve a intentar.' };
+        if (getErrorCode(secondError) === 'org_members_bootstrap_blocked' || getErrorCode(secondError) === 'org_insert_blocked') {
+          return { ok: false, error: 'Ocurrió un error interno al configurar tu cuenta. Por favor, contacta a soporte.' };
         }
-        if (getErrorCode(secondError) === 'org_insert_blocked') {
-          return { ok: false, error: 'No hay permisos para crear organizaciones (RLS). Revisa políticas/migraciones.' };
-        }
-        return { ok: false, error: 'No se pudo crear la organización. Intenta de nuevo.' };
+        return { ok: false, error: 'No se pudo crear el negocio. Intenta de nuevo.' };
       }
     }
   }

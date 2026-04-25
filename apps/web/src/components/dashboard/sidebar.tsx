@@ -171,7 +171,12 @@ export function Sidebar({ plan = 'free', totalCards = 0, totalCustomers = 0, fir
                   Analytics
                 </SidebarItem>
               </div>
-              <SidebarItem href="/app/settings/profile" icon={DiamondIcon}>
+              <SidebarItem 
+                href="/app/settings/profile" 
+                icon={DiamondIcon}
+                activeIcon={DiamondIcon}
+                activePattern={/^\/app\/settings(\/.*)?$/}
+              >
                 Configuración
               </SidebarItem>
             </nav>

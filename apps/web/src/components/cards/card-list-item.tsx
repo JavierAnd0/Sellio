@@ -1,5 +1,5 @@
 import Link from 'next/link';
-
+import { Eye, Pencil, Download } from 'lucide-react';
 
 import type { Card } from '@sellio/domain';
 
@@ -78,26 +78,26 @@ export function CardListItem({ card, memberCount = 0, totalPoints = 0, totalScan
       {/* Actions */}
       <div className="grid grid-cols-3 gap-2">
         <Link
-          href={`/app/cards/${card.id}/customers`}
+          href={`/app/cards/${card.id}`}
           className="flex flex-col items-center justify-center gap-0.5 rounded-[12px] bg-[#E8341A] py-2 text-[12px] xl:text-[13px] font-bold leading-none text-white shadow-sm transition-all hover:bg-[#D02B13] hover:shadow-md"
         >
           <div className="flex items-center gap-1">
-            <span>👁</span> <span>Ver</span>
+            <Eye size={13} /> <span>Ver</span>
           </div>
           <span className="mt-0.5">tarjeta</span>
         </Link>
         <Link
-          href={`/app/cards/${card.id}`}
+          href={`/app/cards/${card.id}/builder`}
           className="flex flex-col items-center justify-center gap-1 rounded-[12px] border border-border/40 bg-[#E1DED5]/40 py-2 text-[12px] xl:text-[13px] font-bold text-fg transition-all hover:bg-[#E1DED5]/80 dark:bg-surface"
         >
-          <span>✏️</span> 
+          <Pencil size={13} />
           <span>Editar</span>
         </Link>
         <button
           type="button"
           className="flex flex-col items-center justify-center gap-1 rounded-[12px] border border-border/40 bg-[#E1DED5]/40 py-2 text-[11px] xl:text-[12px] font-bold text-fg transition-all hover:bg-[#E1DED5]/80 dark:bg-surface"
         >
-          <span>↓</span> 
+          <Download size={13} />
           <span>Descargar</span>
         </button>
       </div>

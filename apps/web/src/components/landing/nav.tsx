@@ -61,22 +61,36 @@ export default function LandingNav() {
         ))}
 
         {/* CTA */}
-        <Link
-          href="/register"
-          className="font-display font-bold text-[13px] text-white bg-coral hover:opacity-85 transition-opacity duration-150"
-          style={{ padding: '9px 20px', borderRadius: 8, letterSpacing: '0.01em' }}
-        >
-          Empezar gratis
-        </Link>
+        <div className="flex items-center gap-5 border-l border-border/10 pl-5">
+          <Link
+            href="/login"
+            className="text-[13px] font-medium text-fg/80 hover:text-fg transition-colors duration-150"
+          >
+            Iniciar sesión
+          </Link>
+          <Link
+            href="/register"
+            className="font-display font-bold text-[13px] text-white bg-coral hover:opacity-85 transition-opacity duration-150"
+            style={{ padding: '9px 20px', borderRadius: 8, letterSpacing: '0.01em' }}
+          >
+            Registrarse
+          </Link>
+        </div>
       </div>
 
       {/* Mobile — solo CTA */}
-      <div className="md:hidden">
+      <div className="md:hidden flex items-center gap-3">
+        <Link
+          href="/login"
+          className="text-[13px] font-medium text-fg/80"
+        >
+          Entrar
+        </Link>
         <Link
           href="/register"
           className="font-display font-bold text-[13px] text-white bg-coral px-4 py-2 rounded-lg"
         >
-          Empezar gratis
+          Registro
         </Link>
       </div>
     </nav>

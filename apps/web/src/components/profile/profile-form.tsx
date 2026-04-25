@@ -2,7 +2,7 @@
 
 import { type FormEvent, useState, useTransition } from 'react';
 
-import { Alert, Button, FormField, Input } from '@sellio/ui';
+import { Alert, Button, Input } from '@sellio/ui';
 import type { Organization, Profile } from '@sellio/domain';
 
 import { updateProfileAction } from '@/actions/profile/update-profile.action';
@@ -10,14 +10,13 @@ import { updateProfileAction } from '@/actions/profile/update-profile.action';
 interface ProfileFormProps {
   initialProfile: Profile | null;
   initialOrg: Organization | null;
-  fallbackName?: string;
+  userEmail?: string;
 }
 
-export function ProfileForm({ initialProfile, initialOrg, fallbackName = '' }: ProfileFormProps) {
+export function ProfileForm({ initialProfile, initialOrg, userEmail = '' }: ProfileFormProps) {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [color, setColor] = useState(initialOrg?.primaryColor ?? '#E8341A');
   const [isPending, startTransition] = useTransition();
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -38,13 +37,13 @@ export function ProfileForm({ initialProfile, initialOrg, fallbackName = '' }: P
   };
 
   return (
-    <div className="mx-auto max-w-xl">
+    <div className="rounded-2xl bg-white shadow-sm border border-border/10 p-8 max-w-[700px]">
       <div className="mb-8">
-        <h2 className="font-display text-2xl font-extrabold tracking-tight text-fg">
-          Perfil
+        <h2 className="font-display text-[28px] font-black tracking-tight text-fg mb-1">
+          General
         </h2>
-        <p className="mt-1 text-sm text-muted">
-          Actualiza tu información personal y los datos de tu negocio.
+        <p className="text-[15px] text-muted">
+          Actualiza tu información de perfil y cuenta.
         </p>
       </div>
 
@@ -60,73 +59,78 @@ export function ProfileForm({ initialProfile, initialOrg, fallbackName = '' }: P
         </Alert>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Sección personal */}
-        <section>
-          <h3 className="mb-4 border-b border-border/20 pb-2 text-xs font-semibold uppercase tracking-wider text-muted">
-            Información personal
-          </h3>
-          <div className="space-y-4">
-            <FormField label="Nombre completo" htmlFor="fullName" error={fieldErrors.fullName}>
-              <Input
-                id="fullName"
-                name="fullName"
-                type="text"
-                autoComplete="name"
-                defaultValue={initialProfile?.fullName || fallbackName}
-                placeholder="Tu nombre"
-                error={!!fieldErrors.fullName}
-              />
-            </FormField>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-8">
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
+          {/* Row 1 */}
+          <div className="flex flex-col gap-2">
+            <label className="text-[15px] font-bold text-[#333]">
+              Nombre de usuario <span className="text-muted font-normal ml-1">(no editable)</span>
+            </label>
+            <Input
+              readOnly
+              disabled
+              value={initialOrg?.slug || ''}
+              className="h-[46px] rounded-xl border-border/20 shadow-sm px-4 bg-[#F9F7F4]/50 cursor-not-allowed opacity-80"
+            />
           </div>
-        </section>
 
-        {/* Sección negocio */}
-        {initialOrg && (
-          <section>
-            <h3 className="mb-4 border-b border-border/20 pb-2 text-xs font-semibold uppercase tracking-wider text-muted">
-              Tu negocio
-            </h3>
-            <div className="space-y-4">
-              <FormField label="Nombre del negocio" htmlFor="orgName" error={fieldErrors.orgName}>
-                <Input
-                  id="orgName"
-                  name="orgName"
-                  type="text"
-                  defaultValue={initialOrg.name}
-                  placeholder="Café La Rosa"
-                  error={!!fieldErrors.orgName}
-                />
-              </FormField>
+          <div className="flex flex-col gap-2">
+            <label htmlFor="email" className="text-[15px] font-bold text-[#333]">
+              Correo electrónico
+            </label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              readOnly
+              value={userEmail}
+              className="h-[46px] rounded-xl border-border/20 shadow-sm px-4 bg-[#F9F7F4]/20 cursor-default"
+            />
+          </div>
 
-              <FormField
-                label="Color principal"
-                htmlFor="primaryColor"
-                error={fieldErrors.primaryColor}
-                hint="Color de tu marca. Se usa en las tarjetas de tus clientes."
-              >
-                <div className="flex items-center gap-3">
-                  <input
-                    id="primaryColor"
-                    name="primaryColor"
-                    type="color"
-                    value={color}
-                    onChange={(e) => setColor(e.target.value)}
-                    className="h-11 w-14 cursor-pointer rounded-lg border border-border/20 bg-surface-2 p-1"
-                  />
-                  <Input
-                    readOnly
-                    value={color}
-                    className="w-32 font-mono text-sm"
-                  />
-                </div>
-              </FormField>
-            </div>
-          </section>
-        )}
+          {/* Row 2 */}
+          <div className="flex flex-col gap-2">
+            <label htmlFor="orgName" className="text-[15px] font-bold text-[#333]">
+              Nombre del negocio
+            </label>
+            <Input
+              id="orgName"
+              name="orgName"
+              type="text"
+              defaultValue={initialOrg?.name || ''}
+              error={!!fieldErrors.orgName}
+              className="h-[46px] rounded-xl border-border/20 shadow-sm px-4"
+            />
+            {fieldErrors.orgName && (
+              <p className="text-xs text-error">{fieldErrors.orgName}</p>
+            )}
+          </div>
 
-        <div className="flex justify-end">
-          <Button type="submit" loading={isPending} size="md">
+          <div className="flex flex-col gap-2">
+            <label htmlFor="phone" className="text-[15px] font-bold text-[#333]">
+              Teléfono
+            </label>
+            <Input
+              id="phone"
+              name="phone"
+              type="tel"
+              defaultValue={initialProfile?.phone || ''}
+              error={!!fieldErrors.phone}
+              className="h-[46px] rounded-xl border-border/20 shadow-sm px-4"
+            />
+            {fieldErrors.phone && (
+              <p className="text-xs text-error">{fieldErrors.phone}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex justify-end pt-2">
+          <Button 
+            type="submit" 
+            loading={isPending}
+            className="bg-[#E8341A] hover:bg-[#D02B13] text-white font-bold px-6 py-3.5 h-auto rounded-xl shadow-sm transition-colors text-[15px]"
+          >
             Guardar cambios
           </Button>
         </div>

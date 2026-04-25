@@ -1,6 +1,12 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Card builder scrollbar */
+.sellio-builder ::-webkit-scrollbar { width: 3px; height: 3px; }
+.sellio-builder ::-webkit-scrollbar-track { background: transparent; }
+.sellio-builder ::-webkit-scrollbar-thumb { background: #2E2A26; border-radius: 2px; }
 
 @layer base {
   :root {
