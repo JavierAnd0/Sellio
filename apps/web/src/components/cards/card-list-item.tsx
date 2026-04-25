@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { Eye, Pencil, Download } from 'lucide-react';
 
 import type { Card } from '@sellio/domain';
 
@@ -39,15 +38,15 @@ export function CardListItem({ card, memberCount = 0, totalPoints = 0, totalScan
       </div>
 
       {/* Card visual */}
-      <div className="relative mb-6 flex h-[200px] w-full items-center justify-center">
+      <div className="relative mb-6 flex h-[180px] w-full items-center justify-center">
         <div
           style={{
-            transform: 'scale(0.85)',
+            transform: 'scale(0.72)',
             transformOrigin: 'center center',
             filter: 'drop-shadow(0 12px 24px rgba(0,0,0,0.12))',
             position: 'absolute',
           }}
-          className="transition-transform duration-500 group-hover:scale-[0.87]"
+          className="transition-transform duration-500 group-hover:scale-[0.74]"
         >
           <CardFromDesign design={design} primaryColor={primaryColor} W={380} H={230} noShadow />
         </div>
@@ -57,19 +56,19 @@ export function CardListItem({ card, memberCount = 0, totalPoints = 0, totalScan
       <div className="mb-6 flex gap-2">
         <div className="flex flex-1 flex-col items-center justify-center rounded-[16px] bg-[#E1DED5]/60 px-2 py-3 text-center dark:bg-surface">
           <span className="mb-1 text-[12px] text-muted">Clientes</span>
-          <span className="font-display text-[22px] font-black tracking-tight text-fg">
+          <span className="font-display text-[28px] font-black tracking-tight text-fg">
             {memberCount}
           </span>
         </div>
         <div className="flex flex-[1.2] flex-col items-center justify-center rounded-[16px] bg-[#E1DED5]/60 px-2 py-3 text-center dark:bg-surface">
           <span className="mb-1 text-[12px] text-muted">Puntos</span>
-          <span className="font-display text-[22px] font-black tracking-tight text-fg">
+          <span className="font-display text-[28px] font-black tracking-tight text-fg">
             {totalPoints.toLocaleString()}
           </span>
         </div>
         <div className="flex flex-1 flex-col items-center justify-center rounded-[16px] bg-[#E1DED5]/60 px-2 py-3 text-center dark:bg-surface">
           <span className="mb-1 text-[12px] text-muted">Scans</span>
-          <span className="font-display text-[22px] font-black tracking-tight text-fg">
+          <span className="font-display text-[28px] font-black tracking-tight text-fg">
             {totalScans}
           </span>
         </div>
@@ -82,23 +81,23 @@ export function CardListItem({ card, memberCount = 0, totalPoints = 0, totalScan
           className="flex flex-col items-center justify-center gap-0.5 rounded-[12px] bg-[#E8341A] py-2 text-[12px] xl:text-[13px] font-bold leading-none text-white shadow-sm transition-all hover:bg-[#D02B13] hover:shadow-md"
         >
           <div className="flex items-center gap-1">
-            <Eye size={13} /> <span>Ver</span>
+            <span>👁</span> <span>Ver</span>
           </div>
           <span className="mt-0.5">tarjeta</span>
         </Link>
         <Link
           href={`/app/cards/${card.id}/builder`}
-          className="flex flex-col items-center justify-center gap-1 rounded-[12px] border border-border/40 bg-[#E1DED5]/40 py-2 text-[12px] xl:text-[13px] font-bold text-fg transition-all hover:bg-[#E1DED5]/80 dark:bg-surface"
+          className="flex items-center justify-center gap-1.5 rounded-[12px] border border-border/40 bg-[#E1DED5]/40 py-2 text-[12px] xl:text-[13px] font-bold text-fg transition-all hover:bg-[#E1DED5]/80 dark:bg-surface"
         >
-          <Pencil size={13} />
+          <span>✏️</span>
           <span>Editar</span>
         </Link>
         <button
           type="button"
-          className="flex flex-col items-center justify-center gap-1 rounded-[12px] border border-border/40 bg-[#E1DED5]/40 py-2 text-[11px] xl:text-[12px] font-bold text-fg transition-all hover:bg-[#E1DED5]/80 dark:bg-surface"
+          className="flex items-center justify-center gap-1.5 rounded-[12px] border border-border/40 bg-[#E1DED5]/40 py-2 text-[11px] xl:text-[12px] font-bold text-fg transition-all hover:bg-[#E1DED5]/80 dark:bg-surface"
         >
-          <Download size={13} />
-          <span>Descargar</span>
+          <span>↓</span>
+          <span>Descargar QR</span>
         </button>
       </div>
     </div>
