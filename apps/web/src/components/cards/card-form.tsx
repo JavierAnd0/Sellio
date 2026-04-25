@@ -2,13 +2,15 @@
 
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
-import { Lock, ChevronLeft, Download as DownloadIcon, Printer as PrinterIcon } from 'lucide-react';
+import { type LucideIcon, Lock, ChevronLeft, Download as DownloadIcon, Printer as PrinterIcon, Building2, Tag, Star, User, QrCode, Badge } from 'lucide-react';
 
 import { Alert, Button } from '@sellio/ui';
 import type { Card } from '@sellio/domain';
 
 import { createCardAction, updateCardAction } from '@/actions/cards/card.actions';
+import type { CreateCardResult } from '@/actions/cards/card.actions';
 import {
   type Tier, type TabId, type TemplateId, type PointsStyleId,
   type CustomGradient, type BuilderState, type StampIconId,
@@ -96,6 +98,7 @@ function CtrlInput({ label, value, onChange, type = 'text', placeholder, maxLeng
 
 export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exitHref, orgTier = 'elite' }: CardFormProps) {
   const isEdit = !!card;
+  const router = useRouter();
 
   // Restore builder state from saved design if editing — wrapped in useRef to run only once
   const initialBuilderRef = useRef<BuilderState | null>(null);
@@ -259,10 +262,12 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
         setTimeout(() => setSaved(false), 2000);
         return;
       }
-      try {
-        await createCardAction(formData);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error al crear la tarjeta.');
+      const result: CreateCardResult = await createCardAction(formData);
+      if (!result.ok) {
+        if (result.field) setFieldErrors({ [result.field]: result.error });
+        else setError(result.error);
+      } else {
+        router.push(`/app/cards/${result.cardId}/builder`);
       }
     });
   };
@@ -347,6 +352,11 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
           {tier}
         </span>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+          {error && (
+            <span style={{ fontSize: 11, color: '#F87171', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={error}>
+              {error}
+            </span>
+          )}
           {autoSave ? (
             <span style={{
               fontSize: 11,
@@ -384,108 +394,254 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
           {/* Tab content */}
           <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
 
-            {/* Templates */}
+            {/* Templates tab — two sections: Personalizar + Plantillas */}
             {activeTab === 'templates' && (() => {
               const innerWidth = Math.max(leftWidth - 32 - 12, 120);
-              const scale = innerWidth / 380;
+              const colW = Math.max(Math.floor((innerWidth - 8) / 2), 56);
+              const colH = Math.round(colW * (230 / 380));
+              const colScale = colW / 380;
+
+              // ── Layouts that live in Personalizar (all renderers except 'custom')
+              const DESIGN_LAYOUTS = TEMPLATES.filter(t => t.id !== 'custom');
+
+              // ── Custom layout distribution options
+              const CUSTOM_DISTRIBUTIONS = [
+                { id: 'stack'    as const, label: 'Vertical'  },
+                { id: 'centered' as const, label: 'Centrado'  },
+                { id: 'split'    as const, label: 'Acento'    },
+              ] as const;
+
+              // ── Element chips for custom template
+              const ELEMS: Array<{ key: 'customElemBiz' | 'customElemCardName' | 'customElemPoints' | 'customElemMember' | 'customElemQr' | 'customElemLogo'; label: string; Icon: LucideIcon }> = [
+                { key: 'customElemBiz',      label: 'Nombre del negocio', Icon: Building2 },
+                { key: 'customElemCardName', label: 'Tipo de tarjeta',    Icon: Tag       },
+                { key: 'customElemPoints',   label: 'Puntos',             Icon: Star      },
+                { key: 'customElemMember',   label: 'Nombre del cliente', Icon: User      },
+                { key: 'customElemQr',       label: 'Código QR',          Icon: QrCode    },
+                { key: 'customElemLogo',     label: 'Logo / badge',       Icon: Badge     },
+              ];
+
+              // ── Business template presets
+              type BizPreset = Partial<BuilderState>;
+              const BUSINESS_TEMPLATES: Array<{ id: string; name: string; icon: string; preset: BizPreset }> = [
+                { id: 'cafe',     name: 'Cafetería',      icon: '☕',
+                  preset: { template: 'stamp',   palette: 'amber',   font: 'syne',    businessName: 'Tu Cafetería',    cardName: 'Tarjeta Café',       pointsStyle: 'stamps', stampIcon: 'coffee'   } },
+                { id: 'restaurant', name: 'Restaurante',  icon: '🍽',
+                  preset: { template: 'classic', palette: 'emerald', font: 'syne',    businessName: 'Tu Restaurante',  cardName: 'Club Gastronómico',  pointsStyle: 'number'                        } },
+                { id: 'spa',      name: 'Spa & Wellness', icon: '💆',
+                  preset: { template: 'minimal', palette: 'violet',  font: 'outfit',  businessName: 'Tu Spa',          cardName: 'Club Wellness',      pointsStyle: 'number'                        } },
+                { id: 'gym',      name: 'Gym / Fitness',  icon: '🏋',
+                  preset: { template: 'bold',    palette: 'coral',   font: 'syne',    businessName: 'Tu Gym',          cardName: 'Plan Fitness',       pointsStyle: 'bar'                           } },
+                { id: 'classes',  name: 'Clases Privadas',icon: '📚',
+                  preset: { template: 'split',   palette: 'indigo',  font: 'outfit',  businessName: 'Tu Academia',     cardName: 'Tarjeta Educativa',  pointsStyle: 'number'                        } },
+                { id: 'salon',    name: 'Peluquería',     icon: '💇',
+                  preset: { template: 'classic', palette: 'teal',    font: 'syne',    businessName: 'Tu Salón',        cardName: 'Membership Card',    pointsStyle: 'stamps', stampIcon: 'scissors' } },
+                { id: 'retail',   name: 'Tienda / Retail',icon: '🛍',
+                  preset: { template: 'luxury',  palette: 'indigo',  font: 'syne',    businessName: 'Tu Tienda',       cardName: 'VIP Member',         pointsStyle: 'number'                        } },
+                { id: 'bar',      name: 'Bar / Drinks',   icon: '🍺',
+                  preset: { template: 'bold',    palette: 'violet',  font: 'syne',    businessName: 'Tu Bar',          cardName: 'Night Pass',         pointsStyle: 'number'                        } },
+              ];
+
+              const canPersonalize = canUse(tier, 'basic');
+
               return (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: '#F5F0EB', letterSpacing: '0.15em', textTransform: 'uppercase' }}>Layout</div>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    {TEMPLATES.map((tpl) => {
-                      const locked = !canUse(tier, tpl.tier);
-                      const MiniCard = CARD_RENDERERS[tpl.id];
-                      const isActive = s.template === tpl.id;
-                      return (
-                        <div key={tpl.id} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <div style={{ width: 6, height: 6, borderRadius: '50%', background: isActive ? '#E8341A' : 'transparent', border: `1px solid ${isActive ? '#E8341A' : '#3A3630'}`, transition: 'all 0.3s' }} />
-                              <span style={{ fontSize: 12, fontWeight: isActive ? 600 : 400, color: isActive ? '#F5F0EB' : '#6B6560', letterSpacing: '0.03em', transition: 'all 0.3s' }}>
-                                {tpl.name}
-                              </span>
-                            </div>
-                            {locked && <span style={{ fontSize: 9, fontWeight: 600, color: '#FFB347', background: 'rgba(255,179,71,0.1)', padding: '2px 6px', borderRadius: 4 }}>{tpl.tier}</span>}
-                          </div>
-                          <div
-                            onClick={() => locked ? upgrade(tpl.tier) : set('template', tpl.id)}
-                            style={{
-                              borderRadius: 16,
-                              padding: 6,
-                              background: isActive ? 'linear-gradient(180deg, #1A1814 0%, #0A0A0A 100%)' : '#0A0A0A',
-                              border: `1px solid ${isActive ? 'rgba(232,52,26,0.4)' : 'rgba(245,240,235,0.04)'}`,
-                              cursor: locked ? 'not-allowed' : 'pointer',
-                              opacity: locked ? 0.6 : 1,
-                              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                              boxShadow: isActive ? '0 8px 30px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)' : 'none',
-                              transform: isActive ? 'scale(1)' : 'scale(0.98)',
-                            }}
-                          >
-                            <div style={{ position: 'relative', width: innerWidth, height: 230 * scale, borderRadius: 10, overflow: 'hidden', background: '#000', border: '1px solid rgba(255,255,255,0.05)' }}>
-                              <div style={{ position: 'absolute', top: 0, left: 0, width: 380, height: 230, transformOrigin: 'top left', transform: `scale(${scale})` }}>
-                                <MiniCard s={s} pal={pal} font={font} pattern={pattern} W={380} H={230} />
-                              </div>
-                              {locked && (
-                                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)' }}>
-                                  <div style={{ background: 'rgba(10,10,10,0.8)', padding: '6px 14px', borderRadius: 100, fontSize: 11, fontWeight: 600, color: '#F5F0EB', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <Lock size={10} /> Desbloquear
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+
+                  {/* ══ PERSONALIZAR ══════════════════════════════ */}
+                  <div style={{ marginBottom: 24 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#F5F0EB', letterSpacing: '0.14em', textTransform: 'uppercase' }}>Personalizar</span>
+                      {!canPersonalize && <LockPill tier="basic" onUpgrade={() => upgrade('basic')} />}
+                    </div>
+
+                    {!canPersonalize ? (
+                      <UpgradeBanner tier="basic" label="Elige entre todos los diseños y personaliza cada elemento de tu tarjeta." onUpgrade={() => upgrade('basic')} />
+                    ) : (
+                      <>
+                        {/* Diseño grid */}
+                        <div style={{ fontSize: 9, color: '#4A4540', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Diseño</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: `repeat(2, 1fr)`, gap: 6, marginBottom: 16 }}>
+                          {DESIGN_LAYOUTS.map((tpl) => {
+                            const locked = !canUse(tier, tpl.tier);
+                            const MiniCard = CARD_RENDERERS[tpl.id];
+                            const isActive = s.template === tpl.id;
+                            return (
+                              <button
+                                key={tpl.id}
+                                type="button"
+                                onClick={() => locked ? upgrade(tpl.tier) : set('template', tpl.id)}
+                                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: locked ? 'not-allowed' : 'pointer', padding: 0 }}
+                              >
+                                <div style={{
+                                  position: 'relative', width: colW, height: colH,
+                                  borderRadius: 7, overflow: 'hidden',
+                                  border: `2px solid ${isActive ? '#E8341A' : 'rgba(245,240,235,0.07)'}`,
+                                  boxShadow: isActive ? '0 0 0 2px rgba(232,52,26,0.18)' : 'none',
+                                  transition: 'all 0.15s',
+                                  opacity: locked ? 0.45 : 1,
+                                }}>
+                                  <div style={{ position: 'absolute', top: 0, left: 0, width: 380, height: 230, transformOrigin: 'top left', transform: `scale(${colScale})`, pointerEvents: 'none' }}>
+                                    <MiniCard s={s} pal={pal} font={font} pattern={pattern} W={380} H={230} noShadow />
+                                  </div>
+                                  {locked && (
+                                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)' }}>
+                                      <Lock size={9} color="#FFB347" />
+                                    </div>
+                                  )}
+                                </div>
+                                <span style={{ fontSize: 9, fontWeight: 600, color: isActive ? '#E8341A' : '#4A4540', transition: 'color 0.15s' }}>{tpl.name}</span>
+                              </button>
+                            );
+                          })}
+
+                          {/* Custom tile — always last */}
+                          {(() => {
+                            const isActive = s.template === 'custom';
+                            const CustomCard = CARD_RENDERERS['custom'];
+                            return (
+                              <button
+                                type="button"
+                                onClick={() => set('template', 'custom')}
+                                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                              >
+                                <div style={{
+                                  position: 'relative', width: colW, height: colH,
+                                  borderRadius: 7, overflow: 'hidden',
+                                  border: `2px solid ${isActive ? '#E8341A' : 'rgba(245,240,235,0.07)'}`,
+                                  boxShadow: isActive ? '0 0 0 2px rgba(232,52,26,0.18)' : 'none',
+                                  transition: 'all 0.15s',
+                                }}>
+                                  <div style={{ position: 'absolute', top: 0, left: 0, width: 380, height: 230, transformOrigin: 'top left', transform: `scale(${colScale})`, pointerEvents: 'none' }}>
+                                    <CustomCard s={s} pal={pal} font={font} pattern={pattern} W={380} H={230} noShadow />
                                   </div>
                                 </div>
-                              )}
-                            </div>
-                          </div>
+                                <span style={{ fontSize: 9, fontWeight: 600, color: isActive ? '#E8341A' : '#4A4540', transition: 'color 0.15s' }}>Custom</span>
+                              </button>
+                            );
+                          })()}
                         </div>
-                      );
-                    })}
+
+                        {/* Custom-only controls */}
+                        {s.template === 'custom' && (
+                          <>
+                            {/* Distribución */}
+                            <div style={{ marginBottom: 14 }}>
+                              <div style={{ fontSize: 9, color: '#4A4540', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 7 }}>Distribución</div>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 5 }}>
+                                {CUSTOM_DISTRIBUTIONS.map(({ id, label }) => {
+                                  const CustomCard = CARD_RENDERERS['custom'];
+                                  const previewState = { ...s, customLayout: id };
+                                  const distW = Math.max(Math.floor((innerWidth - 16) / 3), 40);
+                                  const distH = Math.round(distW * (230 / 380));
+                                  const distScale = distW / 380;
+                                  const isDistActive = s.customLayout === id;
+                                  return (
+                                    <button
+                                      key={id}
+                                      type="button"
+                                      onClick={() => set('customLayout', id)}
+                                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                                    >
+                                      <div style={{
+                                        position: 'relative', width: distW, height: distH,
+                                        borderRadius: 5, overflow: 'hidden',
+                                        border: `2px solid ${isDistActive ? '#E8341A' : 'rgba(245,240,235,0.07)'}`,
+                                        boxShadow: isDistActive ? '0 0 0 2px rgba(232,52,26,0.18)' : 'none',
+                                        transition: 'all 0.15s',
+                                      }}>
+                                        <div style={{ position: 'absolute', top: 0, left: 0, width: 380, height: 230, transformOrigin: 'top left', transform: `scale(${distScale})`, pointerEvents: 'none' }}>
+                                          <CustomCard s={previewState} pal={pal} font={font} pattern={pattern} W={380} H={230} noShadow />
+                                        </div>
+                                      </div>
+                                      <span style={{ fontSize: 8, fontWeight: 600, color: isDistActive ? '#E8341A' : '#4A4540', transition: 'color 0.15s' }}>{label}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            {/* Elementos */}
+                            <div>
+                              <div style={{ fontSize: 9, color: '#4A4540', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 7 }}>Elementos</div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                {ELEMS.map(({ key, label, Icon }) => {
+                                  const on = s[key] as boolean;
+                                  return (
+                                    <button
+                                      key={key}
+                                      type="button"
+                                      onClick={() => set(key, !on)}
+                                      style={{
+                                        display: 'flex', alignItems: 'center', gap: 8,
+                                        padding: '8px 10px', borderRadius: 8, cursor: 'pointer', textAlign: 'left',
+                                        background: on ? 'rgba(232,52,26,0.07)' : 'transparent',
+                                        border: `1.5px solid ${on ? 'rgba(232,52,26,0.3)' : 'rgba(245,240,235,0.06)'}`,
+                                        transition: 'all 0.15s',
+                                      }}
+                                    >
+                                      <div style={{
+                                        width: 24, height: 24, borderRadius: 6, flexShrink: 0,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        background: on ? '#E8341A' : 'rgba(245,240,235,0.04)',
+                                        transition: 'background 0.15s',
+                                      }}>
+                                        <Icon size={12} color={on ? '#fff' : '#4A4540'} />
+                                      </div>
+                                      <span style={{ fontSize: 11, fontWeight: 500, color: on ? '#F5F0EB' : '#4A4540', flex: 1, transition: 'color 0.15s' }}>{label}</span>
+                                      <div style={{ width: 5, height: 5, borderRadius: '50%', flexShrink: 0, background: on ? '#E8341A' : 'rgba(245,240,235,0.1)', transition: 'background 0.15s' }} />
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )}
                   </div>
 
-                  {/* ── Controles de plantilla personalizada ── */}
-                  {s.template === 'custom' && (
-                    <div style={{ marginTop: 20, background: '#0A0A0A', border: '1px solid rgba(245,240,235,0.08)', borderRadius: 12, padding: 14 }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: '#F5F0EB', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 14 }}>Personalizar tarjeta</div>
+                  {/* Divider */}
+                  <div style={{ height: 1, background: 'rgba(245,240,235,0.07)', marginBottom: 24 }} />
 
-                      {/* Layout */}
-                      <div style={{ marginBottom: 16 }}>
-                        <div style={{ fontSize: 10, color: '#6B6560', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Distribución</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6 }}>
-                          {([
-                            { id: 'stack',    label: 'Vertical',  desc: 'Clásico' },
-                            { id: 'centered', label: 'Centrado',  desc: 'Minimal' },
-                            { id: 'split',    label: 'Acento',    desc: 'División' },
-                          ] as const).map(({ id, label }) => (
-                            <button
-                              key={id}
-                              type="button"
-                              onClick={() => set('customLayout', id)}
-                              style={{ padding: '8px 4px', borderRadius: 8, fontSize: 10, fontWeight: 700, cursor: 'pointer', background: s.customLayout === id ? 'rgba(232,52,26,0.15)' : 'transparent', border: `1.5px solid ${s.customLayout === id ? '#E8341A' : 'rgba(245,240,235,0.12)'}`, color: s.customLayout === id ? '#E8341A' : '#6B6560', letterSpacing: '0.04em', transition: 'all 0.15s' }}
+                  {/* ══ PLANTILLAS ════════════════════════════════ */}
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: '#F5F0EB', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 12 }}>Plantillas</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+                      {BUSINESS_TEMPLATES.map(({ id, name, icon, preset }) => {
+                        const mergedState: BuilderState = { ...s, ...preset };
+                        const TemplateComp = CARD_RENDERERS[preset.template ?? s.template] ?? ClassicCard;
+                        const presetPalId = preset.palette ?? s.palette;
+                        const presetPal = palettes.find(p => p.id === presetPalId) ?? palettes[0]!;
+                        return (
+                          <button
+                            key={id}
+                            type="button"
+                            onClick={() => setS(prev => ({ ...prev, ...preset }))}
+                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                          >
+                            <div style={{
+                              position: 'relative', width: colW, height: colH,
+                              borderRadius: 7, overflow: 'hidden',
+                              border: '1.5px solid rgba(245,240,235,0.07)',
+                              transition: 'border-color 0.15s',
+                            }}
+                              onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(232,52,26,0.3)'; }}
+                              onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(245,240,235,0.07)'; }}
                             >
-                              {label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Elementos visibles */}
-                      <div>
-                        <div style={{ fontSize: 10, color: '#6B6560', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>Elementos visibles</div>
-                        {([
-                          { key: 'customElemBiz'      as const, label: 'Nombre del negocio' },
-                          { key: 'customElemCardName' as const, label: 'Nombre de tarjeta'  },
-                          { key: 'customElemPoints'   as const, label: 'Contador de puntos' },
-                          { key: 'customElemMember'   as const, label: 'Nombre del cliente' },
-                          { key: 'customElemQr'       as const, label: 'Código QR'           },
-                          { key: 'customElemLogo'     as const, label: 'Logo / badge'        },
-                        ]).map(({ key, label }) => (
-                          <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 9 }}>
-                            <span style={{ fontSize: 12, color: s[key] ? '#F5F0EB' : '#4A4540', transition: 'color 0.15s' }}>{label}</span>
-                            <Toggle on={s[key]} onChange={() => set(key, !s[key])} />
-                          </div>
-                        ))}
-                      </div>
+                              <div style={{ position: 'absolute', top: 0, left: 0, width: 380, height: 230, transformOrigin: 'top left', transform: `scale(${colScale})`, pointerEvents: 'none' }}>
+                                <TemplateComp s={mergedState} pal={presetPal} font={font} pattern={pattern} W={380} H={230} noShadow />
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <span style={{ fontSize: 11 }}>{icon}</span>
+                              <span style={{ fontSize: 10, fontWeight: 600, color: '#6B6560' }}>{name}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
                     </div>
-                  )}
+                  </div>
+
                 </div>
               );
             })()}

@@ -11,6 +11,8 @@ import {
 } from '@sellio/db/repositories';
 import { Button } from '@sellio/ui';
 
+import { CardFromDesign } from '@/components/cards/card-renderer';
+
 export const metadata: Metadata = { title: 'Dashboard' };
 
 export default async function DashboardPage() {
@@ -59,17 +61,36 @@ export default async function DashboardPage() {
       {/* Banner */}
       <div className="relative overflow-hidden rounded-[24px] sm:rounded-[32px] bg-gradient-to-br from-[#FEF5F4] to-[#FDF0EE] dark:from-coral/10 dark:to-coral/5 border border-coral/10 p-6 sm:p-10 flex flex-col sm:flex-row items-center justify-between gap-8 shadow-sm">
         <div className="relative z-10 max-w-xl">
-          <h2 className="font-display text-2xl sm:text-[32px] leading-tight font-extrabold tracking-tight text-fg mb-4">
-            ¡Tu tarjeta de lealtad está lista! <span className="inline-block animate-floatA origin-bottom">🎉</span>
-          </h2>
-          <p className="text-muted text-sm sm:text-base mb-8 max-w-md leading-relaxed">
-            Comparte tu QR con tus primeros clientes y empieza a fidelizarlos hoy.
-          </p>
+          {hasCards ? (
+            <>
+              <h2 className="font-display text-2xl sm:text-[32px] leading-tight font-extrabold tracking-tight text-fg mb-4">
+                {cards.length === 1
+                  ? <>¡Tu tarjeta de lealtad está lista!</>
+                  : <>{cards.length} tarjetas activas</>
+                }
+              </h2>
+              <p className="text-muted text-sm sm:text-base mb-8 max-w-md leading-relaxed">
+                {cards.length === 1
+                  ? 'Comparte tu QR con tus clientes y empieza a fidelizarlos hoy.'
+                  : 'Gestiona todas tus tarjetas de lealtad desde un solo lugar.'
+                }
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 className="font-display text-2xl sm:text-[32px] leading-tight font-extrabold tracking-tight text-fg mb-4">
+                Crea tu primera tarjeta de lealtad
+              </h2>
+              <p className="text-muted text-sm sm:text-base mb-8 max-w-md leading-relaxed">
+                Diseña una tarjeta personalizada y empieza a fidelizar a tus clientes hoy mismo.
+              </p>
+            </>
+          )}
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             {hasCards ? (
-              <Link href={`/app/cards/${activeCard?.id}`}>
+              <Link href={cards.length === 1 ? `/app/cards/${activeCard?.id}` : '/app/cards'}>
                 <Button size="lg" className="bg-[#E8341A] hover:bg-[#D02B13] text-white rounded-xl shadow-lg shadow-coral/20 font-bold px-6 sm:px-8 border-0">
-                  Ver mi tarjeta <span className="ml-2 font-black">→</span>
+                  {cards.length === 1 ? 'Ver tarjeta' : 'Ver tarjetas'} <span className="ml-2 font-black">→</span>
                 </Button>
               </Link>
             ) : (
@@ -79,51 +100,61 @@ export default async function DashboardPage() {
                 </Button>
               </Link>
             )}
-            <Button size="lg" variant="secondary" className="bg-surface hover:bg-surface-2 rounded-xl border border-border shadow-sm font-bold px-6 sm:px-8 text-fg">
-              Descargar QR
-            </Button>
+            {hasCards && (
+              <Button size="lg" variant="secondary" className="bg-surface hover:bg-surface-2 rounded-xl border border-border shadow-sm font-bold px-6 sm:px-8 text-fg">
+                Descargar QR
+              </Button>
+            )}
           </div>
         </div>
-        
-        {/* Card Preview Graphic */}
-        <div className="relative z-10 hidden lg:block shrink-0 drop-shadow-2xl translate-x-4 hover:-translate-y-2 transition-transform duration-500 ease-out">
-          <div className="w-[360px] h-[220px] rounded-[24px] bg-gradient-to-br from-[#1A0806] via-[#3A1006] to-[#E8341A] p-7 text-white overflow-hidden relative shadow-[0_40px_80px_rgba(232,52,26,0.3)] border border-white/10 flex flex-col justify-between">
-            {/* Subtle decorative circles */}
-            <div className="absolute right-[-60px] top-[-60px] w-[220px] h-[220px] rounded-full border border-white/5 pointer-events-none" />
-            <div className="absolute right-[-100px] top-[-100px] w-[320px] h-[320px] rounded-full border border-white/5 pointer-events-none" />
-            
-            <div className="flex justify-between items-start relative">
-              <div>
-                <div className="font-display font-black text-base tracking-wide mb-1 text-[#FFB347] drop-shadow-sm">{org.name}</div>
-                <div className="text-[9px] text-white/50 tracking-[0.25em] uppercase font-bold">Member Card</div>
-              </div>
-              <div className="w-9 h-9 rounded-xl bg-[#E8341A] flex items-center justify-center font-bold text-sm shadow-inner shadow-white/20 border border-white/10">S</div>
+
+        {/* Card Preview */}
+        <div className="relative z-10 hidden lg:block shrink-0 translate-x-4 hover:-translate-y-2 transition-transform duration-500 ease-out">
+          {hasCards ? (
+            <div
+              style={{ filter: 'drop-shadow(0 40px 60px rgba(0,0,0,0.18))' }}
+            >
+              {cards.length > 1 && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: -10,
+                    right: -10,
+                    background: '#E8341A',
+                    color: 'white',
+                    borderRadius: 20,
+                    padding: '2px 10px',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    zIndex: 10,
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                  }}
+                >
+                  {cards.length} tarjetas
+                </div>
+              )}
+              <CardFromDesign
+                design={(activeCard?.design ?? {}) as Record<string, unknown>}
+                primaryColor={
+                  typeof activeCard?.design === 'object' &&
+                  activeCard.design !== null &&
+                  'primaryColor' in activeCard.design &&
+                  typeof (activeCard.design as Record<string, unknown>).primaryColor === 'string'
+                    ? (activeCard.design as Record<string, unknown>).primaryColor as string
+                    : org.primaryColor
+                }
+                W={360}
+                H={218}
+              />
             </div>
-            
-            <div className="relative mt-2">
-              <div className="font-display font-extrabold text-[52px] leading-[0.9] mb-1 drop-shadow-md">847</div>
-              <div className="text-[9px] text-white/50 tracking-[0.2em] uppercase font-bold">Puntos acumulados</div>
-            </div>
-            
-            <div className="flex justify-between items-end relative">
-              <div>
-                <div className="text-[8px] text-white/40 tracking-[0.15em] uppercase mb-1.5 font-bold">Miembro</div>
-                <div className="text-[13px] font-semibold tracking-wide">Ana García</div>
+          ) : (
+            <div className="w-[360px] h-[218px] rounded-[20px] border-2 border-dashed border-[#E8341A]/30 bg-[#FEF5F4] flex flex-col items-center justify-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-[#E8341A]/10 flex items-center justify-center">
+                <span className="text-2xl">💳</span>
               </div>
-              <div className="opacity-80 flex gap-1">
-                 <div className="w-10 h-10 rounded-lg border-2 border-white/20 flex flex-col items-center justify-center gap-1 p-1.5 bg-white/5 backdrop-blur-sm">
-                   <div className="flex gap-1">
-                     <div className="w-[7px] h-[7px] bg-white/80 rounded-[2px]"></div>
-                     <div className="w-[7px] h-[7px] bg-white/80 rounded-[2px]"></div>
-                   </div>
-                   <div className="flex gap-1">
-                     <div className="w-[7px] h-[7px] bg-white/80 rounded-[2px]"></div>
-                     <div className="w-[7px] h-[7px] bg-white/40 rounded-[2px]"></div>
-                   </div>
-                 </div>
-              </div>
+              <p className="text-[13px] font-bold text-[#E8341A]/70">Tu tarjeta aparecerá aquí</p>
             </div>
-          </div>
+          )}
         </div>
       </div>
 

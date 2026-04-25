@@ -20,6 +20,7 @@ export function orgRowToEntity(row: OrgRow): Organization {
     country: row.country,
     timezone: row.timezone,
     plan: row.plan,
+    trialEndsAt: row.trial_ends_at ? new Date(row.trial_ends_at) : null,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };
@@ -32,7 +33,12 @@ export class SupabaseOrganizationRepository implements IOrganizationRepository {
 
     const { error: orgError } = await db
       .from('organizations')
-      .insert({ id: orgId, name: input.name, slug: input.slug });
+      .insert({
+        id: orgId,
+        name: input.name,
+        slug: input.slug,
+        ...(input.trialEndsAt ? { trial_ends_at: input.trialEndsAt.toISOString() } : {}),
+      });
 
     if (orgError) {
       if (orgError.code === '23505') {

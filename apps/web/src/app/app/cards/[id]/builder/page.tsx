@@ -6,6 +6,7 @@ import { SupabaseCardRepository, SupabaseOrganizationRepository } from '@sellio/
 
 import { CardForm } from '@/components/cards/card-form';
 import { BuilderNav } from '@/components/cards/builder-nav';
+import { getEffectiveTier } from '@/lib/trial';
 
 export const metadata: Metadata = { title: 'Card Builder' };
 
@@ -48,6 +49,7 @@ export default async function CardBuilderPage({ params }: CardBuilderPageProps) 
           primaryColor={primaryColor}
           autoSave
           exitHref={`/app/cards/${id}`}
+          orgTier={getEffectiveTier(org)}
         />
       </div>
     </>

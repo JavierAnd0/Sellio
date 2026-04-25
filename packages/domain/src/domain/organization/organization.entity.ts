@@ -15,6 +15,7 @@ export const organizationSchema = z.object({
   country: z.string().length(2).default('CO'),
   timezone: z.string().default('America/Bogota'),
   plan: z.enum(['free', 'basic', 'elite']).default('free'),
+  trialEndsAt: z.date().nullable().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });

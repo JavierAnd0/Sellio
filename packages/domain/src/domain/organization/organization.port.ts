@@ -4,6 +4,7 @@ export interface CreateOrganizationInput {
   ownerId: string;
   name: string;
   slug: string;
+  trialEndsAt?: Date | null;
 }
 
 export interface UpdateOrganizationInput {

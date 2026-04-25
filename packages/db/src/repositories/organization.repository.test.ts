@@ -10,6 +10,7 @@ const baseRow = {
   country: 'CO',
   timezone: 'America/Bogota',
   plan: 'free' as const,
+  trial_ends_at: null,
   created_at: '2024-01-15T10:00:00Z',
   updated_at: '2024-01-15T10:00:00Z',
 };
@@ -50,7 +51,7 @@ describe('orgRowToEntity', () => {
     const entity = orgRowToEntity(baseRow);
     const keys = Object.keys(entity).sort();
     expect(keys).toEqual(
-      ['country', 'createdAt', 'id', 'logoUrl', 'name', 'plan', 'primaryColor', 'slug', 'timezone', 'updatedAt'].sort(),
+      ['country', 'createdAt', 'id', 'logoUrl', 'name', 'plan', 'primaryColor', 'slug', 'timezone', 'trialEndsAt', 'updatedAt'].sort(),
     );
   });
 });

@@ -60,6 +60,7 @@ export interface Database {
           country: string;
           timezone: string;
           plan: OrgPlan;
+          trial_ends_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -72,6 +73,7 @@ export interface Database {
           country?: string;
           timezone?: string;
           plan?: OrgPlan;
+          trial_ends_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -84,6 +86,7 @@ export interface Database {
           country?: string;
           timezone?: string;
           plan?: OrgPlan;
+          trial_ends_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };

@@ -10,13 +10,14 @@ import { useUiStore } from '@/lib/stores/ui.store';
 import type { OrgPlan } from '@sellio/db';
 
 const PLAN_CONFIG: Record<OrgPlan, { label: string; maxCards: number | null; maxCustomers: number | null }> = {
-  free:  { label: 'Plan Free',  maxCards: 1,    maxCustomers: 50   },
-  basic: { label: 'Plan Basic', maxCards: 5,    maxCustomers: 500  },
-  elite: { label: 'Plan Elite', maxCards: null, maxCustomers: null },
+  free:  { label: 'Prueba gratuita', maxCards: 5,    maxCustomers: 500  },
+  basic: { label: 'Plan Basic',      maxCards: 5,    maxCustomers: 500  },
+  elite: { label: 'Plan Elite',      maxCards: null, maxCustomers: null },
 };
 
 interface SidebarProps {
   plan?: OrgPlan;
+  trialDaysLeft?: number | null;
   totalCards?: number;
   totalCustomers?: number;
   firstCardId?: string;
@@ -95,13 +96,13 @@ function SidebarItem({ href, icon: Icon, children, badge, activeIcon: ActiveIcon
   );
 }
 
-export function Sidebar({ plan = 'free', totalCards = 0, totalCustomers = 0, firstCardId, orgName, userEmail }: SidebarProps) {
+export function Sidebar({ plan = 'free', trialDaysLeft, totalCards = 0, totalCustomers = 0, firstCardId, orgName, userEmail }: SidebarProps) {
   const { sidebarOpen, setSidebarOpen } = useUiStore();
   const config = PLAN_CONFIG[plan];
   const isElite = plan === 'elite';
+  const isTrial = plan === 'free' && trialDaysLeft !== null && trialDaysLeft !== undefined && trialDaysLeft > 0;
+  const isTrialExpired = plan === 'free' && trialDaysLeft === 0;
 
-  // Use customers as the main progress metric (more meaningful for the user)
-  // For elite, progress is always 0 (unlimited)
   const progressPercent = isElite || !config.maxCustomers
     ? 0
     : Math.min(100, Math.max(0, (totalCustomers / config.maxCustomers) * 100));
@@ -198,40 +199,61 @@ export function Sidebar({ plan = 'free', totalCards = 0, totalCustomers = 0, fir
           </div>
 
           {/* Plan Widget */}
-          <div className="mx-4 rounded-[20px] bg-[#F5E6DE] p-5 shadow-sm">
+          <div className={`mx-4 rounded-[20px] p-5 shadow-sm ${isTrialExpired ? 'bg-[#FFF0EE] border border-[#E8341A]/20' : 'bg-[#F5E6DE]'}`}>
             <div className="mb-2">
               <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[#D02B13] mb-1">
-                {config.label}
+                {isTrial ? 'Prueba gratuita' : isTrialExpired ? 'Prueba expirada' : config.label}
               </p>
-              <p className="text-xs font-semibold text-muted">
-                {isElite ? (
-                  <>
-                    {totalCustomers} clientes - {totalCards} tarjeta{totalCards !== 1 ? 's' : ''}
-                  </>
-                ) : (
-                  <>
-                    {totalCustomers}/{config.maxCustomers} clientes - {totalCards} tarjeta{config.maxCards !== 1 ? 's' : ''}
-                  </>
-                )}
-              </p>
+              {isTrial ? (
+                <p className="text-xs font-semibold text-muted">
+                  {trialDaysLeft === 1 ? 'Queda 1 día' : `Quedan ${trialDaysLeft} días`}
+                </p>
+              ) : isTrialExpired ? (
+                <p className="text-xs font-semibold text-[#D02B13]">
+                  Solo lectura — actualiza tu plan
+                </p>
+              ) : isElite ? (
+                <p className="text-xs font-semibold text-muted">
+                  {totalCustomers} clientes · {totalCards} tarjeta{totalCards !== 1 ? 's' : ''}
+                </p>
+              ) : (
+                <p className="text-xs font-semibold text-muted">
+                  {totalCustomers}/{config.maxCustomers} clientes · {totalCards} tarjeta{config.maxCards !== 1 ? 's' : ''}
+                </p>
+              )}
             </div>
 
-            {!isElite && (
+            {isTrial && (
               <>
                 <div className="h-1.5 w-full bg-[#D02B13]/20 rounded-full mb-3 overflow-hidden relative">
                   <div
                     className="absolute top-0 left-0 h-full bg-[#D02B13] rounded-full transition-all duration-1000"
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                  <div
-                    className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#D02B13]"
-                    style={{ left: `calc(${progressPercent}% - 4px)` }}
+                    style={{ width: `${Math.round(((20 - (trialDaysLeft ?? 0)) / 20) * 100)}%` }}
                   />
                 </div>
-
-                {/* Progress missing from mockup? Wait, the mockup doesn't have an 'Upgradar' link at the bottom of the widget? No, it DOES! */}
-                {/* Wait, the mockup does NOT have an Upgradar -> link in the red widget. It only has the progress bar! */}
+                <p className="text-[11px] font-semibold text-[#D02B13]/70">
+                  {trialDaysLeft! <= 3 ? '⚠ Tu prueba está por vencer' : 'Actualiza cuando estés listo'}
+                </p>
               </>
+            )}
+
+            {isTrialExpired && (
+              <button className="mt-3 w-full rounded-xl bg-[#E8341A] py-2 text-[12px] font-bold text-white hover:bg-[#D02B13] transition-colors">
+                Actualizar plan →
+              </button>
+            )}
+
+            {!isTrial && !isTrialExpired && !isElite && (
+              <div className="h-1.5 w-full bg-[#D02B13]/20 rounded-full mb-3 overflow-hidden relative">
+                <div
+                  className="absolute top-0 left-0 h-full bg-[#D02B13] rounded-full transition-all duration-1000"
+                  style={{ width: `${progressPercent}%` }}
+                />
+                <div
+                  className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#D02B13]"
+                  style={{ left: `calc(${progressPercent}% - 4px)` }}
+                />
+              </div>
             )}
 
             {isElite && (

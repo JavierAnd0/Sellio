@@ -72,6 +72,13 @@ export async function createFirstCardAction(input: {
   const orgRepo = new SupabaseOrganizationRepository();
   let org = await orgRepo.findByOwner(user.id);
 
+  // Set trial if this org was created by Supabase trigger (no trialEndsAt yet).
+  if (org && !org.trialEndsAt && org.plan === 'free') {
+    const trialEndsAt = new Date(Date.now() + 20 * 24 * 60 * 60 * 1000);
+    await db.from('organizations').update({ trial_ends_at: trialEndsAt.toISOString() }).eq('id', org.id);
+    org = { ...org, trialEndsAt };
+  }
+
   // Org creation can silently fail during registration (slug collision edge case).
   // Recover here using the business name the user provided in step 1.
   if (!org) {
@@ -80,7 +87,8 @@ export async function createFirstCardAction(input: {
       'Mi Negocio';
     const baseSlug = deriveSlug(name);
     try {
-      org = await orgRepo.create({ ownerId: user.id, name, slug: baseSlug });
+      const trialEndsAt = new Date(Date.now() + 20 * 24 * 60 * 60 * 1000);
+      org = await orgRepo.create({ ownerId: user.id, name, slug: baseSlug, trialEndsAt });
     } catch (firstError) {
       // Only retry when the collision is truly caused by a duplicate slug.
       if (getErrorCode(firstError) !== 'slug_taken') {
@@ -91,9 +99,10 @@ export async function createFirstCardAction(input: {
         return { ok: false, error: 'No se pudo crear el negocio. Intenta de nuevo.' };
       }
 
+      const trialEndsAt = new Date(Date.now() + 20 * 24 * 60 * 60 * 1000);
       const suffix = Math.random().toString(36).slice(2, 5);
       try {
-        org = await orgRepo.create({ ownerId: user.id, name, slug: `${baseSlug.slice(0, 37)}-${suffix}` });
+        org = await orgRepo.create({ ownerId: user.id, name, slug: `${baseSlug.slice(0, 37)}-${suffix}`, trialEndsAt });
       } catch (secondError) {
         console.error('createFirstCardAction org create failed (second attempt)', secondError);
         if (getErrorCode(secondError) === 'org_members_bootstrap_blocked' || getErrorCode(secondError) === 'org_insert_blocked') {

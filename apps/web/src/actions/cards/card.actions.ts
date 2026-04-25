@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import { createClient } from '@sellio/db/server';
 import { SupabaseCardRepository, SupabaseOrganizationRepository } from '@sellio/db/repositories';
+import { isTrialExpired } from '@/lib/trial';
 
 const cardSchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio').max(60, 'Máximo 60 caracteres'),
@@ -35,7 +36,11 @@ export type CardActionResult =
   | { ok: true }
   | { ok: false; error: string; field?: string };
 
-export async function createCardAction(formData: FormData): Promise<never> {
+export type CreateCardResult =
+  | { ok: true; cardId: string }
+  | { ok: false; error: string; field?: string };
+
+export async function createCardAction(formData: FormData): Promise<CreateCardResult> {
   const parsed = cardSchema.safeParse({
     name: formData.get('name'),
     description: formData.get('description') || undefined,
@@ -48,7 +53,7 @@ export async function createCardAction(formData: FormData): Promise<never> {
 
   if (!parsed.success) {
     const first = parsed.error.errors[0];
-    throw new Error(first?.message ?? 'Datos inválidos');
+    return { ok: false, error: first?.message ?? 'Datos inválidos', field: String(first?.path[0] ?? '') };
   }
 
   const db = await createClient();
@@ -59,23 +64,30 @@ export async function createCardAction(formData: FormData): Promise<never> {
   if (!user) redirect('/login');
 
   const org = await new SupabaseOrganizationRepository().findByOwner(user.id);
-  if (!org) throw new Error('Organización no encontrada');
+  if (!org) return { ok: false, error: 'Organización no encontrada.' };
+
+  if (isTrialExpired(org)) {
+    return { ok: false, error: 'Tu prueba gratuita ha expirado. Actualiza tu plan para crear tarjetas.' };
+  }
 
   const { name, description, pointsPerCheckin, pointsForReward, rewardDescription, maxMembers, design } =
     parsed.data;
 
-  const card = await new SupabaseCardRepository().create({
-    orgId: org.id,
-    name,
-    description: description ?? null,
-    pointsPerCheckin,
-    pointsForReward,
-    rewardDescription,
-    maxMembers: maxMembers ?? null,
-    design: { primaryColor: org.primaryColor, ...parseDesign(design) },
-  });
-
-  redirect(`/app/cards/${card.id}/builder`);
+  try {
+    const card = await new SupabaseCardRepository().create({
+      orgId: org.id,
+      name,
+      description: description ?? null,
+      pointsPerCheckin,
+      pointsForReward,
+      rewardDescription,
+      maxMembers: maxMembers ?? null,
+      design: { primaryColor: org.primaryColor, ...parseDesign(design) },
+    });
+    return { ok: true, cardId: card.id };
+  } catch {
+    return { ok: false, error: 'Error al crear la tarjeta. Intenta de nuevo.' };
+  }
 }
 
 export async function updateCardAction(
@@ -115,6 +127,10 @@ export async function updateCardAction(
 
   const org = await new SupabaseOrganizationRepository().findByOwner(user.id);
   if (!org || card.orgId !== org.id) return { ok: false, error: 'Sin permisos.' };
+
+  if (isTrialExpired(org)) {
+    return { ok: false, error: 'Tu prueba gratuita ha expirado. Actualiza tu plan para editar tarjetas.' };
+  }
 
   const { name, description, pointsPerCheckin, pointsForReward, rewardDescription, maxMembers, design } =
     parsed.data;

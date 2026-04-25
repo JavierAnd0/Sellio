@@ -6,6 +6,7 @@ import { SupabaseCardRepository, SupabaseCustomerRepository, SupabaseOrganizatio
 
 import { Sidebar } from '@/components/dashboard/sidebar';
 import { Topbar } from '@/components/dashboard/topbar';
+import { getEffectiveTier, getTrialDaysLeft } from '@/lib/trial';
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const db = await createClient();
@@ -23,16 +24,19 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   }
 
   const cards = await new SupabaseCardRepository().findByOrg(org.id);
-  
+
   const customerRepo = new SupabaseCustomerRepository();
   const totalCustomers = await customerRepo.countByOrg(org.id);
 
   const userMeta = user.user_metadata as { full_name?: string } | undefined;
+  const effectiveTier = getEffectiveTier(org);
+  const trialDaysLeft = getTrialDaysLeft(org);
 
   return (
     <div className="flex h-screen overflow-hidden bg-bg">
-      <Sidebar 
-        plan={org.plan}
+      <Sidebar
+        plan={effectiveTier}
+        trialDaysLeft={trialDaysLeft}
         totalCards={cards.length}
         totalCustomers={totalCustomers}
         firstCardId={cards[0]?.id}

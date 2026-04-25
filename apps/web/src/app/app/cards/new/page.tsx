@@ -6,6 +6,7 @@ import { SupabaseOrganizationRepository } from '@sellio/db/repositories';
 
 import { CardForm } from '@/components/cards/card-form';
 import { BuilderNav } from '@/components/cards/builder-nav';
+import { getEffectiveTier } from '@/lib/trial';
 
 export const metadata: Metadata = { title: 'Nueva tarjeta' };
 
@@ -24,7 +25,7 @@ export default async function NewCardPage() {
     <>
       <BuilderNav orgName={org.name} />
       <div className="fixed inset-0 z-[99]">
-        <CardForm primaryColor={org.primaryColor} exitHref="/app/cards" />
+        <CardForm primaryColor={org.primaryColor} exitHref="/app/cards" orgTier={getEffectiveTier(org)} />
       </div>
     </>
   );
