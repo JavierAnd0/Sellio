@@ -24,13 +24,14 @@ export function CardDetailView({ card, primaryColor, memberCount }: CardDetailVi
         <div className="space-y-8">
           <div className="rounded-[28px] border border-border/40 bg-[#EAE7DF]/40 p-6 shadow-sm dark:bg-surface-2">
             {/* Card preview */}
-            <div className="relative mb-8 flex h-[260px] w-full items-center justify-center">
+            <div className="relative mb-8 flex h-[260px] w-full items-center justify-center overflow-hidden rounded-[20px]">
               <div
                 style={{
                   transform: 'scale(1.05)',
                   transformOrigin: 'center center',
                   filter: 'drop-shadow(0 24px 32px rgba(0,0,0,0.15))',
-                  position: 'absolute',
+                  maxWidth: '100%',
+                  width: 380,
                 }}
               >
                 <CardFromDesign design={design} primaryColor={primaryColor} W={380} H={230} />

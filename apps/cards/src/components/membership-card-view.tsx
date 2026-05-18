@@ -1,5 +1,5 @@
 import QRCode from 'qrcode';
-import { CardPreview } from '@sellio/ui';
+import { FlippableCard } from './flippable-card';
 
 interface MembershipCardViewProps {
   businessName: string;
@@ -40,8 +40,8 @@ export async function MembershipCardView({
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-bg px-4 py-12">
       <div className="w-full max-w-sm">
-        {/* Card */}
-        <CardPreview
+        {/* Flippable card — front: design, back: stamp grid */}
+        <FlippableCard
           businessName={businessName}
           cardName={cardName}
           points={points}
