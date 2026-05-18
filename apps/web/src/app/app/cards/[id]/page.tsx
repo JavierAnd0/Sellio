@@ -64,7 +64,7 @@ export default async function CardDetailPage({ params }: CardDetailPageProps) {
             {card.name}
           </h1>
           <p className="mt-1 text-[16px] font-medium text-muted">
-            Café Central · {memberCount} clientes
+            {org.name} · {memberCount} clientes
           </p>
         </div>
 

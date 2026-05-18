@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { useState, useMemo, useTransition } from 'react';
+import { ArrowRight, Plus } from 'lucide-react';
 import type { Customer } from '@sellio/domain';
 import type { OrgPlan } from '@sellio/db';
+
+import { addPointsAction } from '@/actions/cards/customer.actions';
 
 interface CustomerWithMembership extends Customer {
   membership: {
@@ -19,6 +21,7 @@ interface CustomerTableProps {
   customers: CustomerWithMembership[];
   maxCustomers?: number | null;
   plan?: OrgPlan;
+  pointsPerCheckin?: number;
 }
 
 /** Returns a human-readable relative date string in Spanish */
@@ -67,8 +70,41 @@ function isActive(lastActivity: Date | null, joinedAt: Date): boolean {
   return days <= 30;
 }
 
-export function CustomerTable({ customers, maxCustomers, plan = 'free' }: CustomerTableProps) {
+function AddPointsButton({ membershipId, pointsPerCheckin, onSuccess }: { membershipId: string; pointsPerCheckin: number; onSuccess: (newPoints: number) => void }) {
+  const [isPending, startTransition] = useTransition();
+  const [flash, setFlash] = useState(false);
+
+  const handleClick = () => {
+    startTransition(async () => {
+      const result = await addPointsAction(membershipId, pointsPerCheckin);
+      if (result.ok) {
+        onSuccess(result.newPoints);
+        setFlash(true);
+        setTimeout(() => setFlash(false), 800);
+      }
+    });
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={isPending}
+      title={`Sumar ${pointsPerCheckin} punto${pointsPerCheckin !== 1 ? 's' : ''}`}
+      className={`flex h-7 w-7 items-center justify-center rounded-lg border transition-all ${
+        flash
+          ? 'border-[#E8341A]/60 bg-[#E8341A]/15 text-[#E8341A]'
+          : 'border-border/40 bg-surface-2/60 text-muted hover:border-[#E8341A]/40 hover:bg-[#E8341A]/8 hover:text-[#E8341A]'
+      } disabled:cursor-not-allowed disabled:opacity-40`}
+    >
+      <Plus size={13} strokeWidth={2.5} />
+    </button>
+  );
+}
+
+export function CustomerTable({ customers, maxCustomers, plan = 'free', pointsPerCheckin = 1 }: CustomerTableProps) {
   const [search, setSearch] = useState('');
+  const [pointsOverride, setPointsOverride] = useState<Record<string, number>>({});
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -195,9 +231,16 @@ export function CustomerTable({ customers, maxCustomers, plan = 'free' }: Custom
 
                     {/* Points */}
                     <td className="px-6 py-4 text-right">
-                      <span className="font-bold text-[#E8341A] text-[15px] tabular-nums">
-                        {c.membership.points.toLocaleString('es-CO')}
-                      </span>
+                      <div className="flex items-center justify-end gap-2">
+                        <span className="font-bold text-[#E8341A] text-[15px] tabular-nums">
+                          {(pointsOverride[c.membership.id] ?? c.membership.points).toLocaleString('es-CO')}
+                        </span>
+                        <AddPointsButton
+                          membershipId={c.membership.id}
+                          pointsPerCheckin={pointsPerCheckin}
+                          onSuccess={(newPoints) => setPointsOverride((prev) => ({ ...prev, [c.membership.id]: newPoints }))}
+                        />
+                      </div>
                     </td>
 
                     {/* Visits (points used as proxy — real visit count would need a separate field) */}

@@ -1,7 +1,7 @@
 import type { IMembershipRepository, Membership } from '@sellio/domain';
 
 import { createClient } from '../server';
-import type { Tables } from '../types';
+import type { PointTxSource, Tables } from '../types';
 
 type MembershipRow = Tables<'memberships'>;
 
@@ -95,5 +95,44 @@ export class SupabaseMembershipRepository implements IMembershipRepository {
     if (!data) return null;
 
     return membershipRowToEntity(data);
+  }
+
+  async addPoints(
+    membershipId: string,
+    points: number,
+    source: Extract<PointTxSource, 'manual' | 'admin'>,
+    createdBy?: string,
+  ): Promise<number> {
+    const db = await createClient();
+
+    const { data: current, error: fetchError } = await db
+      .from('memberships')
+      .select('points')
+      .eq('id', membershipId)
+      .single();
+
+    if (fetchError || !current) throw new Error('Membership not found');
+
+    const newPoints = current.points + points;
+
+    const { error: txError } = await db.from('point_transactions').insert({
+      membership_id: membershipId,
+      type: 'earn' as const,
+      points,
+      source,
+      idempotency_key: crypto.randomUUID(),
+      created_by: createdBy ?? null,
+    });
+
+    if (txError) throw new Error(txError.message);
+
+    const { error: updateError } = await db
+      .from('memberships')
+      .update({ points: newPoints, last_activity_at: new Date().toISOString() })
+      .eq('id', membershipId);
+
+    if (updateError) throw new Error(updateError.message);
+
+    return newPoints;
   }
 }

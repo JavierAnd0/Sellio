@@ -13,7 +13,7 @@ import { createCardAction, updateCardAction } from '@/actions/cards/card.actions
 import type { CreateCardResult } from '@/actions/cards/card.actions';
 import {
   type Tier, type TabId, type TemplateId, type PointsStyleId,
-  type CustomGradient, type BuilderState, type StampIconId,
+  type CustomGradient, type BuilderState, type StampIconId, type FontOption,
   canUse, BASE_PALETTES, PATTERNS, FONTS, TEMPLATES,
   BADGE_OPTIONS, POINTS_STYLES, STAMP_CATEGORIES, STAMP_ICONS_EXTENDED, DEFAULT_BUILDER, QR, ClassicCard, CARD_RENDERERS,
 } from './card-renderer';
@@ -32,14 +32,14 @@ type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 // ── Sub-components ────────────────────────────────────────────
 
-function LockPill({ tier, onUpgrade }: { tier: string; onUpgrade: () => void }) {
+function LockPill({ onUpgrade }: { tier: string; onUpgrade: () => void }) {
   return (
     <button
       type="button"
       onClick={onUpgrade}
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(255,179,71,0.1)', border: '1px solid rgba(255,179,71,0.2)', borderRadius: 100, padding: '3px 8px', fontSize: 10, color: '#FFB347', fontWeight: 600, cursor: 'pointer' }}
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.2)', borderRadius: 100, padding: '3px 8px', fontSize: 10, color: '#A78BFA', fontWeight: 600, cursor: 'pointer' }}
     >
-      <Lock size={9} /> {tier === 'basic' ? 'Basic' : 'Elite'}
+      <Lock size={9} /> Elite
     </button>
   );
 }
@@ -56,18 +56,17 @@ function Toggle({ on, onChange, disabled }: { on: boolean; onChange: () => void;
   );
 }
 
-function UpgradeBanner({ tier, label, onUpgrade }: { tier: string; label: string; onUpgrade: () => void }) {
-  const isElite = tier === 'elite';
+function UpgradeBanner({ label, onUpgrade }: { tier: string; label: string; onUpgrade: () => void }) {
   return (
-    <div style={{ background: 'linear-gradient(135deg,rgba(255,179,71,0.08),rgba(255,179,71,0.04))', border: '1px solid rgba(255,179,71,0.18)', borderRadius: 10, padding: '12px 14px', marginTop: 10 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: '#FFB347', marginBottom: 4, fontFamily: 'Syne,sans-serif', display: 'flex', alignItems: 'center', gap: 5 }}><Lock size={11} /> Requiere {isElite ? 'Elite' : 'Basic'}</div>
+    <div style={{ background: 'linear-gradient(135deg,rgba(167,139,250,0.08),rgba(167,139,250,0.04))', border: '1px solid rgba(167,139,250,0.18)', borderRadius: 10, padding: '12px 14px', marginTop: 10 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#A78BFA', marginBottom: 4, fontFamily: 'Syne,sans-serif', display: 'flex', alignItems: 'center', gap: 5 }}><Lock size={11} /> Requiere Elite</div>
       <div style={{ fontSize: 11, color: '#6B6560', lineHeight: 1.5, marginBottom: 10 }}>{label}</div>
       <button
         type="button"
         onClick={onUpgrade}
-        style={{ background: isElite ? '#A78BFA' : '#FFB347', color: isElite ? '#fff' : '#0A0A0A', border: 'none', borderRadius: 6, padding: '7px 14px', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Syne,sans-serif', width: '100%' }}
+        style={{ background: '#A78BFA', color: '#fff', border: 'none', borderRadius: 6, padding: '7px 14px', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Syne,sans-serif', width: '100%' }}
       >
-        Ver plan {isElite ? 'Elite' : 'Basic'} →
+        Ver plan Elite →
       </button>
     </div>
   );
@@ -112,6 +111,8 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
       customGradient: (savedDesign?.customGradient as CustomGradient | null) ?? null,
       customPrimary: (savedDesign?.customPrimary as string) ?? undefined,
       font: (savedDesign?.font as string) ?? DEFAULT_BUILDER.font,
+      customFontUrl: (savedDesign?.customFontUrl as string) ?? undefined,
+      customFontFamily: (savedDesign?.customFontFamily as string) ?? undefined,
       pattern: (savedDesign?.pattern as string) ?? DEFAULT_BUILDER.pattern,
       pointsStyle: (savedDesign?.pointsStyle as PointsStyleId) ?? DEFAULT_BUILDER.pointsStyle,
       showBadge: (savedDesign?.showBadge as boolean) ?? false,
@@ -130,7 +131,8 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
     };
   }
 
-  const [tier, setTier] = useState<Tier>(orgTier);
+  // 'free' is only the expired-trial state — for builder feature access it behaves as 'basic'
+  const [tier, setTier] = useState<Tier>(orgTier === 'free' ? 'basic' : orgTier);
   const [activeTab, setActiveTab] = useState<TabId>('templates');
   const [saved, setSaved] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -216,20 +218,24 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
     return palettes.find((p) => p.id === s.palette) ?? palettes[0]!;
   }, [s.customGradient, s.customPrimary, s.palette, palettes]);
 
-  const font = useMemo(() => (FONTS.find((f) => f.id === s.font) ?? FONTS[0])!, [s.font]);
+  const font = useMemo((): FontOption => {
+    if (s.customFontFamily) {
+      return { id: 'custom', display: s.customFontFamily, body: s.customFontFamily, name: 'Fuente personalizada', tier: 'elite' };
+    }
+    return FONTS.find((f) => f.id === s.font) ?? FONTS[0]!;
+  }, [s.font, s.customFontFamily]);
   const pattern = useMemo(() => (PATTERNS.find((p) => p.id === s.pattern) ?? PATTERNS[0])!, [s.pattern]);
   const CardComp = useMemo(() => CARD_RENDERERS[s.template] ?? ClassicCard, [s.template]);
 
-  const upgrade = useCallback((required: string) => {
-    window.confirm(
-      `Esta función requiere el plan ${required === 'basic' ? 'Basic ($9.99/mes)' : 'Elite ($29.99/mes)'}. ¿Ver planes?`,
-    );
+  const upgrade = useCallback((_required: string) => {
+    window.confirm('Esta función requiere el plan Elite ($29.99/mes). ¿Ver planes?');
   }, []);
 
   // Single source of truth for design payload — used by both hidden form input and auto-save
   const designPayload = useMemo(() => ({
     template: s.template, palette: s.palette, customGradient: s.customGradient, customPrimary: s.customPrimary,
-    font: s.font, pattern: s.pattern, pointsStyle: s.pointsStyle,
+    font: s.font, customFontUrl: s.customFontUrl, customFontFamily: s.customFontFamily,
+    pattern: s.pattern, pointsStyle: s.pointsStyle,
     showBadge: s.showBadge, badgeText: s.badgeText,
     showMemberNum: s.showMemberNum, qrStyle: s.qrStyle,
     stampIcon: s.stampIcon, customStampUrl: s.customStampUrl,
@@ -301,6 +307,20 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s, designPayloadJSON, description, pointsPerCheckin, rewardDescription, pointsForReward, maxMembers]);
 
+  // Inject custom font into the document when the user sets one
+  useEffect(() => {
+    if (!s.customFontUrl) return;
+    const id = 'sellio-custom-font';
+    let el = document.getElementById(id) as HTMLLinkElement | null;
+    if (!el) {
+      el = document.createElement('link');
+      el.id = id;
+      el.rel = 'stylesheet';
+      document.head.appendChild(el);
+    }
+    el.href = s.customFontUrl;
+  }, [s.customFontUrl]);
+
   const tabs: Array<{ id: TabId; label: string }> = [
     { id: 'templates', label: 'Plantillas' },
     { id: 'background', label: 'Fondo' },
@@ -346,10 +366,10 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
         <div style={{ width: 1, height: 24, background: 'rgba(245,240,235,0.12)' }} />
         <span style={{
           fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', padding: '3px 8px', borderRadius: 100, textTransform: 'uppercase',
-          background: tier === 'free' ? 'rgba(107,101,96,0.2)' : tier === 'basic' ? 'rgba(193,125,60,0.15)' : 'rgba(167,139,250,0.15)',
-          color: tier === 'free' ? '#6B6560' : tier === 'basic' ? '#C17D3C' : '#A78BFA',
+          background: tier === 'elite' ? 'rgba(167,139,250,0.15)' : 'rgba(193,125,60,0.15)',
+          color: tier === 'elite' ? '#A78BFA' : '#C17D3C',
         }}>
-          {tier}
+          {tier === 'elite' ? 'Elite' : 'Basic'}
         </span>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
           {error && (
@@ -421,42 +441,43 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                 { key: 'customElemLogo',     label: 'Logo / badge',       Icon: Badge     },
               ];
 
-              // ── Business template presets
-              type BizPreset = Partial<BuilderState>;
-              const BUSINESS_TEMPLATES: Array<{ id: string; name: string; icon: string; preset: BizPreset }> = [
-                { id: 'cafe',     name: 'Cafetería',      icon: '☕',
-                  preset: { template: 'stamp',   palette: 'amber',   font: 'syne',    businessName: 'Tu Cafetería',    cardName: 'Tarjeta Café',       pointsStyle: 'stamps', stampIcon: 'coffee'   } },
-                { id: 'restaurant', name: 'Restaurante',  icon: '🍽',
-                  preset: { template: 'classic', palette: 'emerald', font: 'syne',    businessName: 'Tu Restaurante',  cardName: 'Club Gastronómico',  pointsStyle: 'number'                        } },
-                { id: 'spa',      name: 'Spa & Wellness', icon: '💆',
-                  preset: { template: 'minimal', palette: 'violet',  font: 'outfit',  businessName: 'Tu Spa',          cardName: 'Club Wellness',      pointsStyle: 'number'                        } },
-                { id: 'gym',      name: 'Gym / Fitness',  icon: '🏋',
-                  preset: { template: 'bold',    palette: 'coral',   font: 'syne',    businessName: 'Tu Gym',          cardName: 'Plan Fitness',       pointsStyle: 'bar'                           } },
-                { id: 'classes',  name: 'Clases Privadas',icon: '📚',
-                  preset: { template: 'split',   palette: 'indigo',  font: 'outfit',  businessName: 'Tu Academia',     cardName: 'Tarjeta Educativa',  pointsStyle: 'number'                        } },
-                { id: 'salon',    name: 'Peluquería',     icon: '💇',
-                  preset: { template: 'classic', palette: 'teal',    font: 'syne',    businessName: 'Tu Salón',        cardName: 'Membership Card',    pointsStyle: 'stamps', stampIcon: 'scissors' } },
-                { id: 'retail',   name: 'Tienda / Retail',icon: '🛍',
-                  preset: { template: 'luxury',  palette: 'indigo',  font: 'syne',    businessName: 'Tu Tienda',       cardName: 'VIP Member',         pointsStyle: 'number'                        } },
-                { id: 'bar',      name: 'Bar / Drinks',   icon: '🍺',
-                  preset: { template: 'bold',    palette: 'violet',  font: 'syne',    businessName: 'Tu Bar',          cardName: 'Night Pass',         pointsStyle: 'number'                        } },
+              // ── Two base styles
+              const BASE_STYLES = [
+                { id: 'classic' as TemplateId, label: 'Member Card', sub: 'Puntos' },
+                { id: 'stamp'   as TemplateId, label: 'Stamp Card',  sub: 'Sellos' },
               ];
 
-              const canPersonalize = canUse(tier, 'basic');
+              // ── Business template presets (only classic or stamp)
+              type BizPreset = Partial<BuilderState>;
+              const BUSINESS_TEMPLATES: Array<{ id: string; name: string; icon: string; preset: BizPreset }> = [
+                { id: 'cafe',      name: 'Cafetería',       icon: '☕',
+                  preset: { template: 'stamp',   palette: 'amber',   font: 'syne',   businessName: 'Tu Cafetería',    cardName: 'Tarjeta Café',      pointsStyle: 'stamps', stampIcon: 'coffee'   } },
+                { id: 'restaurant',name: 'Restaurante',     icon: '🍽️',
+                  preset: { template: 'classic', palette: 'emerald', font: 'syne',   businessName: 'Tu Restaurante',  cardName: 'Club Gastronómico', pointsStyle: 'number'                        } },
+                { id: 'spa',       name: 'Spa & Wellness',  icon: '💆',
+                  preset: { template: 'classic', palette: 'violet',  font: 'outfit', businessName: 'Tu Spa',          cardName: 'Club Wellness',     pointsStyle: 'number'                        } },
+                { id: 'gym',       name: 'Gym / Fitness',   icon: '🏋️',
+                  preset: { template: 'stamp',   palette: 'coral',   font: 'syne',   businessName: 'Tu Gym',          cardName: 'Plan Fitness',      pointsStyle: 'stamps', stampIcon: 'dumbbell' } },
+                { id: 'classes',   name: 'Clases Privadas', icon: '📚',
+                  preset: { template: 'classic', palette: 'indigo',  font: 'outfit', businessName: 'Tu Academia',     cardName: 'Tarjeta Educativa', pointsStyle: 'number'                        } },
+                { id: 'salon',     name: 'Peluquería',      icon: '💇',
+                  preset: { template: 'stamp',   palette: 'teal',    font: 'syne',   businessName: 'Tu Salón',        cardName: 'Membership Card',   pointsStyle: 'stamps', stampIcon: 'scissors' } },
+                { id: 'retail',    name: 'Tienda / Retail', icon: '🛍️',
+                  preset: { template: 'classic', palette: 'indigo',  font: 'syne',   businessName: 'Tu Tienda',       cardName: 'VIP Member',        pointsStyle: 'number'                        } },
+                { id: 'bar',       name: 'Bar / Drinks',    icon: '🍺',
+                  preset: { template: 'stamp',   palette: 'violet',  font: 'syne',   businessName: 'Tu Bar',          cardName: 'Night Pass',        pointsStyle: 'stamps', stampIcon: 'cup-soda' } },
+              ];
 
               return (
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
 
                   {/* ══ PERSONALIZAR ══════════════════════════════ */}
                   <div style={{ marginBottom: 24 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <div style={{ marginBottom: 12 }}>
                       <span style={{ fontSize: 10, fontWeight: 700, color: '#F5F0EB', letterSpacing: '0.14em', textTransform: 'uppercase' }}>Personalizar</span>
-                      {!canPersonalize && <LockPill tier="basic" onUpgrade={() => upgrade('basic')} />}
                     </div>
 
-                    {!canPersonalize ? (
-                      <UpgradeBanner tier="basic" label="Elige entre todos los diseños y personaliza cada elemento de tu tarjeta." onUpgrade={() => upgrade('basic')} />
-                    ) : (
+                    {(
                       <>
                         {/* Diseño grid */}
                         <div style={{ fontSize: 9, color: '#4A4540', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Diseño</div>
@@ -606,6 +627,45 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                   {/* ══ PLANTILLAS ════════════════════════════════ */}
                   <div>
                     <div style={{ fontSize: 10, fontWeight: 700, color: '#F5F0EB', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 12 }}>Plantillas</div>
+
+                    {/* ── Two base styles ── */}
+                    <div style={{ fontSize: 9, color: '#4A4540', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Estilo base</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6, marginBottom: 18 }}>
+                      {BASE_STYLES.map(({ id, label, sub }) => {
+                        const BaseComp = CARD_RENDERERS[id];
+                        const isActive = s.template === id;
+                        return (
+                          <button
+                            key={id}
+                            type="button"
+                            onClick={() => set('template', id)}
+                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                          >
+                            <div style={{
+                              position: 'relative', width: colW, height: colH,
+                              borderRadius: 7, overflow: 'hidden',
+                              border: `2px solid ${isActive ? '#E8341A' : 'rgba(245,240,235,0.1)'}`,
+                              boxShadow: isActive ? '0 0 0 2px rgba(232,52,26,0.18)' : 'none',
+                              transition: 'all 0.15s',
+                            }}>
+                              <div style={{ position: 'absolute', top: 0, left: 0, width: 380, height: 230, transformOrigin: 'top left', transform: `scale(${colScale})`, pointerEvents: 'none' }}>
+                                <BaseComp s={s} pal={pal} font={font} pattern={pattern} W={380} H={230} noShadow />
+                              </div>
+                            </div>
+                            <div style={{ textAlign: 'center' }}>
+                              <div style={{ fontSize: 10, fontWeight: 700, color: isActive ? '#E8341A' : '#F5F0EB', transition: 'color 0.15s' }}>{label}</div>
+                              <div style={{ fontSize: 9, color: '#4A4540' }}>{sub}</div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Divider */}
+                    <div style={{ height: 1, background: 'rgba(245,240,235,0.07)', marginBottom: 14 }} />
+
+                    {/* ── By business ── */}
+                    <div style={{ fontSize: 9, color: '#4A4540', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Por negocio</div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
                       {BUSINESS_TEMPLATES.map(({ id, name, icon, preset }) => {
                         const mergedState: BuilderState = { ...s, ...preset };
@@ -661,12 +721,8 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                   </div>
                 </Section>
 
-                <Section label="Fondo personalizado (Color libre)" action={!canUse(tier, 'basic') ? <LockPill tier="basic" onUpgrade={() => upgrade('basic')} /> : undefined}>
-                  {canUse(tier, 'basic') ? (
-                    <input type="color" value={s.customPrimary ?? primaryColor} onChange={(e) => { set('customPrimary', e.target.value); set('customGradient', null); }} style={{ width: '100%', height: 40, borderRadius: 8, border: '1px solid rgba(245,240,235,0.12)', background: 'none', cursor: 'pointer', padding: 2 }} />
-                  ) : (
-                    <UpgradeBanner tier="basic" label="Elige el color exacto para generar tu fondo degradado." onUpgrade={() => upgrade('basic')} />
-                  )}
+                <Section label="Fondo personalizado (Color libre)">
+                  <input type="color" value={s.customPrimary ?? primaryColor} onChange={(e) => { set('customPrimary', e.target.value); set('customGradient', null); }} style={{ width: '100%', height: 40, borderRadius: 8, border: '1px solid rgba(245,240,235,0.12)', background: 'none', cursor: 'pointer', padding: 2 }} />
                 </Section>
 
 
@@ -693,17 +749,18 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
 
             {/* Colors → solo estilo del QR */}
             {activeTab === 'colors' && (
-              <Section label="Estilo del QR" action={!canUse(tier, 'basic') ? <LockPill tier="basic" onUpgrade={() => upgrade('basic')} /> : undefined}>
+              <Section label="Estilo del QR" action={!canUse(tier, 'elite') ? <LockPill tier="elite" onUpgrade={() => upgrade('elite')} /> : undefined}>
                 {(['simple', 'colored', 'logo'] as const).map((qs) => {
-                  const locked = qs !== 'simple' && !canUse(tier, 'basic');
+                  const locked = qs === 'logo' && !canUse(tier, 'elite');
                   return (
                     <div key={qs}
-                      onClick={() => locked ? upgrade('basic') : set('qrStyle', qs)}
+                      onClick={() => locked ? upgrade('elite') : set('qrStyle', qs)}
                       style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 7, cursor: locked ? 'not-allowed' : 'pointer', marginBottom: 4, background: s.qrStyle === qs ? '#201D18' : 'transparent', border: `1px solid ${s.qrStyle === qs ? 'rgba(245,240,235,0.12)' : 'transparent'}`, opacity: locked ? 0.4 : 1 }}
                     >
                       <QR size={28} color={qs === 'colored' ? pal.primary : qs === 'logo' ? '#A78BFA' : 'rgba(255,255,255,0.6)'} />
                       <span style={{ fontSize: 12 }}>{qs === 'simple' ? 'Simple (blanco)' : qs === 'colored' ? 'A color' : 'Con logo'}</span>
-                      {s.qrStyle === qs && <span style={{ marginLeft: 'auto', color: '#E8341A', fontSize: 12 }}>✓</span>}
+                      {locked && <Lock size={9} style={{ marginLeft: 'auto', color: '#A78BFA' }} />}
+                      {s.qrStyle === qs && !locked && <span style={{ marginLeft: 'auto', color: '#E8341A', fontSize: 12 }}>✓</span>}
                     </div>
                   );
                 })}
@@ -712,6 +769,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
 
             {/* Typography */}
             {activeTab === 'typography' && (
+              <>
               <Section label="Tipografía">
                 {FONTS.map((f) => {
                   const locked = !canUse(tier, f.tier);
@@ -758,6 +816,57 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                   );
                 })}
               </Section>
+
+              {/* Custom font — Elite only */}
+
+              <Section label="Fuente personalizada" action={!canUse(tier, 'elite') ? <LockPill tier="elite" onUpgrade={() => upgrade('elite')} /> : undefined}>
+                {!canUse(tier, 'elite') ? (
+                  <UpgradeBanner tier="elite" label="Sube cualquier fuente de Google Fonts o un archivo .woff2 propio y úsala en tu tarjeta." onUpgrade={() => upgrade('elite')} />
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div style={{ fontSize: 11, color: '#6B6560', lineHeight: 1.5 }}>
+                      Pega la URL de importación de Google Fonts o un archivo <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 4px', borderRadius: 3 }}>.woff2</code>.
+                    </div>
+                    <label style={{ display: 'block' }}>
+                      <div style={{ fontSize: 11, color: '#6B6560', marginBottom: 5, fontWeight: 500 }}>URL de la fuente</div>
+                      <input
+                        type="url"
+                        value={s.customFontUrl ?? ''}
+                        onChange={(e) => set('customFontUrl', e.target.value || undefined)}
+                        placeholder="https://fonts.googleapis.com/css2?family=..."
+                        style={{ width: '100%', background: '#201D18', border: '1px solid rgba(245,240,235,0.12)', borderRadius: 7, padding: '8px 10px', fontFamily: 'Space Grotesk,sans-serif', fontSize: 11, color: '#F5F0EB', outline: 'none', boxSizing: 'border-box' }}
+                      />
+                    </label>
+                    <label style={{ display: 'block' }}>
+                      <div style={{ fontSize: 11, color: '#6B6560', marginBottom: 5, fontWeight: 500 }}>Nombre CSS de la familia</div>
+                      <input
+                        type="text"
+                        value={s.customFontFamily ?? ''}
+                        onChange={(e) => set('customFontFamily', e.target.value || undefined)}
+                        placeholder="Ej: Roboto, Pacifico, MiFuente"
+                        style={{ width: '100%', background: '#201D18', border: '1px solid rgba(245,240,235,0.12)', borderRadius: 7, padding: '8px 10px', fontFamily: 'Space Grotesk,sans-serif', fontSize: 11, color: '#F5F0EB', outline: 'none', boxSizing: 'border-box' }}
+                      />
+                    </label>
+                    {s.customFontFamily && (
+                      <div style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(245,240,235,0.1)', background: '#0A0907' }}>
+                        <div style={{ fontSize: 9, color: '#4A4540', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>Preview</div>
+                        <div style={{ fontFamily: `'${s.customFontFamily}', sans-serif`, fontSize: 26, fontWeight: 700, color: '#F5F0EB', lineHeight: 1 }}>Aa Bb 123</div>
+                        <div style={{ fontFamily: `'${s.customFontFamily}', sans-serif`, fontSize: 11, color: '#6B6560', marginTop: 4 }}>{s.businessName || 'Tu Negocio'}</div>
+                      </div>
+                    )}
+                    {s.customFontFamily && (
+                      <button
+                        type="button"
+                        onClick={() => { set('customFontUrl', undefined); set('customFontFamily', undefined); }}
+                        style={{ fontSize: 10, color: '#6B6560', background: 'none', border: '1px solid rgba(245,240,235,0.08)', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 600 }}
+                      >
+                        Quitar fuente personalizada
+                      </button>
+                    )}
+                  </div>
+                )}
+              </Section>
+              </>
             )}
 
 
@@ -910,9 +1019,9 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                 <Section label="Elementos adicionales">
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                     <span style={{ fontSize: 12 }}>Badge de nivel</span>
-                    <Toggle on={s.showBadge && canUse(tier, 'basic')} onChange={() => set('showBadge', !s.showBadge)} disabled={!canUse(tier, 'basic')} />
+                    <Toggle on={s.showBadge} onChange={() => set('showBadge', !s.showBadge)} />
                   </div>
-                  {s.showBadge && canUse(tier, 'basic') && (
+                  {s.showBadge && (
                     <select
                       value={s.badgeText}
                       onChange={(e) => set('badgeText', e.target.value)}
@@ -923,9 +1032,8 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                   )}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                     <span style={{ fontSize: 12 }}>Número de miembro</span>
-                    <Toggle on={s.showMemberNum && canUse(tier, 'basic')} onChange={() => set('showMemberNum', !s.showMemberNum)} disabled={!canUse(tier, 'basic')} />
+                    <Toggle on={s.showMemberNum} onChange={() => set('showMemberNum', !s.showMemberNum)} />
                   </div>
-                  {!canUse(tier, 'basic') && <UpgradeBanner tier="basic" label="Activa badges, número de miembro y más con el plan Basic." onUpgrade={() => upgrade('basic')} />}
                 </Section>
 
                 <Section label="Efectos especiales" action={!canUse(tier, 'elite') ? <LockPill tier="elite" onUpgrade={() => upgrade('elite')} /> : undefined}>
@@ -939,7 +1047,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                 {/* Dev-only tier switcher */}
                 <Section label="Simular tier">
                   <div style={{ display: 'flex', gap: 6 }}>
-                    {(['free', 'basic', 'elite'] as Tier[]).map((t) => (
+                    {(['basic', 'elite'] as Tier[]).map((t) => (
                       <button
                         key={t}
                         type="button"
@@ -1186,7 +1294,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
 
           {/* Exportar */}
           <RightSection title="Exportar">
-            {([['PNG', 'Imagen de alta resolución', 'free'], ['PDF', 'Para impresión (85×54mm)', 'free'], ['SVG', 'Vectorial editable', 'basic'], ['Lote 50u', 'Para imprenta profesional', 'elite']] as const).map(([fmt, desc, req]) => {
+            {([['PNG', 'Imagen de alta resolución', 'free'], ['PDF', 'Para impresión (85×54mm)', 'free'], ['SVG', 'Vectorial editable', 'free'], ['Lote 50u', 'Para imprenta profesional', 'elite']] as const).map(([fmt, desc, req]) => {
               const locked = !canUse(tier, req);
               return (
                 <div key={fmt}

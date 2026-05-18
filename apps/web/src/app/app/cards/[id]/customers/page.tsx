@@ -67,7 +67,7 @@ export default async function CardCustomersPage({ params }: CustomersPageProps) 
         </div>
       </div>
 
-      <CustomerTable customers={customers} maxCustomers={maxCustomers} plan={org.plan} />
+      <CustomerTable customers={customers} maxCustomers={maxCustomers} plan={org.plan} pointsPerCheckin={card.pointsPerCheckin} />
     </div>
   );
 }

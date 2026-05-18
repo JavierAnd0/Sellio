@@ -24,6 +24,7 @@ export type StampIconId =
   | 'utensils' | 'pizza' | 'chef-hat' | 'sandwich'
   | 'scissors' | 'sparkles' | 'flower' | 'droplets'
   | 'shopping-bag' | 'tag' | 'shirt' | 'glasses'
+  | 'dumbbell'
   | 'custom';
 
 export interface Palette { id: string; primary: string; bg: string; name: string }
@@ -35,6 +36,8 @@ export interface BuilderState {
   customGradient: CustomGradient | null;
   customPrimary?: string;
   font: string;
+  customFontUrl?: string;
+  customFontFamily?: string;
   businessName: string;
   cardName: string;
   pattern: string;
@@ -242,6 +245,8 @@ export const DEFAULT_BUILDER: BuilderState = {
   palette: 'coral',
   customGradient: null,
   font: 'syne',
+  customFontUrl: undefined,
+  customFontFamily: undefined,
   businessName: 'Tu Negocio',
   cardName: 'Tarjeta de Fidelidad',
   pattern: 'none',
@@ -609,8 +614,12 @@ export function CardFromDesign({ design, primaryColor = '#E8341A', W = 380, H = 
   const customGradient = (design.customGradient as CustomGradient | null) ?? null;
   const fontId = (design.font as string) ?? 'syne';
   const patternId = (design.pattern as string) ?? 'none';
+  const customFontUrl = (design.customFontUrl as string) ?? undefined;
+  const customFontFamily = (design.customFontFamily as string) ?? undefined;
 
-  const font = FONTS.find((f) => f.id === fontId) ?? FONTS[0]!;
+  const font: FontOption = customFontFamily
+    ? { id: 'custom', display: customFontFamily, body: customFontFamily, name: 'Fuente personalizada', tier: 'elite' }
+    : (FONTS.find((f) => f.id === fontId) ?? FONTS[0]!);
   const pattern = PATTERNS.find((p) => p.id === patternId) ?? PATTERNS[0]!;
 
   const resolvedPalettes = BASE_PALETTES.map((p) =>
@@ -627,6 +636,8 @@ export function CardFromDesign({ design, primaryColor = '#E8341A', W = 380, H = 
     customGradient,
     customPrimary: (design.customPrimary as string) ?? undefined,
     font: fontId,
+    customFontUrl,
+    customFontFamily,
     businessName: (design.businessName as string) ?? 'Tu Negocio',
     cardName: (design.cardName as string) ?? 'Member Card',
     pattern: patternId,
@@ -647,5 +658,10 @@ export function CardFromDesign({ design, primaryColor = '#E8341A', W = 380, H = 
   };
 
   const CardComp = CARD_RENDERERS[template] ?? ClassicCard;
-  return <CardComp s={s} pal={pal} font={font} pattern={pattern} W={W} H={H} noShadow={noShadow} />;
+  return (
+    <>
+      {customFontUrl && <link rel="stylesheet" href={customFontUrl} />}
+      <CardComp s={s} pal={pal} font={font} pattern={pattern} W={W} H={H} noShadow={noShadow} />
+    </>
+  );
 }

@@ -26,6 +26,34 @@ export type AddCustomerResult =
   | { ok: true; membership: Membership }
   | { ok: false; error: string; field?: string };
 
+export type AddPointsResult =
+  | { ok: true; newPoints: number }
+  | { ok: false; error: string };
+
+export async function addPointsAction(
+  membershipId: string,
+  points: number,
+): Promise<AddPointsResult> {
+  const db = await createClient();
+  const {
+    data: { user },
+  } = await db.auth.getUser();
+
+  if (!user) return { ok: false, error: 'Sesión expirada.' };
+
+  try {
+    const newPoints = await new SupabaseMembershipRepository().addPoints(
+      membershipId,
+      points,
+      'manual',
+      user.id,
+    );
+    return { ok: true, newPoints };
+  } catch {
+    return { ok: false, error: 'Error al sumar los puntos.' };
+  }
+}
+
 export async function addCustomerAction(
   cardId: string,
   formData: FormData,

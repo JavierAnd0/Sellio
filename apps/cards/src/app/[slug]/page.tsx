@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { headers } from 'next/headers';
 
 import { createAdminClient } from '@sellio/db/admin';
 
@@ -41,6 +42,7 @@ export default async function MembershipSlugPage({ params }: SlugPageProps) {
         org_id,
         organizations (
           name,
+          slug,
           primary_color
         )
       ),
@@ -66,7 +68,7 @@ export default async function MembershipSlugPage({ params }: SlugPageProps) {
     design: Record<string, unknown> | null;
     active: boolean;
     org_id: string;
-    organizations: { name: string; primary_color: string } | null;
+    organizations: { name: string; slug: string; primary_color: string } | null;
   } | null;
 
   const customer = membership.customers as {
@@ -87,6 +89,15 @@ export default async function MembershipSlugPage({ params }: SlugPageProps) {
     org?.primary_color ??
     '#E8341A';
 
+  const h = await headers();
+  const origin =
+    process.env.NEXT_PUBLIC_CARDS_URL ??
+    (h.get('x-forwarded-proto') && h.get('x-forwarded-host')
+      ? `${h.get('x-forwarded-proto')}://${h.get('x-forwarded-host')}`
+      : 'http://localhost:3001');
+
+  const checkInUrl = org?.slug ? `${origin}/check-in/${org.slug}` : null;
+
   return (
     <MembershipCardView
       businessName={org?.name ?? ''}
@@ -96,6 +107,7 @@ export default async function MembershipSlugPage({ params }: SlugPageProps) {
       rewardDescription={card.reward_description}
       customerName={customer?.name ?? null}
       primaryColor={primaryColor}
+      checkInUrl={checkInUrl}
     />
   );
 }
