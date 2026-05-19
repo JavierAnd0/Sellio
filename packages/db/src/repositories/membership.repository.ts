@@ -12,6 +12,7 @@ function membershipRowToEntity(row: MembershipRow): Membership {
     customerId: row.customer_id,
     slug: row.slug,
     points: row.points,
+    memberNumber: row.member_number,
     joinedAt: new Date(row.joined_at),
     lastActivityAt: row.last_activity_at ? new Date(row.last_activity_at) : null,
   };

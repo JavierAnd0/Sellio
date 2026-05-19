@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
 import { createClient } from '@sellio/db/server';
-import { SupabaseCardRepository, SupabaseOrganizationRepository } from '@sellio/db/repositories';
+import { SupabaseCardRepository, SupabaseOrganizationRepository, SupabaseMembershipRepository } from '@sellio/db/repositories';
 import { isTrialExpired } from '@/lib/trial';
 
 const cardSchema = z.object({
@@ -135,6 +135,14 @@ export async function updateCardAction(
   const { name, description, pointsPerCheckin, pointsForReward, rewardDescription, maxMembers, design } =
     parsed.data;
 
+  // Block changing stamp/points goal if card already has active members
+  if (pointsForReward !== card.pointsForReward) {
+    const activeCount = await new SupabaseMembershipRepository().countByCard(id);
+    if (activeCount > 0) {
+      return { ok: false, error: 'No puedes cambiar el número de sellos mientras la tarjeta tenga usuarios activos.', field: 'pointsForReward' };
+    }
+  }
+
   try {
     await cardRepo.update(id, {
       name,
@@ -151,6 +159,17 @@ export async function updateCardAction(
   }
 
   return { ok: true };
+}
+
+export async function getCardActiveUserCount(cardId: string): Promise<number> {
+  const db = await createClient();
+  const { data: { user } } = await db.auth.getUser();
+  if (!user) return 0;
+  try {
+    return await new SupabaseMembershipRepository().countByCard(cardId);
+  } catch {
+    return 0;
+  }
 }
 
 export async function deleteCardAction(id: string): Promise<never> {

@@ -11,9 +11,10 @@ import { useUiStore } from '@/lib/stores/ui.store';
 import type { OrgPlan } from '@sellio/db';
 
 const PLAN_CONFIG: Record<OrgPlan, { label: string; maxCards: number | null; maxCustomers: number | null }> = {
-  free:  { label: 'Prueba gratuita', maxCards: 5,    maxCustomers: 500  },
-  basic: { label: 'Plan Basic',      maxCards: 5,    maxCustomers: 500  },
-  elite: { label: 'Plan Elite',      maxCards: null, maxCustomers: null },
+  free:       { label: 'Prueba gratuita', maxCards: 5,    maxCustomers: 500  },
+  basic:      { label: 'Plan Basic',      maxCards: 5,    maxCustomers: 500  },
+  elite:      { label: 'Plan Elite',      maxCards: null, maxCustomers: null },
+  enterprise: { label: 'Enterprise',      maxCards: null, maxCustomers: null },
 };
 
 interface SidebarProps {
@@ -102,7 +103,8 @@ export function Sidebar({ plan = 'free', trialDaysLeft, totalCards = 0, totalCus
   const tNav = useTranslations('nav');
   const tSidebar = useTranslations('sidebar');
   const config = PLAN_CONFIG[plan];
-  const isElite = plan === 'elite';
+  const isElite = plan === 'elite' || plan === 'enterprise';
+  const hasAnalytics = plan === 'elite' || plan === 'enterprise';
   const isTrial = plan === 'free' && trialDaysLeft !== null && trialDaysLeft !== undefined && trialDaysLeft > 0;
   const isTrialExpired = plan === 'free' && trialDaysLeft === 0;
 
@@ -170,11 +172,19 @@ export function Sidebar({ plan = 'free', trialDaysLeft, totalCards = 0, totalCus
                 {tNav('customers')}
               </SidebarItem>
 
-              <div className="mt-2 pointer-events-none opacity-50 grayscale">
-                <SidebarItem href="/app/analytics" icon={StarIcon} badge="PRO">
-                  {tNav('analytics')}
-                </SidebarItem>
-              </div>
+              {hasAnalytics ? (
+                <div className="mt-2">
+                  <SidebarItem href="/app/analytics" icon={StarIcon}>
+                    {tNav('analytics')}
+                  </SidebarItem>
+                </div>
+              ) : (
+                <div className="mt-2 pointer-events-none opacity-50 grayscale">
+                  <SidebarItem href="/app/analytics" icon={StarIcon} badge="ELITE">
+                    {tNav('analytics')}
+                  </SidebarItem>
+                </div>
+              )}
               <SidebarItem
                 href="/app/settings/profile"
                 icon={DiamondIcon}

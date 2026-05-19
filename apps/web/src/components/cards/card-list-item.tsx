@@ -7,14 +7,16 @@ import { CardFromDesign } from './card-renderer';
 
 interface CardListItemProps {
   card: Card;
+  orgName?: string;
   memberCount?: number;
   totalPoints?: number;
   totalScans?: number;
 }
 
-export function CardListItem({ card, memberCount = 0, totalPoints = 0, totalScans = 0 }: CardListItemProps) {
+export function CardListItem({ card, orgName, memberCount = 0, totalPoints = 0, totalScans = 0 }: CardListItemProps) {
   const design = (card.design ?? {}) as Record<string, unknown>;
   const primaryColor = typeof design.primaryColor === 'string' ? design.primaryColor : '#E8341A';
+  const businessName = typeof design.businessName === 'string' ? design.businessName : orgName;
 
   return (
     <div className="group relative overflow-hidden rounded-[28px] border border-border/40 bg-surface-2/60 p-6 shadow-sm transition-all hover:border-border/60 hover:shadow-md dark:bg-surface-2">
@@ -24,7 +26,7 @@ export function CardListItem({ card, memberCount = 0, totalPoints = 0, totalScan
           <h3 className="line-clamp-2 font-display text-[18px] xl:text-[20px] font-black leading-[1.1] tracking-tight text-fg">
             {card.name}
           </h3>
-          <p className="mt-1 text-[13px] font-medium text-muted">Café Central</p>
+          {businessName && <p className="mt-1 text-[13px] font-medium text-muted">{businessName}</p>}
         </div>
         {card.active ? (
           <span className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-[#E0F2E9] px-3 py-1 text-[11px] font-bold text-[#10B981] dark:bg-emerald-900/30">

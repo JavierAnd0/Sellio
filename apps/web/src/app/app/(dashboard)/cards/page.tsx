@@ -116,6 +116,7 @@ export default async function CardsPage() {
             <CardListItem
               key={card.id}
               card={card}
+              orgName={org.name}
               memberCount={statsMap[card.id]?.memberCount}
               totalPoints={statsMap[card.id]?.totalPoints}
               totalScans={statsMap[card.id]?.totalScans}

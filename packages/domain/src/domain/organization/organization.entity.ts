@@ -14,7 +14,7 @@ export const organizationSchema = z.object({
   primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default('#E8341A'),
   country: z.string().length(2).default('CO'),
   timezone: z.string().default('America/Bogota'),
-  plan: z.enum(['free', 'basic', 'elite']).default('free'),
+  plan: z.enum(['free', 'basic', 'elite', 'enterprise']).default('free'),
   trialEndsAt: z.date().nullable().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),

@@ -3,7 +3,7 @@
 import { type FormEvent, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, ArrowRight, Hash, Stamp } from 'lucide-react';
+import { ChevronLeft, ArrowRight, Hash, Stamp, Lock } from 'lucide-react';
 
 import { createCardAction } from '@/actions/cards/card.actions';
 
@@ -53,6 +53,8 @@ export function NewCardSetup({ orgName, primaryColor }: NewCardSetupProps) {
   const [cardName, setCardName] = useState('');
   const [rewardDescription, setRewardDescription] = useState('');
   const [stampCount, setStampCount] = useState(10);
+  const [stampConfirmed, setStampConfirmed] = useState(false);
+  const [showStampWarning, setShowStampWarning] = useState(false);
   const [pointsPerCheckin, setPointsPerCheckin] = useState(10);
   const [pointsForReward, setPointsForReward] = useState(100);
   const [description, setDescription] = useState('');
@@ -303,22 +305,59 @@ export function NewCardSetup({ orgName, primaryColor }: NewCardSetupProps) {
             </div>
 
             {isStamps ? (
-              /* Stamps mode: only stamp count */
+              /* Stamps mode: stamp count with confirm lock */
               <div>
                 <label style={LABEL}>Número de sellos *</label>
-                <input
-                  type="number"
-                  value={stampCount}
-                  onChange={(e) => setStampCount(Math.max(2, Math.min(20, Number(e.target.value) || 10)))}
-                  min={2}
-                  max={20}
-                  required
-                  style={{ ...FIELD, borderColor: fieldErrors.pointsForReward ? '#F87171' : 'rgba(245,240,235,0.12)' }}
-                />
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input
+                    type="number"
+                    value={stampCount}
+                    onChange={(e) => !stampConfirmed && setStampCount(Math.max(2, Math.min(20, Number(e.target.value) || 10)))}
+                    min={2}
+                    max={20}
+                    disabled={stampConfirmed}
+                    required
+                    style={{ ...FIELD, flex: 1, borderColor: fieldErrors.pointsForReward ? '#F87171' : 'rgba(245,240,235,0.12)', cursor: stampConfirmed ? 'not-allowed' : 'text', color: stampConfirmed ? 'rgba(245,240,235,0.4)' : undefined, background: stampConfirmed ? '#111009' : '#1A1712' }}
+                  />
+                  {stampConfirmed ? (
+                    <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.25)', borderRadius: 9, padding: '10px 12px' }}>
+                      <Lock size={11} color="#4ADE80" />
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#4ADE80' }}>Confirmado</span>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowStampWarning(true)}
+                      style={{ flexShrink: 0, background: 'rgba(232,52,26,0.1)', border: '1px solid rgba(232,52,26,0.3)', borderRadius: 9, padding: '10px 14px', fontSize: 12, fontWeight: 700, color: '#E8341A', cursor: 'pointer', fontFamily: 'Space Grotesk,sans-serif' }}
+                    >
+                      Confirmar
+                    </button>
+                  )}
+                </div>
                 {fieldErrors.pointsForReward
                   ? <span style={{ ...HINT, color: '#F87171' }}>{fieldErrors.pointsForReward}</span>
-                  : <span style={HINT}>El cliente necesita completar esta cantidad de sellos (máx. 20)</span>
+                  : <span style={HINT}>{stampConfirmed ? `${stampCount} sellos confirmados. Podrás cambiarlo solo si la tarjeta no tiene usuarios activos.` : 'Confirma el número antes de crear la tarjeta (máx. 20). No podrás cambiarlo si ya tienes usuarios.'}</span>
                 }
+                {/* Confirm dialog */}
+                {showStampWarning && (
+                  <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+                    <div style={{ background: '#1A1712', border: '1px solid rgba(245,240,235,0.12)', borderRadius: 16, padding: 28, maxWidth: 360, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.7)' }}>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: '#F5F0EB', marginBottom: 12, fontFamily: 'Syne,sans-serif' }}>Confirmar número de sellos</div>
+                      <div style={{ fontSize: 13, color: '#8A8480', lineHeight: 1.7, marginBottom: 22 }}>
+                        ¿Confirmas <strong style={{ color: '#F5F0EB' }}>{stampCount} sellos</strong> para esta tarjeta?<br />
+                        Una vez que tengas usuarios activos, <strong style={{ color: '#F87171' }}>este número no podrá cambiarse</strong>.
+                      </div>
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <button type="button" onClick={() => setShowStampWarning(false)} style={{ flex: 1, background: 'rgba(245,240,235,0.06)', border: '1px solid rgba(245,240,235,0.12)', borderRadius: 10, padding: '11px 0', fontSize: 13, fontWeight: 600, color: '#8A8480', cursor: 'pointer', fontFamily: 'Space Grotesk,sans-serif' }}>
+                          Cancelar
+                        </button>
+                        <button type="button" onClick={() => { setStampConfirmed(true); setShowStampWarning(false); }} style={{ flex: 1, background: '#E8341A', border: 'none', borderRadius: 10, padding: '11px 0', fontSize: 13, fontWeight: 700, color: '#fff', cursor: 'pointer', fontFamily: 'Space Grotesk,sans-serif' }}>
+                          Sí, confirmar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               /* Points mode: per-visit + threshold */
@@ -389,17 +428,19 @@ export function NewCardSetup({ orgName, primaryColor }: NewCardSetupProps) {
 
             <button
               type="submit"
-              disabled={isPending}
+              disabled={isPending || (isStamps && !stampConfirmed)}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                background: isPending ? '#6B6560' : isStamps ? primaryColor : '#A78BFA',
-                color: '#fff', border: 'none', borderRadius: 10, padding: '14px 24px',
+                background: isPending || (isStamps && !stampConfirmed) ? '#3A3530' : isStamps ? primaryColor : '#A78BFA',
+                color: isPending || (isStamps && !stampConfirmed) ? '#6B6560' : '#fff',
+                border: 'none', borderRadius: 10, padding: '14px 24px',
                 fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 15,
-                cursor: isPending ? 'not-allowed' : 'pointer', transition: 'background 0.15s', marginTop: 4,
+                cursor: isPending || (isStamps && !stampConfirmed) ? 'not-allowed' : 'pointer', transition: 'background 0.15s', marginTop: 4,
               }}
             >
-              {isPending ? 'Creando...' : 'Crear y diseñar'}
-              {!isPending && <ArrowRight size={16} />}
+              {isPending ? 'Creando...' : isStamps && !stampConfirmed ? 'Confirma los sellos primero' : 'Crear y diseñar'}
+              {!isPending && stampConfirmed && <ArrowRight size={16} />}
+              {!isPending && !isStamps && <ArrowRight size={16} />}
             </button>
 
             <p style={{ fontSize: 11, color: '#4A4540', textAlign: 'center' }}>

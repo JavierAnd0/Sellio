@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 
 import { createClient } from '@sellio/db/server';
-import { SupabaseCardRepository, SupabaseOrganizationRepository } from '@sellio/db/repositories';
+import { SupabaseCardRepository, SupabaseOrganizationRepository, SupabaseMembershipRepository } from '@sellio/db/repositories';
 
 import { CardForm } from '@/components/cards/card-form';
 import { BuilderNav } from '@/components/cards/builder-nav';
@@ -24,9 +24,10 @@ export default async function CardBuilderPage({ params }: CardBuilderPageProps) 
 
   if (!user) redirect('/login');
 
-  const [org, card] = await Promise.all([
+  const [org, card, activeUserCount] = await Promise.all([
     new SupabaseOrganizationRepository().findByOwner(user.id),
     new SupabaseCardRepository().findById(id),
+    new SupabaseMembershipRepository().countByCard(id).catch(() => 0),
   ]);
 
   if (!org) redirect('/app/dashboard');
@@ -50,6 +51,7 @@ export default async function CardBuilderPage({ params }: CardBuilderPageProps) 
           autoSave
           exitHref={`/app/cards/${id}`}
           orgTier={getEffectiveTier(org)}
+          cardActiveUserCount={activeUserCount}
         />
       </div>
     </>

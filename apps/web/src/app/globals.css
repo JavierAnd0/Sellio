@@ -6,7 +6,7 @@
 /* Card builder scrollbar */
 .sellio-builder ::-webkit-scrollbar { width: 3px; height: 3px; }
 .sellio-builder ::-webkit-scrollbar-track { background: transparent; }
-.sellio-builder ::-webkit-scrollbar-thumb { background: #2E2A26; border-radius: 2px; }
+.sellio-builder ::-webkit-scrollbar-thumb { background: var(--cb-deep); border-radius: 2px; }
 
 @layer base {
   :root {
@@ -17,6 +17,18 @@
     --border: 245 240 235;
     --muted: 107 101 96;
     --subtle: 58 53 48;
+    /* Card builder theme tokens — dark default */
+    --cb-bg: #0D0B09;
+    --cb-panel: #111009;
+    --cb-panel-2: #1A1713;
+    --cb-input: #201D18;
+    --cb-fg: #F5F0EB;
+    --cb-muted: #6B6560;
+    --cb-subtle: #4A4540;
+    --cb-dim: #3A3530;
+    --cb-deep: #2E2A26;
+    --cb-fg-rgb: 245, 240, 235;
+    --cb-bg-rgb: 13, 11, 9;
   }
 
   /* System: follow OS preference when no explicit class is set */
@@ -29,6 +41,18 @@
       --border: 0 0 0;
       --muted: 122 110 102;
       --subtle: 208 200 192;
+      /* Card builder — light */
+      --cb-bg: #F2EEE8;
+      --cb-panel: #E8E4DC;
+      --cb-panel-2: #DDD9D0;
+      --cb-input: #D0CCC4;
+      --cb-fg: #1A1713;
+      --cb-muted: #6B6560;
+      --cb-subtle: #8A8580;
+      --cb-dim: #A09A95;
+      --cb-deep: #B5B0AB;
+      --cb-fg-rgb: 26, 23, 19;
+      --cb-bg-rgb: 242, 238, 232;
     }
   }
 
@@ -41,6 +65,18 @@
     --border: 0 0 0;
     --muted: 122 110 102;
     --subtle: 208 200 192;
+    /* Card builder — light */
+    --cb-bg: #F2EEE8;
+    --cb-panel: #E8E4DC;
+    --cb-panel-2: #DDD9D0;
+    --cb-input: #D0CCC4;
+    --cb-fg: #1A1713;
+    --cb-muted: #6B6560;
+    --cb-subtle: #8A8580;
+    --cb-dim: #A09A95;
+    --cb-deep: #B5B0AB;
+    --cb-fg-rgb: 26, 23, 19;
+    --cb-bg-rgb: 242, 238, 232;
   }
 
   /* Explicit dark — applied directly to html element, beats media query */
@@ -52,6 +88,18 @@
     --border: 245 240 235;
     --muted: 107 101 96;
     --subtle: 58 53 48;
+    /* Card builder — dark */
+    --cb-bg: #0D0B09;
+    --cb-panel: #111009;
+    --cb-panel-2: #1A1713;
+    --cb-input: #201D18;
+    --cb-fg: #F5F0EB;
+    --cb-muted: #6B6560;
+    --cb-subtle: #4A4540;
+    --cb-dim: #3A3530;
+    --cb-deep: #2E2A26;
+    --cb-fg-rgb: 245, 240, 235;
+    --cb-bg-rgb: 13, 11, 9;
   }
 
   * {

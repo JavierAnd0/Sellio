@@ -6,6 +6,7 @@ export const membershipSchema = z.object({
   customerId: z.string().uuid(),
   slug: z.string(),
   points: z.number().int().min(0),
+  memberNumber: z.number().int().min(1),
   joinedAt: z.date(),
   lastActivityAt: z.date().nullable(),
 });

@@ -4,7 +4,8 @@ import type { Tier } from '@/components/cards/card-renderer';
 export const TRIAL_DAYS = 20;
 
 export function getEffectiveTier(org: Organization): Tier {
-  if (org.plan === 'basic' || org.plan === 'elite') return org.plan;
+  if (org.plan === 'enterprise' || org.plan === 'elite') return org.plan;
+  if (org.plan === 'basic') return 'basic';
   if (org.trialEndsAt && new Date() < org.trialEndsAt) return 'basic';
   return 'free';
 }

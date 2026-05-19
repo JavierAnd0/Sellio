@@ -81,6 +81,7 @@ export class SupabaseCustomerRepository implements ICustomerRepository {
           id: string;
           slug: string;
           points: number;
+          memberNumber: number;
           joinedAt: Date;
           lastActivityAt: Date | null;
         };
@@ -105,6 +106,7 @@ export class SupabaseCustomerRepository implements ICustomerRepository {
           id: row.id,
           slug: row.slug,
           points: row.points,
+          memberNumber: row.member_number,
           joinedAt: new Date(row.joined_at),
           lastActivityAt: row.last_activity_at ? new Date(row.last_activity_at) : null,
         },

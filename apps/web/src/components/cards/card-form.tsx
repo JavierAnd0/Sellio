@@ -1,10 +1,10 @@
 'use client';
 
-import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import React, { type FormEvent, useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { type LucideIcon, Lock, ChevronLeft, Download as DownloadIcon, Printer as PrinterIcon, Building2, Tag, Star, User, QrCode, Badge, Coffee, UtensilsCrossed, Leaf, Dumbbell, BookOpen, Scissors, ShoppingBag, Beer, Ticket } from 'lucide-react';
+import { type LucideIcon, Lock, ChevronLeft, Download as DownloadIcon, Printer as PrinterIcon, Building2, Tag, Star, User, QrCode, Badge, Coffee, UtensilsCrossed, Leaf, Dumbbell, BookOpen, Scissors, ShoppingBag, Beer, Ticket, Croissant, Home, Monitor, Gem, Music } from 'lucide-react';
 
 import { Alert, Button } from '@sellio/ui';
 import type { Card } from '@sellio/domain';
@@ -16,6 +16,7 @@ import {
   type CustomGradient, type BuilderState, type StampIconId, type FontOption,
   canUse, BASE_PALETTES, PATTERNS, FONTS, TEMPLATES,
   BADGE_OPTIONS, POINTS_STYLES, STAMP_CATEGORIES, STAMP_ICONS_EXTENDED, DEFAULT_BUILDER, QR, ClassicCard, CARD_RENDERERS,
+  type FreeLayoutElem, defaultFreeElems, FreeLayoutOverlay, SNAP_POINTS,
 } from './card-renderer';
 
 // ── Types ──────────────────────────────────────────────────────
@@ -26,6 +27,7 @@ interface CardFormProps {
   autoSave?: boolean;
   exitHref?: string;
   orgTier?: Tier;
+  cardActiveUserCount?: number;
 }
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
@@ -49,7 +51,7 @@ function Toggle({ on, onChange, disabled }: { on: boolean; onChange: () => void;
     <button
       type="button"
       onClick={disabled ? undefined : onChange}
-      style={{ width: 36, height: 20, borderRadius: 10, background: on && !disabled ? '#E8341A' : '#2E2A26', position: 'relative', border: 'none', cursor: disabled ? 'not-allowed' : 'pointer', transition: 'background 0.2s', opacity: disabled ? 0.4 : 1, flexShrink: 0 }}
+      style={{ width: 36, height: 20, borderRadius: 10, background: on && !disabled ? '#E8341A' : 'var(--cb-deep)', position: 'relative', border: 'none', cursor: disabled ? 'not-allowed' : 'pointer', transition: 'background 0.2s', opacity: disabled ? 0.4 : 1, flexShrink: 0 }}
     >
       <span style={{ position: 'absolute', top: 2, left: on && !disabled ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
     </button>
@@ -60,7 +62,7 @@ function UpgradeBanner({ label, onUpgrade }: { tier: string; label: string; onUp
   return (
     <div style={{ background: 'linear-gradient(135deg,rgba(167,139,250,0.08),rgba(167,139,250,0.04))', border: '1px solid rgba(167,139,250,0.18)', borderRadius: 10, padding: '12px 14px', marginTop: 10 }}>
       <div style={{ fontSize: 12, fontWeight: 700, color: '#A78BFA', marginBottom: 4, fontFamily: 'Syne,sans-serif', display: 'flex', alignItems: 'center', gap: 5 }}><Lock size={11} /> Requiere Elite</div>
-      <div style={{ fontSize: 11, color: '#6B6560', lineHeight: 1.5, marginBottom: 10 }}>{label}</div>
+      <div style={{ fontSize: 11, color: 'var(--cb-muted)', lineHeight: 1.5, marginBottom: 10 }}>{label}</div>
       <button
         type="button"
         onClick={onUpgrade}
@@ -72,13 +74,81 @@ function UpgradeBanner({ label, onUpgrade }: { tier: string; label: string; onUp
   );
 }
 
+function StampCountField({ value, onChange, activeUserCount, error }: {
+  value: number; onChange: (v: number) => void; activeUserCount: number; error?: string;
+}) {
+  const [confirmed, setConfirmed] = React.useState(false);
+  const [showWarning, setShowWarning] = React.useState(false);
+  const isLocked = activeUserCount > 0 || confirmed;
+
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ fontSize: 11, color: 'var(--cb-muted)', marginBottom: 5, fontWeight: 500 }}>Número de sellos</div>
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+        <input
+          type="number"
+          value={value}
+          min={2}
+          max={20}
+          disabled={isLocked}
+          onChange={(e) => !isLocked && onChange(Math.max(2, Math.min(20, Number(e.target.value) || 2)))}
+          style={{ flex: 1, background: isLocked ? 'rgba(var(--cb-fg-rgb),0.04)' : 'var(--cb-input)', border: `1px solid ${error ? '#F87171' : 'rgba(var(--cb-fg-rgb),0.12)'}`, borderRadius: 7, padding: '8px 10px', fontFamily: 'Space Grotesk,sans-serif', fontSize: 12, color: isLocked ? 'var(--cb-muted)' : 'var(--cb-fg)', outline: 'none', cursor: isLocked ? 'not-allowed' : 'text' }}
+        />
+        {!isLocked && (
+          <button
+            type="button"
+            onClick={() => setShowWarning(true)}
+            style={{ flexShrink: 0, background: 'rgba(232,52,26,0.1)', border: '1px solid rgba(232,52,26,0.3)', borderRadius: 7, padding: '7px 10px', fontSize: 11, fontWeight: 700, color: '#E8341A', cursor: 'pointer', fontFamily: 'Space Grotesk,sans-serif' }}
+          >
+            Confirmar
+          </button>
+        )}
+        {isLocked && (
+          <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4, background: activeUserCount > 0 ? 'rgba(248,113,113,0.08)' : 'rgba(74,222,128,0.08)', border: `1px solid ${activeUserCount > 0 ? 'rgba(248,113,113,0.25)' : 'rgba(74,222,128,0.25)'}`, borderRadius: 7, padding: '6px 8px' }}>
+            <Lock size={10} color={activeUserCount > 0 ? '#F87171' : '#4ADE80'} />
+            <span style={{ fontSize: 9, fontWeight: 700, color: activeUserCount > 0 ? '#F87171' : '#4ADE80' }}>
+              {activeUserCount > 0 ? `${activeUserCount} usuario${activeUserCount !== 1 ? 's' : ''}` : 'Confirmado'}
+            </span>
+          </div>
+        )}
+      </div>
+      {error && <span style={{ fontSize: 10, color: '#F87171', display: 'block', marginTop: 3 }}>{error}</span>}
+      {!isLocked && (
+        <div style={{ fontSize: 9, color: 'var(--cb-dim)', marginTop: 4, lineHeight: 1.4 }}>
+          Una vez que la tarjeta tenga usuarios activos, este número no podrá cambiarse.
+        </div>
+      )}
+      {/* Confirm dialog */}
+      {showWarning && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <div style={{ background: 'var(--cb-panel)', border: '1px solid rgba(var(--cb-fg-rgb),0.12)', borderRadius: 14, padding: 24, maxWidth: 340, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--cb-fg)', marginBottom: 10, fontFamily: 'Syne,sans-serif' }}>Confirmar número de sellos</div>
+            <div style={{ fontSize: 12, color: 'var(--cb-muted)', lineHeight: 1.6, marginBottom: 18 }}>
+              ¿Confirmas <strong style={{ color: 'var(--cb-fg)' }}>{value} sellos</strong> para esta tarjeta?<br />
+              Una vez que la tarjeta tenga usuarios activos, <strong style={{ color: '#F87171' }}>este número no podrá cambiarse</strong>.
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="button" onClick={() => setShowWarning(false)} style={{ flex: 1, background: 'rgba(var(--cb-fg-rgb),0.06)', border: '1px solid rgba(var(--cb-fg-rgb),0.12)', borderRadius: 8, padding: '9px 0', fontSize: 12, fontWeight: 600, color: 'var(--cb-muted)', cursor: 'pointer', fontFamily: 'Space Grotesk,sans-serif' }}>
+                Cancelar
+              </button>
+              <button type="button" onClick={() => { setConfirmed(true); setShowWarning(false); }} style={{ flex: 1, background: '#E8341A', border: 'none', borderRadius: 8, padding: '9px 0', fontSize: 12, fontWeight: 700, color: '#fff', cursor: 'pointer', fontFamily: 'Space Grotesk,sans-serif' }}>
+                Sí, confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CtrlInput({ label, value, onChange, type = 'text', placeholder, maxLength, error }: {
   label: string; value: string; onChange: (v: string) => void;
   type?: 'text' | 'number'; placeholder?: string; maxLength?: number; error?: string;
 }) {
   return (
     <label style={{ display: 'block', marginBottom: 12 }}>
-      <div style={{ fontSize: 11, color: '#6B6560', marginBottom: 5, fontWeight: 500 }}>{label}</div>
+      <div style={{ fontSize: 11, color: 'var(--cb-muted)', marginBottom: 5, fontWeight: 500 }}>{label}</div>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -86,7 +156,7 @@ function CtrlInput({ label, value, onChange, type = 'text', placeholder, maxLeng
         placeholder={placeholder}
         maxLength={maxLength}
         min={type === 'number' ? 1 : undefined}
-        style={{ width: '100%', background: '#201D18', border: '1px solid rgba(245,240,235,0.12)', borderRadius: 7, padding: '8px 10px', fontFamily: 'Space Grotesk,sans-serif', fontSize: 12, color: '#F5F0EB', outline: 'none' }}
+        style={{ width: '100%', background: 'var(--cb-input)', border: '1px solid rgba(var(--cb-fg-rgb),0.12)', borderRadius: 7, padding: '8px 10px', fontFamily: 'Space Grotesk,sans-serif', fontSize: 12, color: 'var(--cb-fg)', outline: 'none' }}
       />
       {error && <span style={{ fontSize: 10, color: '#F87171', display: 'block', marginTop: 3 }}>{error}</span>}
     </label>
@@ -95,7 +165,7 @@ function CtrlInput({ label, value, onChange, type = 'text', placeholder, maxLeng
 
 // ── CardForm ──────────────────────────────────────────────────
 
-export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exitHref, orgTier = 'elite' }: CardFormProps) {
+export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exitHref, orgTier = 'elite', cardActiveUserCount = 0 }: CardFormProps) {
   const isEdit = !!card;
   const router = useRouter();
 
@@ -121,6 +191,9 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
       qrStyle: (savedDesign?.qrStyle as BuilderState['qrStyle']) ?? 'simple',
       stampIcon: (savedDesign?.stampIcon as StampIconId) ?? DEFAULT_BUILDER.stampIcon,
       customStampUrl: (savedDesign?.customStampUrl as string) ?? undefined,
+      backBg: (savedDesign?.backBg as BuilderState['backBg']) ?? 'warm',
+      freeLayout: (savedDesign?.freeLayout as boolean) ?? false,
+      freeElems: Array.isArray(savedDesign?.freeElems) ? (savedDesign.freeElems as FreeLayoutElem[]) : [],
       customLayout: (savedDesign?.customLayout as BuilderState['customLayout']) ?? 'stack',
       customElemBiz:      (savedDesign?.customElemBiz      as boolean) ?? true,
       customElemCardName: (savedDesign?.customElemCardName as boolean) ?? true,
@@ -157,6 +230,13 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
   const walletTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevDesignSig = useRef('');
   const cardRef = useRef<HTMLDivElement>(null);
+
+  // Face switcher — which face is currently being edited
+  const [activeView, setActiveView] = useState<'front' | 'back'>('front');
+
+  // Free layout drag state
+  const freeDragRef = useRef<{ elemId: string; startPtrX: number; startPtrY: number; startElemX: number; startElemY: number } | null>(null);
+  const [freeLivePos, setFreeLivePos] = useState<{ id: string; x: number; y: number } | null>(null);
 
   // 3D tilt on hover
   const handleCardMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -239,6 +319,26 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
   }, [s.font, s.customFontFamily]);
   const pattern = useMemo(() => (PATTERNS.find((p) => p.id === s.pattern) ?? PATTERNS[0])!, [s.pattern]);
 
+  // Free layout helpers
+  const freeElems: FreeLayoutElem[] = s.freeElems.length > 0 ? s.freeElems : defaultFreeElems(pal);
+  const nearestSnap = useCallback((x: number, y: number) => {
+    let bestX: number = SNAP_POINTS[0]!.x;
+    let bestY: number = SNAP_POINTS[0]!.y;
+    let bestD = Infinity;
+    for (const pt of SNAP_POINTS) {
+      const d = (x - pt.x) ** 2 + (y - pt.y) ** 2;
+      if (d < bestD) { bestD = d; bestX = pt.x; bestY = pt.y; }
+    }
+    return { x: bestX, y: bestY };
+  }, []);
+  const toggleFreeLayout = useCallback(() => {
+    setS(prev => {
+      const on = !prev.freeLayout;
+      return { ...prev, freeLayout: on, freeElems: on && prev.freeElems.length === 0 ? defaultFreeElems(pal) : prev.freeElems };
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pal.primary]);
+
   const upgrade = useCallback((_required: string) => {
     window.confirm('Esta función requiere el plan Elite ($29.99/mes). ¿Ver planes?');
   }, []);
@@ -257,6 +357,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
     customElemPoints: s.customElemPoints, customElemMember: s.customElemMember,
     customElemQr: s.customElemQr, customElemLogo: s.customElemLogo,
     cardType: s.cardType,
+    backBg: s.backBg,
   }), [s]);
 
   const designPayloadJSON = useMemo(() => JSON.stringify(designPayload), [designPayload]);
@@ -366,16 +467,15 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
 
   const tabs: Array<{ id: TabId; label: string }> = [
     { id: 'templates', label: 'Plantillas' },
-    { id: 'background', label: 'Fondo' },
-    { id: 'colors', label: 'Colores' },
-    { id: 'typography', label: 'Tipo' },
-    { id: 'elements', label: 'Elementos' },
+    { id: 'colors',    label: 'Colores'    },
+    { id: 'typography', label: 'Tipo'      },
+    { id: 'elements',  label: 'Elementos'  },
   ];
 
   const cardSlug = card ? `sellio.app/c/${card.id.slice(0, 8)}` : null;
 
   return (
-    <div className="sellio-builder" style={{ display: 'flex', flexDirection: 'column', background: '#0D0B09', color: '#F5F0EB', borderRadius: exitHref ? 0 : 16, border: exitHref ? 'none' : '1px solid rgba(245,240,235,0.07)', overflow: 'hidden', boxShadow: exitHref ? 'none' : '0 20px 60px rgba(0,0,0,0.5)', fontFamily: 'Space Grotesk,sans-serif', height: exitHref ? '100vh' : undefined }}>
+    <div className="sellio-builder" style={{ display: 'flex', flexDirection: 'column', background: 'var(--cb-bg)', color: 'var(--cb-fg)', borderRadius: exitHref ? 0 : 16, border: exitHref ? 'none' : '1px solid rgba(var(--cb-fg-rgb),0.07)', overflow: 'hidden', boxShadow: exitHref ? 'none' : '0 20px 60px rgba(0,0,0,0.5)', fontFamily: 'Space Grotesk,sans-serif', height: exitHref ? '100vh' : undefined }}>
       {/* Hidden form inputs */}
       <form id="card-builder-form" onSubmit={handleSubmit}>
         <input name="name"              value={s.cardName}          readOnly aria-hidden className="hidden" />
@@ -388,25 +488,25 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
       </form>
 
       {/* Top bar */}
-      <div style={{ height: 48, background: '#111009', borderBottom: '1px solid rgba(245,240,235,0.07)', display: 'flex', alignItems: 'center', padding: '0 16px', gap: 16, flexShrink: 0 }}>
+      <div style={{ height: 48, background: 'var(--cb-panel)', borderBottom: '1px solid rgba(var(--cb-fg-rgb),0.07)', display: 'flex', alignItems: 'center', padding: '0 16px', gap: 16, flexShrink: 0 }}>
         {exitHref && (
           <>
-            <Link href={exitHref} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#6B6560', textDecoration: 'none', transition: 'color 0.15s', flexShrink: 0 }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = '#F5F0EB'; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = '#6B6560'; }}
+            <Link href={exitHref} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--cb-muted)', textDecoration: 'none', transition: 'color 0.15s', flexShrink: 0 }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = 'var(--cb-fg)'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = 'var(--cb-muted)'; }}
             >
               <ChevronLeft size={14} /> Salir
             </Link>
-            <div style={{ width: 1, height: 24, background: 'rgba(245,240,235,0.12)' }} />
+            <div style={{ width: 1, height: 24, background: 'rgba(var(--cb-fg-rgb),0.12)' }} />
           </>
         )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ width: 26, height: 26, borderRadius: 6, background: '#E8341A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 12, color: '#fff' }}>S</div>
           <span style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 15 }}>Sellio<span style={{ color: '#E8341A' }}>.</span></span>
         </div>
-        <div style={{ width: 1, height: 24, background: 'rgba(245,240,235,0.12)' }} />
-        <span style={{ fontSize: 12, color: '#6B6560' }}>Card Builder</span>
-        <div style={{ width: 1, height: 24, background: 'rgba(245,240,235,0.12)' }} />
+        <div style={{ width: 1, height: 24, background: 'rgba(var(--cb-fg-rgb),0.12)' }} />
+        <span style={{ fontSize: 12, color: 'var(--cb-muted)' }}>Card Builder</span>
+        <div style={{ width: 1, height: 24, background: 'rgba(var(--cb-fg-rgb),0.12)' }} />
         <span style={{
           fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', padding: '3px 8px', borderRadius: 100, textTransform: 'uppercase',
           background: tier === 'elite' ? 'rgba(167,139,250,0.15)' : 'rgba(193,125,60,0.15)',
@@ -424,7 +524,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
             <span style={{
               fontSize: 11,
               transition: 'color 0.3s',
-              color: saveStatus === 'saving' ? '#6B6560' : saveStatus === 'saved' ? '#4ADE80' : saveStatus === 'error' ? '#F87171' : 'transparent',
+              color: saveStatus === 'saving' ? 'var(--cb-muted)' : saveStatus === 'saved' ? '#4ADE80' : saveStatus === 'error' ? '#F87171' : 'transparent',
             }}>
               {saveStatus === 'saving' ? 'Guardando...' : saveStatus === 'saved' ? '✓ Guardado' : saveStatus === 'error' ? 'Error al guardar' : '·'}
             </span>
@@ -439,30 +539,274 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
       <div style={{ display: 'grid', gridTemplateColumns: 'auto auto 1fr 240px', minHeight: exitHref ? 'calc(100vh - 48px)' : 680, flex: exitHref ? 1 : undefined, overflow: 'hidden', cursor: isDragging ? 'col-resize' : 'default' }}>
 
         {/* ── Left panel ── */}
-        <div style={{ width: leftCollapsed ? 0 : leftWidth, minWidth: 0, background: '#111009', display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: isDragging ? 'none' : 'width 0.2s cubic-bezier(0.16,1,0.3,1)', flexShrink: 0 }}>
-          {/* Tab bar */}
-          <div style={{ display: 'flex', borderBottom: '1px solid rgba(245,240,235,0.07)', minWidth: 260 }}>
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                style={{ flex: 1, padding: '10px 2px', fontSize: 9, fontWeight: 600, letterSpacing: '0.06em', textAlign: 'center', cursor: 'pointer', color: activeTab === tab.id ? '#E8341A' : '#6B6560', borderTop: 'none', borderRight: 'none', borderLeft: 'none', borderBottom: `2px solid ${activeTab === tab.id ? '#E8341A' : 'transparent'}`, background: 'none', textTransform: 'uppercase', transition: 'all 0.15s' }}
-              >
-                {tab.label}
-              </button>
-            ))}
+        <div style={{ width: leftCollapsed ? 0 : leftWidth, minWidth: 0, background: 'var(--cb-panel)', display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: isDragging ? 'none' : 'width 0.2s cubic-bezier(0.16,1,0.3,1)', flexShrink: 0 }}>
+
+          {/* ── Face switcher ── */}
+          <div style={{ display: 'flex', gap: 6, padding: '10px 12px', borderBottom: '1px solid rgba(var(--cb-fg-rgb),0.07)', minWidth: 260, flexShrink: 0 }}>
+            {(['front', 'back'] as const).map(view => {
+              const isActive = activeView === view;
+              const label = view === 'front' ? 'Frente' : 'Reverso';
+              return (
+                <button
+                  key={view}
+                  type="button"
+                  disabled={!typeConfirmed}
+                  onClick={() => {
+                    setActiveView(view);
+                    setIsFlipped(view === 'back');
+                  }}
+                  style={{
+                    flex: 1, padding: '7px 0', borderRadius: 8,
+                    fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', cursor: typeConfirmed ? 'pointer' : 'not-allowed',
+                    border: `1.5px solid ${isActive ? '#E8341A' : 'rgba(var(--cb-fg-rgb),0.08)'}`,
+                    background: isActive ? 'rgba(232,52,26,0.1)' : 'transparent',
+                    color: isActive ? '#E8341A' : 'var(--cb-subtle)',
+                    transition: 'all 0.15s',
+                    opacity: typeConfirmed ? 1 : 0.35,
+                  }}
+                >
+                  {view === 'front' ? '◻ ' : '◼ '}{label}
+                </button>
+              );
+            })}
           </div>
+
+          {/* ── Modo Libre toggle ── */}
+          {activeView === 'front' && typeConfirmed && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid rgba(var(--cb-fg-rgb),0.07)', minWidth: 260, flexShrink: 0, background: s.freeLayout ? 'rgba(167,139,250,0.04)' : 'transparent', transition: 'background 0.2s' }}>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: s.freeLayout ? '#A78BFA' : '#5A5450', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Modo Libre</div>
+                <div style={{ fontSize: 8, color: s.freeLayout ? 'rgba(167,139,250,0.6)' : 'var(--cb-dim)', marginTop: 1 }}>
+                  {s.freeLayout ? 'Arrastra los elementos · snap a zonas' : 'Posiciona libremente los elementos'}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={toggleFreeLayout}
+                style={{
+                  width: 40, height: 22, borderRadius: 11, position: 'relative', cursor: 'pointer', flexShrink: 0,
+                  background: s.freeLayout ? '#A78BFA' : 'rgba(var(--cb-fg-rgb),0.1)',
+                  border: `1.5px solid ${s.freeLayout ? '#A78BFA' : 'rgba(var(--cb-fg-rgb),0.12)'}`,
+                  transition: 'all 0.2s',
+                }}
+              >
+                <div style={{
+                  position: 'absolute', top: 2, left: s.freeLayout ? 19 : 2, width: 14, height: 14, borderRadius: '50%',
+                  background: s.freeLayout ? '#fff' : 'rgba(var(--cb-fg-rgb),0.4)',
+                  transition: 'left 0.2s, background 0.2s',
+                }} />
+              </button>
+            </div>
+          )}
+
+          {/* Tab bar — only for front face */}
+          {activeView === 'front' && (
+            <div style={{ display: 'flex', borderBottom: '1px solid rgba(var(--cb-fg-rgb),0.07)', minWidth: 260, flexShrink: 0 }}>
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  style={{ flex: 1, padding: '10px 2px', fontSize: 9, fontWeight: 600, letterSpacing: '0.06em', textAlign: 'center', cursor: 'pointer', color: activeTab === tab.id ? '#E8341A' : 'var(--cb-muted)', borderTop: 'none', borderRight: 'none', borderLeft: 'none', borderBottom: `2px solid ${activeTab === tab.id ? '#E8341A' : 'transparent'}`, background: 'none', textTransform: 'uppercase', transition: 'all 0.15s' }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Tab content */}
           <div style={{ flex: 1, overflowY: 'auto', padding: 16, position: 'relative' }}>
             {!typeConfirmed && (
-              <div style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'rgba(13,11,9,0.82)', backdropFilter: 'blur(4px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: 24, textAlign: 'center' }}>
+              <div style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'rgba(var(--cb-bg-rgb),0.82)', backdropFilter: 'blur(4px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: 24, textAlign: 'center' }}>
                 <div style={{ fontSize: 28 }}>🎯</div>
-                <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 14, color: '#F5F0EB' }}>Elige el tipo primero</div>
-                <div style={{ fontSize: 11, color: '#4A4540', lineHeight: 1.6 }}>Selecciona Sellos o Puntos en el panel derecho para desbloquear la personalización.</div>
+                <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 14, color: 'var(--cb-fg)' }}>Elige el tipo primero</div>
+                <div style={{ fontSize: 11, color: 'var(--cb-subtle)', lineHeight: 1.6 }}>Selecciona Sellos o Puntos en el panel derecho para desbloquear la personalización.</div>
               </div>
             )}
+
+            {/* ══ REVERSO panel ══════════════════════════════════════ */}
+            {activeView === 'back' && typeConfirmed && (() => {
+              const BG_OPTIONS: Array<{ id: BuilderState['backBg']; label: string; style: string }> = [
+                { id: 'warm',   label: 'Cálido',    style: 'linear-gradient(135deg,#1A1712 0%,var(--cb-panel) 100%)' },
+                { id: 'dark',   label: 'Oscuro',    style: 'linear-gradient(135deg,#0C0A07 0%,#080604 100%)' },
+                { id: 'deep',   label: 'Profundo',  style: 'linear-gradient(160deg,#060810 0%,#0B0D18 100%)' },
+                { id: 'accent', label: 'Acento',    style: `linear-gradient(160deg,var(--cb-panel) 0%,${pal.primary}35 100%)` },
+              ];
+              const currentIconComp = STAMP_ICONS_EXTENDED.find(x => x.id === s.stampIcon)?.icon;
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+
+                  {/* Header */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 20 }}>
+                    <div style={{ width: 3, height: 20, borderRadius: 2, background: '#E8341A' }} />
+                    <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--cb-fg)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+                      Reverso · {s.cardType === 'stamps' ? 'Sellos' : 'Puntos'}
+                    </span>
+                  </div>
+
+                  {/* Fondo del reverso */}
+                  <Section label="Fondo del reverso">
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6 }}>
+                      {BG_OPTIONS.map(opt => (
+                        <button key={opt.id} type="button" onClick={() => set('backBg', opt.id)}
+                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                          <div style={{ width: '100%', aspectRatio: '1.65', borderRadius: 7, background: opt.style, border: `2px solid ${s.backBg === opt.id ? '#E8341A' : 'rgba(var(--cb-fg-rgb),0.08)'}`, boxShadow: s.backBg === opt.id ? '0 0 0 2px rgba(232,52,26,0.2)' : 'none', transition: 'all 0.15s', position: 'relative', overflow: 'hidden' }}>
+                            {s.backBg === opt.id && <div style={{ position: 'absolute', top: 3, right: 3, width: 8, height: 8, borderRadius: '50%', background: '#E8341A' }} />}
+                          </div>
+                          <span style={{ fontSize: 9, fontWeight: 600, color: s.backBg === opt.id ? '#E8341A' : 'var(--cb-subtle)' }}>{opt.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </Section>
+
+                  {/* Stamps controls */}
+                  {s.cardType === 'stamps' && (
+                    <>
+                      <Section label="Diseño de sellos">
+                        {(() => {
+                          const currentScenario = STAMP_CATEGORIES.find(c => c.icons.some(i => i.id === s.stampIcon))?.id || 'generic';
+                          return (
+                            <>
+                              <div style={{ marginBottom: 12 }}>
+                                <span style={{ fontSize: 11, color: 'var(--cb-muted)', marginBottom: 5, display: 'block', fontWeight: 500 }}>Escenario / Rubro</span>
+                                <select
+                                  value={currentScenario}
+                                  onChange={(e) => {
+                                    const newScenario = e.target.value;
+                                    const firstIcon = STAMP_CATEGORIES.find(c => c.id === newScenario)?.icons[0];
+                                    if (firstIcon) {
+                                      if (!canUse(tier, firstIcon.tier)) {
+                                        upgrade(firstIcon.tier);
+                                      } else {
+                                        set('stampIcon', firstIcon.id as StampIconId);
+                                      }
+                                    }
+                                  }}
+                                  style={{ width: '100%', background: 'var(--cb-input)', border: '1px solid rgba(var(--cb-fg-rgb),0.12)', borderRadius: 7, padding: '8px 10px', fontSize: 12, color: 'var(--cb-fg)', outline: 'none' }}
+                                >
+                                  {STAMP_CATEGORIES.map(cat => (
+                                    <option key={cat.id} value={cat.id}>{cat.label}</option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              {currentScenario !== 'custom' && (
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+                                  {STAMP_CATEGORIES.find(c => c.id === currentScenario)?.icons.map(si => {
+                                    const locked = !canUse(tier, si.tier);
+                                    const IconComp = si.icon;
+                                    return (
+                                      <button
+                                        key={si.id}
+                                        type="button"
+                                        onClick={() => locked ? upgrade(si.tier) : set('stampIcon', si.id as StampIconId)}
+                                        style={{ aspectRatio: '1', borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, cursor: locked ? 'not-allowed' : 'pointer', background: s.stampIcon === si.id ? 'rgba(232,52,26,0.15)' : 'transparent', border: `1px solid ${s.stampIcon === si.id ? '#E8341A' : 'rgba(var(--cb-fg-rgb),0.12)'}`, opacity: locked ? 0.45 : 1, position: 'relative' }}
+                                        title={si.label}
+                                      >
+                                        <IconComp size={18} color={s.stampIcon === si.id ? '#E8341A' : '#A39D98'} />
+                                        <span style={{ fontSize: 9, color: s.stampIcon === si.id ? '#E8341A' : 'var(--cb-muted)', fontWeight: 600 }}>{si.label}</span>
+                                        {locked && <Lock size={8} style={{ position: 'absolute', top: 4, right: 4, color: '#FFB347' }} />}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+
+                              {currentScenario !== 'custom' && (
+                                <button
+                                  type="button"
+                                  onClick={() => setShowIconPicker(v => !v)}
+                                  style={{ marginTop: 8, fontSize: 10, color: '#E8341A', background: 'none', border: '1px solid rgba(232,52,26,0.25)', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', width: '100%', fontWeight: 600, letterSpacing: '0.04em' }}
+                                >
+                                  {showIconPicker ? '▲ Ocultar librería' : '▼ Ver todos los íconos'}
+                                </button>
+                              )}
+
+                              {showIconPicker && currentScenario !== 'custom' && (() => {
+                                const filtered = STAMP_ICONS_EXTENDED.filter(ic =>
+                                  ic.id !== 'custom' &&
+                                  (!iconSearch || ic.label.toLowerCase().includes(iconSearch.toLowerCase()) || ic.category.toLowerCase().includes(iconSearch.toLowerCase()))
+                                );
+                                return (
+                                  <div style={{ marginTop: 8, background: '#0A0A0A', border: '1px solid rgba(var(--cb-fg-rgb),0.08)', borderRadius: 10, padding: 10 }}>
+                                    <input
+                                      type="text"
+                                      placeholder="Buscar ícono..."
+                                      value={iconSearch}
+                                      onChange={e => setIconSearch(e.target.value)}
+                                      style={{ width: '100%', background: 'var(--cb-panel-2)', border: '1px solid rgba(var(--cb-fg-rgb),0.12)', borderRadius: 6, padding: '6px 10px', fontSize: 11, color: 'var(--cb-fg)', outline: 'none', marginBottom: 10, boxSizing: 'border-box' }}
+                                    />
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 5, maxHeight: 220, overflowY: 'auto' }}>
+                                      {filtered.map(ic => {
+                                        const locked = !canUse(tier, ic.tier);
+                                        const IconComp = ic.icon;
+                                        const isActive = s.stampIcon === ic.id;
+                                        return (
+                                          <button
+                                            key={ic.id}
+                                            type="button"
+                                            title={`${ic.label} · ${ic.category}`}
+                                            onClick={() => {
+                                              if (locked) { upgrade(ic.tier); return; }
+                                              set('stampIcon', ic.id as StampIconId);
+                                              setShowIconPicker(false);
+                                            }}
+                                            style={{ aspectRatio: '1', borderRadius: 7, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, cursor: locked ? 'not-allowed' : 'pointer', background: isActive ? 'rgba(232,52,26,0.15)' : 'rgba(255,255,255,0.03)', border: `1px solid ${isActive ? '#E8341A' : 'rgba(var(--cb-fg-rgb),0.08)'}`, opacity: locked ? 0.4 : 1, transition: 'all 0.12s', position: 'relative' }}
+                                          >
+                                            <IconComp size={16} color={isActive ? '#E8341A' : 'var(--cb-muted)'} />
+                                            <span style={{ fontSize: 8, color: isActive ? '#E8341A' : 'var(--cb-subtle)', textAlign: 'center', lineHeight: 1.2 }}>{ic.label}</span>
+                                            {locked && <Lock size={7} style={{ position: 'absolute', top: 2, right: 2, color: '#FFB347' }} />}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+
+                              {currentScenario === 'custom' && canUse(tier, 'elite') && (
+                                <div style={{ marginTop: 10, padding: '10px', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 8 }}>
+                                  <CtrlInput
+                                    label="URL del Sello (Imagen)"
+                                    value={s.customStampUrl ?? ''}
+                                    onChange={(v) => set('customStampUrl', v)}
+                                    placeholder="https://ejemplo.com/sello.png"
+                                  />
+                                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 4 }}>
+                                    Pega la URL de una imagen PNG con fondo transparente.
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </Section>
+
+                    </>
+                  )}
+
+                  {/* Preview live hint */}
+                  <div style={{ marginTop: 4, padding: '10px 12px', borderRadius: 8, background: 'rgba(232,52,26,0.05)', border: '1px solid rgba(232,52,26,0.12)' }}>
+                    <div style={{ fontSize: 10, color: '#E8341A', fontWeight: 600, marginBottom: 3 }}>Vista en tiempo real</div>
+                    <div style={{ fontSize: 10, color: 'var(--cb-muted)', lineHeight: 1.5 }}>Toca la tarjeta en el canvas para ver la animación de volteo, o haz clic en "Frente" para regresar.</div>
+                  </div>
+
+                  {currentIconComp && s.cardType === 'stamps' && (
+                    <div style={{ marginTop: 12, padding: '10px 12px', borderRadius: 8, background: 'var(--cb-bg)', border: '1px solid rgba(var(--cb-fg-rgb),0.06)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {React.createElement(currentIconComp, { size: 18, color: pal.primary })}
+                      <div>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--cb-fg)' }}>{s.stampIcon}</div>
+                        <div style={{ fontSize: 9, color: 'var(--cb-subtle)' }}>{pointsForReward} sellos · {rewardDescription || 'sin recompensa'}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* ══ FRENTE panel (existing tabs) ══════════════════════ */}
+            {activeView === 'front' && (<>
 
             {/* Templates tab — two sections: Personalizar + Plantillas */}
             {activeTab === 'templates' && (() => {
@@ -495,23 +839,37 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
 
               // ── Business template presets filtered by confirmed cardType
               type BizPreset = Partial<BuilderState>;
-              const ALL_BUSINESS_TEMPLATES: Array<{ id: string; name: string; icon: LucideIcon; preset: BizPreset; forType: CardType }> = [
-                { id: 'cafe',       name: 'Cafetería',       icon: Coffee,          forType: 'stamps',
-                  preset: { template: 'stamp',   palette: 'amber',   font: 'syne',   businessName: 'Tu Cafetería',   cardName: 'Tarjeta Café',      pointsStyle: 'stamps', stampIcon: 'coffee'   } },
-                { id: 'salon',      name: 'Peluquería',      icon: Scissors,        forType: 'stamps',
-                  preset: { template: 'stamp',   palette: 'teal',    font: 'syne',   businessName: 'Tu Salón',       cardName: 'Membership Card',   pointsStyle: 'stamps', stampIcon: 'scissors' } },
-                { id: 'gym-stamp',  name: 'Gym / Fitness',   icon: Dumbbell,        forType: 'stamps',
-                  preset: { template: 'stamp',   palette: 'coral',   font: 'syne',   businessName: 'Tu Gym',         cardName: 'Plan Fitness',      pointsStyle: 'stamps', stampIcon: 'dumbbell' } },
-                { id: 'bar',        name: 'Bar / Drinks',    icon: Beer,            forType: 'stamps',
-                  preset: { template: 'stamp',   palette: 'violet',  font: 'syne',   businessName: 'Tu Bar',         cardName: 'Night Pass',        pointsStyle: 'stamps', stampIcon: 'cup-soda' } },
-                { id: 'restaurant', name: 'Restaurante',     icon: UtensilsCrossed, forType: 'points',
-                  preset: { template: 'classic', palette: 'emerald', font: 'syne',   businessName: 'Tu Restaurante', cardName: 'Club Gastronómico', pointsStyle: 'number' } },
-                { id: 'spa',        name: 'Spa & Wellness',  icon: Leaf,            forType: 'points',
-                  preset: { template: 'classic', palette: 'violet',  font: 'outfit', businessName: 'Tu Spa',         cardName: 'Club Wellness',     pointsStyle: 'number' } },
-                { id: 'classes',    name: 'Clases Privadas', icon: BookOpen,        forType: 'points',
-                  preset: { template: 'classic', palette: 'indigo',  font: 'outfit', businessName: 'Tu Academia',    cardName: 'Tarjeta Educativa', pointsStyle: 'number' } },
-                { id: 'retail',     name: 'Tienda / Retail', icon: ShoppingBag,     forType: 'points',
-                  preset: { template: 'classic', palette: 'indigo',  font: 'syne',   businessName: 'Tu Tienda',      cardName: 'VIP Member',        pointsStyle: 'number' } },
+              const ALL_BUSINESS_TEMPLATES: Array<{ id: string; name: string; desc: string; icon: LucideIcon; preset: BizPreset; forType: CardType }> = [
+                // ── STAMPS ────────────────────────────────────────────────
+                { id: 'cafe',    name: 'Cafetería',      desc: 'Warm & clásico',      icon: Coffee,          forType: 'stamps',
+                  preset: { template: 'classic', palette: 'amber',   font: 'syne',      businessName: 'Café Aroma',      cardName: 'Stamp Card',      pointsStyle: 'stamps', stampIcon: 'coffee'   } },
+                { id: 'salon',   name: 'Salón de Belleza', desc: 'Editorial & elegante', icon: Scissors,      forType: 'stamps',
+                  preset: { template: 'paper',   palette: 'teal',    font: 'playfair',  businessName: 'Studio Belle',    cardName: 'Beauty Pass',     pointsStyle: 'stamps', stampIcon: 'scissors' } },
+                { id: 'gym',     name: 'Gym / Fitness',  desc: 'Dark & potente',       icon: Dumbbell,       forType: 'stamps',
+                  preset: { template: 'carbon',  palette: 'coral',   font: 'bebas',     businessName: 'Power Gym',       cardName: 'Fitness Card',    pointsStyle: 'stamps', stampIcon: 'dumbbell' } },
+                { id: 'bar',     name: 'Bar / Drinks',   desc: 'Neon & nocturno',      icon: Beer,           forType: 'stamps',
+                  preset: { template: 'neon',    palette: 'violet',  font: 'syne',      businessName: 'Night Lounge',    cardName: 'Night Pass',      pointsStyle: 'stamps', stampIcon: 'cup-soda' } },
+                { id: 'bakery',  name: 'Panadería',      desc: 'Minimal & artesanal',  icon: Croissant,      forType: 'stamps',
+                  preset: { template: 'minimal', palette: 'amber',   font: 'outfit',    businessName: 'La Boulangerie',  cardName: 'Bread Lover',     pointsStyle: 'stamps', stampIcon: 'croissant'} },
+                { id: 'food',    name: 'Restaurante',    desc: 'Bold & energético',    icon: UtensilsCrossed, forType: 'stamps',
+                  preset: { template: 'bold',    palette: 'emerald', font: 'syne',      businessName: 'Sabor & Co.',     cardName: 'Foodie Card',     pointsStyle: 'stamps', stampIcon: 'utensils' } },
+                // ── POINTS ────────────────────────────────────────────────
+                { id: 'restaurant-pts', name: 'Restaurante',   desc: 'Luxury & gourmet',   icon: UtensilsCrossed, forType: 'points',
+                  preset: { template: 'luxury',  palette: 'emerald', font: 'playfair',  businessName: 'Casa Gourmet',    cardName: 'Club Gastronómico', pointsStyle: 'number' } },
+                { id: 'spa',     name: 'Spa & Wellness', desc: 'Marble & premium',     icon: Leaf,           forType: 'points',
+                  preset: { template: 'marble',  palette: 'violet',  font: 'cormorant', businessName: 'Zen Spa',         cardName: 'Wellness Club',   pointsStyle: 'number' } },
+                { id: 'hotel',   name: 'Hotel',          desc: 'Carbon & exclusivo',   icon: Home,           forType: 'points',
+                  preset: { template: 'carbon',  palette: 'amber',   font: 'josefin',   businessName: 'Grand Hotel',     cardName: 'Loyalty Suite',   pointsStyle: 'number' } },
+                { id: 'retail',  name: 'Retail / Moda',  desc: 'Gold & aspiracional',  icon: ShoppingBag,    forType: 'points',
+                  preset: { template: 'gold',    palette: 'amber',   font: 'josefin',   businessName: 'Fashion Store',   cardName: 'VIP Member',      pointsStyle: 'number' } },
+                { id: 'classes', name: 'Academia',       desc: 'Glass & moderno',      icon: BookOpen,       forType: 'points',
+                  preset: { template: 'glass',   palette: 'indigo',  font: 'cabinet',   businessName: 'EduPlus',         cardName: 'Premium Pass',    pointsStyle: 'number' } },
+                { id: 'tech',    name: 'Tecnología',     desc: 'Night & digital',      icon: Monitor,        forType: 'points',
+                  preset: { template: 'night',   palette: 'indigo',  font: 'mono',      businessName: 'TechHub',         cardName: 'Tech Points',     pointsStyle: 'number' } },
+                { id: 'music',   name: 'Música / Arte',  desc: 'Neon & creativo',      icon: Music,          forType: 'points',
+                  preset: { template: 'neon',    palette: 'violet',  font: 'bebas',     businessName: 'Música Studio',   cardName: 'Artist Pass',     pointsStyle: 'number' } },
+                { id: 'jewelry', name: 'Joyería',        desc: 'Marble & lujoso',      icon: Gem,            forType: 'points',
+                  preset: { template: 'marble',  palette: 'amber',   font: 'cormorant', businessName: 'Joyería Élite',   cardName: 'Gold Member',     pointsStyle: 'number' } },
               ];
               const BUSINESS_TEMPLATES = ALL_BUSINESS_TEMPLATES.filter(t => t.forType === s.cardType);
 
@@ -521,15 +879,15 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                   {/* ══ PERSONALIZAR ══════════════════════════════ */}
                   <div style={{ marginBottom: 24 }}>
                     <div style={{ marginBottom: 12 }}>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: '#F5F0EB', letterSpacing: '0.14em', textTransform: 'uppercase' }}>Personalizar</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--cb-fg)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>Personalizar</span>
                     </div>
 
                     {(
                       <>
                         {/* Diseño grid */}
-                        <div style={{ fontSize: 9, color: '#4A4540', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Diseño</div>
+                        <div style={{ fontSize: 9, color: 'var(--cb-subtle)', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Diseño</div>
                         <div style={{ display: 'grid', gridTemplateColumns: `repeat(2, 1fr)`, gap: 6, marginBottom: 16 }}>
-                          {DESIGN_LAYOUTS.map((tpl) => {
+                          {DESIGN_LAYOUTS.filter(t => t.id !== 'canvas').map((tpl) => {
                             const locked = !canUse(tier, tpl.tier);
                             const MiniCard = CARD_RENDERERS[tpl.id];
                             const isActive = s.template === tpl.id;
@@ -543,7 +901,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                                 <div style={{
                                   position: 'relative', width: colW, height: colH,
                                   borderRadius: 7, overflow: 'hidden',
-                                  border: `2px solid ${isActive ? '#E8341A' : 'rgba(245,240,235,0.07)'}`,
+                                  border: `2px solid ${isActive ? '#E8341A' : 'rgba(var(--cb-fg-rgb),0.07)'}`,
                                   boxShadow: isActive ? '0 0 0 2px rgba(232,52,26,0.18)' : 'none',
                                   transition: 'all 0.15s',
                                   opacity: locked ? 0.45 : 1,
@@ -557,15 +915,15 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                                     </div>
                                   )}
                                 </div>
-                                <span style={{ fontSize: 9, fontWeight: 600, color: isActive ? '#E8341A' : '#4A4540', transition: 'color 0.15s' }}>{tpl.name}</span>
+                                <span style={{ fontSize: 9, fontWeight: 600, color: isActive ? '#E8341A' : 'var(--cb-subtle)', transition: 'color 0.15s' }}>{tpl.name}</span>
                               </button>
                             );
                           })}
 
-                          {/* Custom tile — always last */}
+                          {/* Custom tile — always last in 2-col grid */}
                           {(() => {
                             const isActive = s.template === 'custom';
-                            const CustomCard = CARD_RENDERERS['custom'];
+                            const CustomCardComp = CARD_RENDERERS['custom'];
                             return (
                               <button
                                 type="button"
@@ -575,26 +933,71 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                                 <div style={{
                                   position: 'relative', width: colW, height: colH,
                                   borderRadius: 7, overflow: 'hidden',
-                                  border: `2px solid ${isActive ? '#E8341A' : 'rgba(245,240,235,0.07)'}`,
+                                  border: `2px solid ${isActive ? '#E8341A' : 'rgba(var(--cb-fg-rgb),0.07)'}`,
                                   boxShadow: isActive ? '0 0 0 2px rgba(232,52,26,0.18)' : 'none',
                                   transition: 'all 0.15s',
                                 }}>
                                   <div style={{ position: 'absolute', top: 0, left: 0, width: 380, height: 230, transformOrigin: 'top left', transform: `scale(${colScale})`, pointerEvents: 'none' }}>
-                                    <CustomCard s={s} pal={pal} font={font} pattern={pattern} W={380} H={230} noShadow hidePoints={s.cardType === 'stamps'} />
+                                    <CustomCardComp s={s} pal={pal} font={font} pattern={pattern} W={380} H={230} noShadow hidePoints={s.cardType === 'stamps'} />
                                   </div>
                                 </div>
-                                <span style={{ fontSize: 9, fontWeight: 600, color: isActive ? '#E8341A' : '#4A4540', transition: 'color 0.15s' }}>Custom</span>
+                                <span style={{ fontSize: 9, fontWeight: 600, color: isActive ? '#E8341A' : 'var(--cb-subtle)', transition: 'color 0.15s' }}>Custom</span>
                               </button>
                             );
                           })()}
                         </div>
+
+                        {/* Free layout element controls — visible when Modo Libre is active */}
+                        {s.freeLayout && activeView === 'front' && (
+                          <div style={{ marginBottom: 16, padding: '10px 0 0' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                              <div style={{ fontSize: 9, color: '#A78BFA', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Elementos</div>
+                              <button
+                                type="button"
+                                onClick={() => setS(prev => ({ ...prev, freeElems: defaultFreeElems(pal) }))}
+                                style={{ fontSize: 9, color: 'var(--cb-muted)', background: 'none', border: '1px solid rgba(var(--cb-fg-rgb),0.1)', borderRadius: 5, padding: '2px 7px', cursor: 'pointer', fontWeight: 600 }}
+                              >Restablecer</button>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                              {freeElems.map(el => {
+                                const labelMap: Record<string, string> = { biz: 'Nombre del negocio', cardname: 'Nombre de tarjeta', logo: 'Logo', points: 'Puntos', member: 'Miembro', qr: 'Código QR' };
+                                const iconMap: Record<string, string> = { biz: 'B', cardname: 'T', logo: '◈', points: '#', member: 'M', qr: '⊞' };
+                                return (
+                                  <div key={el.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 8, background: 'rgba(var(--cb-fg-rgb),0.02)', border: '1px solid rgba(var(--cb-fg-rgb),0.05)' }}>
+                                    <div style={{ width: 20, height: 20, borderRadius: 4, background: el.visible ? 'rgba(167,139,250,0.1)' : 'rgba(var(--cb-fg-rgb),0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                      <span style={{ fontSize: 9, color: el.visible ? '#A78BFA' : 'var(--cb-deep)', fontWeight: 700 }}>{iconMap[el.id] ?? 'T'}</span>
+                                    </div>
+                                    <span style={{ fontSize: 10, fontWeight: 500, color: el.visible ? '#A39D98' : 'var(--cb-deep)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{labelMap[el.id] ?? el.id}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => setS(prev => ({ ...prev, freeElems: (prev.freeElems.length > 0 ? prev.freeElems : defaultFreeElems(pal)).map(fe => fe.id === el.id ? { ...fe, visible: !fe.visible } : fe) }))}
+                                      style={{ fontSize: 10, color: el.visible ? 'var(--cb-muted)' : 'var(--cb-deep)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 3px', flexShrink: 0, lineHeight: 1 }}
+                                      title={el.visible ? 'Ocultar' : 'Mostrar'}
+                                    >
+                                      {el.visible ? '●' : '○'}
+                                    </button>
+                                    {el.id !== 'logo' && el.id !== 'qr' && (
+                                      <input
+                                        type="color"
+                                        value={el.color.startsWith('rgba') ? '#ffffff' : el.color}
+                                        onChange={(ev) => setS(prev => ({ ...prev, freeElems: (prev.freeElems.length > 0 ? prev.freeElems : defaultFreeElems(pal)).map(fe => fe.id === el.id ? { ...fe, color: ev.target.value } : fe) }))}
+                                        style={{ width: 22, height: 18, borderRadius: 4, border: '1px solid rgba(var(--cb-fg-rgb),0.12)', background: 'none', cursor: 'pointer', padding: 1, flexShrink: 0 }}
+                                        title="Color"
+                                      />
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
 
                         {/* Custom-only controls */}
                         {s.template === 'custom' && (
                           <>
                             {/* Distribución */}
                             <div style={{ marginBottom: 14 }}>
-                              <div style={{ fontSize: 9, color: '#4A4540', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 7 }}>Distribución</div>
+                              <div style={{ fontSize: 9, color: 'var(--cb-subtle)', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 7 }}>Distribución</div>
                               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 5 }}>
                                 {CUSTOM_DISTRIBUTIONS.map(({ id, label }) => {
                                   const CustomCard = CARD_RENDERERS['custom'];
@@ -613,7 +1016,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                                       <div style={{
                                         position: 'relative', width: distW, height: distH,
                                         borderRadius: 5, overflow: 'hidden',
-                                        border: `2px solid ${isDistActive ? '#E8341A' : 'rgba(245,240,235,0.07)'}`,
+                                        border: `2px solid ${isDistActive ? '#E8341A' : 'rgba(var(--cb-fg-rgb),0.07)'}`,
                                         boxShadow: isDistActive ? '0 0 0 2px rgba(232,52,26,0.18)' : 'none',
                                         transition: 'all 0.15s',
                                       }}>
@@ -621,7 +1024,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                                           <CustomCard s={previewState} pal={pal} font={font} pattern={pattern} W={380} H={230} noShadow />
                                         </div>
                                       </div>
-                                      <span style={{ fontSize: 8, fontWeight: 600, color: isDistActive ? '#E8341A' : '#4A4540', transition: 'color 0.15s' }}>{label}</span>
+                                      <span style={{ fontSize: 8, fontWeight: 600, color: isDistActive ? '#E8341A' : 'var(--cb-subtle)', transition: 'color 0.15s' }}>{label}</span>
                                     </button>
                                   );
                                 })}
@@ -630,7 +1033,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
 
                             {/* Elementos */}
                             <div>
-                              <div style={{ fontSize: 9, color: '#4A4540', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 7 }}>Elementos</div>
+                              <div style={{ fontSize: 9, color: 'var(--cb-subtle)', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 7 }}>Elementos</div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                                 {ELEMS.map(({ key, label, Icon }) => {
                                   const on = s[key] as boolean;
@@ -643,20 +1046,20 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                                         display: 'flex', alignItems: 'center', gap: 8,
                                         padding: '8px 10px', borderRadius: 8, cursor: 'pointer', textAlign: 'left',
                                         background: on ? 'rgba(232,52,26,0.07)' : 'transparent',
-                                        border: `1.5px solid ${on ? 'rgba(232,52,26,0.3)' : 'rgba(245,240,235,0.06)'}`,
+                                        border: `1.5px solid ${on ? 'rgba(232,52,26,0.3)' : 'rgba(var(--cb-fg-rgb),0.06)'}`,
                                         transition: 'all 0.15s',
                                       }}
                                     >
                                       <div style={{
                                         width: 24, height: 24, borderRadius: 6, flexShrink: 0,
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        background: on ? '#E8341A' : 'rgba(245,240,235,0.04)',
+                                        background: on ? '#E8341A' : 'rgba(var(--cb-fg-rgb),0.04)',
                                         transition: 'background 0.15s',
                                       }}>
-                                        <Icon size={12} color={on ? '#fff' : '#4A4540'} />
+                                        <Icon size={12} color={on ? '#fff' : 'var(--cb-subtle)'} />
                                       </div>
-                                      <span style={{ fontSize: 11, fontWeight: 500, color: on ? '#F5F0EB' : '#4A4540', flex: 1, transition: 'color 0.15s' }}>{label}</span>
-                                      <div style={{ width: 5, height: 5, borderRadius: '50%', flexShrink: 0, background: on ? '#E8341A' : 'rgba(245,240,235,0.1)', transition: 'background 0.15s' }} />
+                                      <span style={{ fontSize: 11, fontWeight: 500, color: on ? 'var(--cb-fg)' : 'var(--cb-subtle)', flex: 1, transition: 'color 0.15s' }}>{label}</span>
+                                      <div style={{ width: 5, height: 5, borderRadius: '50%', flexShrink: 0, background: on ? '#E8341A' : 'rgba(var(--cb-fg-rgb),0.1)', transition: 'background 0.15s' }} />
                                     </button>
                                   );
                                 })}
@@ -669,43 +1072,54 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                   </div>
 
                   {/* Divider */}
-                  <div style={{ height: 1, background: 'rgba(245,240,235,0.07)', marginBottom: 24 }} />
+                  <div style={{ height: 1, background: 'rgba(var(--cb-fg-rgb),0.07)', marginBottom: 24 }} />
 
                   {/* ══ PLANTILLAS ════════════════════════════════ */}
                   <div>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: '#F5F0EB', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 12 }}>Plantillas</div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--cb-fg)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 12 }}>Plantillas</div>
 
                     {/* ── By business ── */}
-                    <div style={{ fontSize: 9, color: '#4A4540', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Por negocio</div>
+                    <div style={{ fontSize: 9, color: 'var(--cb-subtle)', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Por negocio</div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
-                      {BUSINESS_TEMPLATES.map(({ id, name, icon: BizIcon, preset }) => {
+                      {BUSINESS_TEMPLATES.map(({ id, name, desc, icon: BizIcon, preset }) => {
                         const mergedState: BuilderState = { ...s, ...preset };
                         const TemplateComp = CARD_RENDERERS[preset.template ?? s.template] ?? ClassicCard;
                         const presetPalId = preset.palette ?? s.palette;
                         const presetPal = palettes.find(p => p.id === presetPalId) ?? palettes[0]!;
+                        const presetFont = FONTS.find(f => f.id === (preset.font ?? s.font)) ?? FONTS[0]!;
+                        const isActivePreset = s.template === preset.template && s.palette === preset.palette && s.font === preset.font;
                         return (
                           <button
                             key={id}
                             type="button"
                             onClick={() => setS(prev => ({ ...prev, ...preset }))}
-                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}
                           >
                             <div style={{
                               position: 'relative', width: colW, height: colH,
                               borderRadius: 7, overflow: 'hidden',
-                              border: '1.5px solid rgba(245,240,235,0.07)',
-                              transition: 'border-color 0.15s',
+                              border: `1.5px solid ${isActivePreset ? 'rgba(232,52,26,0.5)' : 'rgba(var(--cb-fg-rgb),0.07)'}`,
+                              boxShadow: isActivePreset ? '0 0 0 2px rgba(232,52,26,0.12)' : 'none',
+                              transition: 'border-color 0.15s, box-shadow 0.15s',
                             }}
-                              onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(232,52,26,0.3)'; }}
-                              onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(245,240,235,0.07)'; }}
+                              onMouseEnter={(e) => { if (!isActivePreset) (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(232,52,26,0.25)'; }}
+                              onMouseLeave={(e) => { if (!isActivePreset) (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(var(--cb-fg-rgb),0.07)'; }}
                             >
                               <div style={{ position: 'absolute', top: 0, left: 0, width: 380, height: 230, transformOrigin: 'top left', transform: `scale(${colScale})`, pointerEvents: 'none' }}>
-                                <TemplateComp s={mergedState} pal={presetPal} font={font} pattern={pattern} W={380} H={230} noShadow />
+                                <TemplateComp s={mergedState} pal={presetPal} font={presetFont} pattern={pattern} W={380} H={230} noShadow hidePoints={s.cardType === 'stamps'} />
                               </div>
+                              {isActivePreset && (
+                                <div style={{ position: 'absolute', top: 4, right: 4, width: 14, height: 14, borderRadius: '50%', background: '#E8341A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <span style={{ fontSize: 8, color: '#fff', fontWeight: 800 }}>✓</span>
+                                </div>
+                              )}
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                              <BizIcon size={11} color="#6B6560" />
-                              <span style={{ fontSize: 10, fontWeight: 600, color: '#6B6560' }}>{name}</span>
+                            <div style={{ paddingLeft: 2 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <BizIcon size={10} color={isActivePreset ? '#E8341A' : 'var(--cb-muted)'} />
+                                <span style={{ fontSize: 10, fontWeight: 700, color: isActivePreset ? '#E8341A' : '#A39D98', transition: 'color 0.15s' }}>{name}</span>
+                              </div>
+                              <div style={{ fontSize: 9, color: 'var(--cb-dim)', marginTop: 1 }}>{desc}</div>
                             </div>
                           </button>
                         );
@@ -717,10 +1131,10 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
               );
             })()}
 
-            {/* Background */}
-            {activeTab === 'background' && (
+            {/* Colors — gradientes + color libre + patrón + QR */}
+            {activeTab === 'colors' && (
               <>
-                <Section label="Gradientes base">
+                <Section label="Gradiente base">
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 5 }}>
                     {palettes.map((p) => (
                       <div key={p.id}
@@ -732,50 +1146,60 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                   </div>
                 </Section>
 
-                <Section label="Fondo personalizado (Color libre)">
-                  <input type="color" value={s.customPrimary ?? primaryColor} onChange={(e) => { set('customPrimary', e.target.value); set('customGradient', null); }} style={{ width: '100%', height: 40, borderRadius: 8, border: '1px solid rgba(245,240,235,0.12)', background: 'none', cursor: 'pointer', padding: 2 }} />
+                <Section label="Color de acento libre">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <input
+                      type="color"
+                      value={s.customPrimary ?? primaryColor}
+                      onChange={(e) => { set('customPrimary', e.target.value); set('customGradient', null); }}
+                      style={{ width: 40, height: 40, borderRadius: 8, border: '1px solid rgba(var(--cb-fg-rgb),0.12)', background: 'none', cursor: 'pointer', padding: 2, flexShrink: 0 }}
+                    />
+                    <div style={{ flex: 1, height: 40, borderRadius: 8, background: `linear-gradient(135deg,#1A0806 0%,#3A1006 55%,${s.customPrimary ?? primaryColor} 100%)`, border: '1px solid rgba(var(--cb-fg-rgb),0.08)' }} />
+                    {s.customPrimary && (
+                      <button type="button" onClick={() => { set('customPrimary', undefined); set('customGradient', null); }} style={{ fontSize: 10, color: 'var(--cb-muted)', background: 'none', border: '1px solid rgba(var(--cb-fg-rgb),0.1)', borderRadius: 5, padding: '4px 8px', cursor: 'pointer', whiteSpace: 'nowrap' }}>Reset</button>
+                    )}
+                  </div>
                 </Section>
 
-
-
                 <Section label="Patrón overlay" action={!canUse(tier, 'elite') ? <LockPill tier="elite" onUpgrade={() => upgrade('elite')} /> : undefined}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                     {PATTERNS.map((p) => {
                       const locked = p.id !== 'none' && !canUse(tier, 'elite');
+                      const isActive = s.pattern === p.id;
                       return (
                         <div key={p.id}
                           onClick={() => locked ? upgrade('elite') : set('pattern', p.id)}
-                          style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 7, cursor: locked ? 'not-allowed' : 'pointer', background: s.pattern === p.id ? '#201D18' : 'transparent', border: `1px solid ${s.pattern === p.id ? 'rgba(245,240,235,0.12)' : 'transparent'}`, opacity: locked ? 0.4 : 1 }}
+                          style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 7, cursor: locked ? 'not-allowed' : 'pointer', background: isActive ? 'var(--cb-input)' : 'transparent', border: `1px solid ${isActive ? 'rgba(var(--cb-fg-rgb),0.12)' : 'transparent'}`, opacity: locked ? 0.4 : 1, transition: 'all 0.12s' }}
                         >
-                          <div style={{ width: 24, height: 24, borderRadius: 5, background: '#0A0A0A', backgroundImage: p.css || undefined, backgroundSize: p.size || undefined, flexShrink: 0, border: '1px solid rgba(245,240,235,0.12)' }} />
-                          <span style={{ fontSize: 12 }}>{p.name}</span>
-                          {s.pattern === p.id && <span style={{ marginLeft: 'auto', color: '#E8341A', fontSize: 12 }}>✓</span>}
+                          <div style={{ width: 24, height: 24, borderRadius: 5, background: '#0A0A0A', backgroundImage: p.css || undefined, backgroundSize: p.size || undefined, flexShrink: 0, border: '1px solid rgba(var(--cb-fg-rgb),0.12)' }} />
+                          <span style={{ fontSize: 12, color: isActive ? 'var(--cb-fg)' : '#A39D98' }}>{p.name}</span>
+                          {isActive && <span style={{ marginLeft: 'auto', color: '#E8341A', fontSize: 12 }}>✓</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </Section>
+
+                <Section label="Estilo del QR" action={!canUse(tier, 'elite') ? <LockPill tier="elite" onUpgrade={() => upgrade('elite')} /> : undefined}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {(['simple', 'colored', 'logo'] as const).map((qs) => {
+                      const locked = qs === 'logo' && !canUse(tier, 'elite');
+                      const isActive = s.qrStyle === qs;
+                      return (
+                        <div key={qs}
+                          onClick={() => locked ? upgrade('elite') : set('qrStyle', qs)}
+                          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 7, cursor: locked ? 'not-allowed' : 'pointer', background: isActive ? 'var(--cb-input)' : 'transparent', border: `1px solid ${isActive ? 'rgba(var(--cb-fg-rgb),0.12)' : 'transparent'}`, opacity: locked ? 0.4 : 1, transition: 'all 0.12s' }}
+                        >
+                          <QR size={28} color={qs === 'colored' ? pal.primary : qs === 'logo' ? '#A78BFA' : 'rgba(255,255,255,0.6)'} />
+                          <span style={{ fontSize: 12, color: isActive ? 'var(--cb-fg)' : '#A39D98' }}>{qs === 'simple' ? 'Simple (blanco)' : qs === 'colored' ? 'A color' : 'Con logo'}</span>
+                          {locked && <Lock size={9} style={{ marginLeft: 'auto', color: '#A78BFA' }} />}
+                          {isActive && !locked && <span style={{ marginLeft: 'auto', color: '#E8341A', fontSize: 12 }}>✓</span>}
                         </div>
                       );
                     })}
                   </div>
                 </Section>
               </>
-            )}
-
-            {/* Colors → solo estilo del QR */}
-            {activeTab === 'colors' && (
-              <Section label="Estilo del QR" action={!canUse(tier, 'elite') ? <LockPill tier="elite" onUpgrade={() => upgrade('elite')} /> : undefined}>
-                {(['simple', 'colored', 'logo'] as const).map((qs) => {
-                  const locked = qs === 'logo' && !canUse(tier, 'elite');
-                  return (
-                    <div key={qs}
-                      onClick={() => locked ? upgrade('elite') : set('qrStyle', qs)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 7, cursor: locked ? 'not-allowed' : 'pointer', marginBottom: 4, background: s.qrStyle === qs ? '#201D18' : 'transparent', border: `1px solid ${s.qrStyle === qs ? 'rgba(245,240,235,0.12)' : 'transparent'}`, opacity: locked ? 0.4 : 1 }}
-                    >
-                      <QR size={28} color={qs === 'colored' ? pal.primary : qs === 'logo' ? '#A78BFA' : 'rgba(255,255,255,0.6)'} />
-                      <span style={{ fontSize: 12 }}>{qs === 'simple' ? 'Simple (blanco)' : qs === 'colored' ? 'A color' : 'Con logo'}</span>
-                      {locked && <Lock size={9} style={{ marginLeft: 'auto', color: '#A78BFA' }} />}
-                      {s.qrStyle === qs && !locked && <span style={{ marginLeft: 'auto', color: '#E8341A', fontSize: 12 }}>✓</span>}
-                    </div>
-                  );
-                })}
-              </Section>
             )}
 
             {/* Typography */}
@@ -787,25 +1211,25 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                   const isActive = s.font === f.id;
                   // Per-font display customization for visual distinction
                   const displayStyle: React.CSSProperties = f.id === 'syne'
-                    ? { fontFamily: `'Syne', sans-serif`, fontWeight: 800, fontSize: 26, color: '#F5F0EB', letterSpacing: '-0.02em', lineHeight: 1 }
+                    ? { fontFamily: `'Syne', sans-serif`, fontWeight: 800, fontSize: 26, color: 'var(--cb-fg)', letterSpacing: '-0.02em', lineHeight: 1 }
                     : f.id === 'outfit'
-                    ? { fontFamily: `'Outfit', sans-serif`, fontWeight: 800, fontSize: 24, color: '#F5F0EB', lineHeight: 1 }
+                    ? { fontFamily: `'Outfit', sans-serif`, fontWeight: 800, fontSize: 24, color: 'var(--cb-fg)', lineHeight: 1 }
                     : f.id === 'playfair'
-                    ? { fontFamily: `'Playfair Display', serif`, fontWeight: 700, fontSize: 22, color: '#F5F0EB', lineHeight: 1.1 }
+                    ? { fontFamily: `'Playfair Display', serif`, fontWeight: 700, fontSize: 22, color: 'var(--cb-fg)', lineHeight: 1.1 }
                     : f.id === 'cormorant'
-                    ? { fontFamily: `'Cormorant Garamond', serif`, fontWeight: 600, fontSize: 26, color: '#F5F0EB', fontStyle: 'italic', lineHeight: 1.1 }
+                    ? { fontFamily: `'Cormorant Garamond', serif`, fontWeight: 600, fontSize: 26, color: 'var(--cb-fg)', fontStyle: 'italic', lineHeight: 1.1 }
                     : f.id === 'cabinet'
-                    ? { fontFamily: `'Plus Jakarta Sans', sans-serif`, fontWeight: 800, fontSize: 22, color: '#F5F0EB', lineHeight: 1 }
+                    ? { fontFamily: `'Plus Jakarta Sans', sans-serif`, fontWeight: 800, fontSize: 22, color: 'var(--cb-fg)', lineHeight: 1 }
                     : f.id === 'bebas'
-                    ? { fontFamily: `'Bebas Neue', sans-serif`, fontWeight: 400, fontSize: 32, color: '#F5F0EB', letterSpacing: '0.08em', lineHeight: 1 }
+                    ? { fontFamily: `'Bebas Neue', sans-serif`, fontWeight: 400, fontSize: 32, color: 'var(--cb-fg)', letterSpacing: '0.08em', lineHeight: 1 }
                     : f.id === 'josefin'
-                    ? { fontFamily: `'Josefin Sans', sans-serif`, fontWeight: 700, fontSize: 20, color: '#F5F0EB', letterSpacing: '0.12em', textTransform: 'uppercase' }
-                    : { fontFamily: `'Space Grotesk', monospace`, fontWeight: 500, fontSize: 18, color: '#F5F0EB', letterSpacing: '0.04em' };
+                    ? { fontFamily: `'Josefin Sans', sans-serif`, fontWeight: 700, fontSize: 20, color: 'var(--cb-fg)', letterSpacing: '0.12em', textTransform: 'uppercase' }
+                    : { fontFamily: `'Space Grotesk', monospace`, fontWeight: 500, fontSize: 18, color: 'var(--cb-fg)', letterSpacing: '0.04em' };
 
                   const bodyStyle: React.CSSProperties = {
                     fontFamily: `'${f.body}', sans-serif`,
                     fontSize: 11,
-                    color: '#6B6560',
+                    color: 'var(--cb-muted)',
                     marginTop: 4,
                     fontStyle: f.id === 'cormorant' ? 'normal' : undefined,
                     letterSpacing: f.id === 'josefin' ? '0.04em' : undefined,
@@ -814,10 +1238,10 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                   return (
                     <div key={f.id}
                       onClick={() => locked ? upgrade(f.tier) : set('font', f.id)}
-                      style={{ padding: 12, borderRadius: 8, marginBottom: 6, cursor: locked ? 'not-allowed' : 'pointer', border: `1.5px solid ${isActive ? '#E8341A' : 'rgba(245,240,235,0.07)'}`, background: isActive ? '#201D18' : 'transparent', opacity: locked ? 0.45 : 1, transition: 'all 0.15s' }}
+                      style={{ padding: 12, borderRadius: 8, marginBottom: 6, cursor: locked ? 'not-allowed' : 'pointer', border: `1.5px solid ${isActive ? '#E8341A' : 'rgba(var(--cb-fg-rgb),0.07)'}`, background: isActive ? 'var(--cb-input)' : 'transparent', opacity: locked ? 0.45 : 1, transition: 'all 0.15s' }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                        <span style={{ fontSize: 9, color: isActive ? '#E8341A' : '#4A4540', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{f.name}</span>
+                        <span style={{ fontSize: 9, color: isActive ? '#E8341A' : 'var(--cb-subtle)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{f.name}</span>
                         {locked && <LockPill tier={f.tier} onUpgrade={() => {}} />}
                         {isActive && !locked && <span style={{ fontSize: 9, color: '#E8341A', fontWeight: 700 }}>✓ Activa</span>}
                       </div>
@@ -835,41 +1259,41 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                   <UpgradeBanner tier="elite" label="Sube cualquier fuente de Google Fonts o un archivo .woff2 propio y úsala en tu tarjeta." onUpgrade={() => upgrade('elite')} />
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <div style={{ fontSize: 11, color: '#6B6560', lineHeight: 1.5 }}>
+                    <div style={{ fontSize: 11, color: 'var(--cb-muted)', lineHeight: 1.5 }}>
                       Pega la URL de importación de Google Fonts o un archivo <code style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 4px', borderRadius: 3 }}>.woff2</code>.
                     </div>
                     <label style={{ display: 'block' }}>
-                      <div style={{ fontSize: 11, color: '#6B6560', marginBottom: 5, fontWeight: 500 }}>URL de la fuente</div>
+                      <div style={{ fontSize: 11, color: 'var(--cb-muted)', marginBottom: 5, fontWeight: 500 }}>URL de la fuente</div>
                       <input
                         type="url"
                         value={s.customFontUrl ?? ''}
                         onChange={(e) => set('customFontUrl', e.target.value || undefined)}
                         placeholder="https://fonts.googleapis.com/css2?family=..."
-                        style={{ width: '100%', background: '#201D18', border: '1px solid rgba(245,240,235,0.12)', borderRadius: 7, padding: '8px 10px', fontFamily: 'Space Grotesk,sans-serif', fontSize: 11, color: '#F5F0EB', outline: 'none', boxSizing: 'border-box' }}
+                        style={{ width: '100%', background: 'var(--cb-input)', border: '1px solid rgba(var(--cb-fg-rgb),0.12)', borderRadius: 7, padding: '8px 10px', fontFamily: 'Space Grotesk,sans-serif', fontSize: 11, color: 'var(--cb-fg)', outline: 'none', boxSizing: 'border-box' }}
                       />
                     </label>
                     <label style={{ display: 'block' }}>
-                      <div style={{ fontSize: 11, color: '#6B6560', marginBottom: 5, fontWeight: 500 }}>Nombre CSS de la familia</div>
+                      <div style={{ fontSize: 11, color: 'var(--cb-muted)', marginBottom: 5, fontWeight: 500 }}>Nombre CSS de la familia</div>
                       <input
                         type="text"
                         value={s.customFontFamily ?? ''}
                         onChange={(e) => set('customFontFamily', e.target.value || undefined)}
                         placeholder="Ej: Roboto, Pacifico, MiFuente"
-                        style={{ width: '100%', background: '#201D18', border: '1px solid rgba(245,240,235,0.12)', borderRadius: 7, padding: '8px 10px', fontFamily: 'Space Grotesk,sans-serif', fontSize: 11, color: '#F5F0EB', outline: 'none', boxSizing: 'border-box' }}
+                        style={{ width: '100%', background: 'var(--cb-input)', border: '1px solid rgba(var(--cb-fg-rgb),0.12)', borderRadius: 7, padding: '8px 10px', fontFamily: 'Space Grotesk,sans-serif', fontSize: 11, color: 'var(--cb-fg)', outline: 'none', boxSizing: 'border-box' }}
                       />
                     </label>
                     {s.customFontFamily && (
-                      <div style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(245,240,235,0.1)', background: '#0A0907' }}>
-                        <div style={{ fontSize: 9, color: '#4A4540', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>Preview</div>
-                        <div style={{ fontFamily: `'${s.customFontFamily}', sans-serif`, fontSize: 26, fontWeight: 700, color: '#F5F0EB', lineHeight: 1 }}>Aa Bb 123</div>
-                        <div style={{ fontFamily: `'${s.customFontFamily}', sans-serif`, fontSize: 11, color: '#6B6560', marginTop: 4 }}>{s.businessName || 'Tu Negocio'}</div>
+                      <div style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(var(--cb-fg-rgb),0.1)', background: '#0A0907' }}>
+                        <div style={{ fontSize: 9, color: 'var(--cb-subtle)', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>Preview</div>
+                        <div style={{ fontFamily: `'${s.customFontFamily}', sans-serif`, fontSize: 26, fontWeight: 700, color: 'var(--cb-fg)', lineHeight: 1 }}>Aa Bb 123</div>
+                        <div style={{ fontFamily: `'${s.customFontFamily}', sans-serif`, fontSize: 11, color: 'var(--cb-muted)', marginTop: 4 }}>{s.businessName || 'Tu Negocio'}</div>
                       </div>
                     )}
                     {s.customFontFamily && (
                       <button
                         type="button"
                         onClick={() => { set('customFontUrl', undefined); set('customFontFamily', undefined); }}
-                        style={{ fontSize: 10, color: '#6B6560', background: 'none', border: '1px solid rgba(245,240,235,0.08)', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 600 }}
+                        style={{ fontSize: 10, color: 'var(--cb-muted)', background: 'none', border: '1px solid rgba(var(--cb-fg-rgb),0.08)', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 600 }}
                       >
                         Quitar fuente personalizada
                       </button>
@@ -890,7 +1314,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                     return (
                       <div key={ps.id}
                         onClick={() => locked ? upgrade(ps.tier) : set('pointsStyle', ps.id)}
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', borderRadius: 7, marginBottom: 5, cursor: locked ? 'not-allowed' : 'pointer', background: s.pointsStyle === ps.id ? '#201D18' : 'transparent', border: `1px solid ${s.pointsStyle === ps.id ? 'rgba(245,240,235,0.12)' : 'transparent'}`, opacity: locked ? 0.45 : 1 }}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', borderRadius: 7, marginBottom: 5, cursor: locked ? 'not-allowed' : 'pointer', background: s.pointsStyle === ps.id ? 'var(--cb-input)' : 'transparent', border: `1px solid ${s.pointsStyle === ps.id ? 'rgba(var(--cb-fg-rgb),0.12)' : 'transparent'}`, opacity: locked ? 0.45 : 1 }}
                       >
                         <span style={{ fontSize: 12 }}>{ps.label}</span>
                         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -902,131 +1326,6 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                   })}
                 </Section>
 
-                {s.cardType === 'stamps' && (
-                  <Section label="Diseño de sellos">
-                    {(() => {
-                      const currentScenario = STAMP_CATEGORIES.find(c => c.icons.some(i => i.id === s.stampIcon))?.id || 'generic';
-                      return (
-                        <>
-                          <div style={{ marginBottom: 12 }}>
-                            <span style={{ fontSize: 11, color: '#6B6560', marginBottom: 5, display: 'block', fontWeight: 500 }}>Escenario / Rubro</span>
-                            <select
-                              value={currentScenario}
-                              onChange={(e) => {
-                                const newScenario = e.target.value;
-                                const firstIcon = STAMP_CATEGORIES.find(c => c.id === newScenario)?.icons[0];
-                                if (firstIcon) {
-                                  if (!canUse(tier, firstIcon.tier)) {
-                                    upgrade(firstIcon.tier);
-                                  } else {
-                                    set('stampIcon', firstIcon.id as StampIconId);
-                                  }
-                                }
-                              }}
-                              style={{ width: '100%', background: '#201D18', border: '1px solid rgba(245,240,235,0.12)', borderRadius: 7, padding: '8px 10px', fontSize: 12, color: '#F5F0EB', outline: 'none' }}
-                            >
-                              {STAMP_CATEGORIES.map(cat => (
-                                <option key={cat.id} value={cat.id}>{cat.label}</option>
-                              ))}
-                            </select>
-                          </div>
-
-                          {currentScenario !== 'custom' && (
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
-                              {STAMP_CATEGORIES.find(c => c.id === currentScenario)?.icons.map(si => {
-                                const locked = !canUse(tier, si.tier);
-                                const IconComp = si.icon;
-                                return (
-                                  <button
-                                    key={si.id}
-                                    type="button"
-                                    onClick={() => locked ? upgrade(si.tier) : set('stampIcon', si.id as StampIconId)}
-                                    style={{
-                                      aspectRatio: '1', borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, cursor: locked ? 'not-allowed' : 'pointer', background: s.stampIcon === si.id ? 'rgba(232,52,26,0.15)' : 'transparent', border: `1px solid ${s.stampIcon === si.id ? '#E8341A' : 'rgba(245,240,235,0.12)'}`, opacity: locked ? 0.45 : 1, position: 'relative'
-                                    }}
-                                    title={si.label}
-                                  >
-                                    <IconComp size={18} color={s.stampIcon === si.id ? '#E8341A' : '#A39D98'} />
-                                    <span style={{ fontSize: 9, color: s.stampIcon === si.id ? '#E8341A' : '#6B6560', fontWeight: 600 }}>{si.label}</span>
-                                    {locked && <Lock size={8} style={{ position: 'absolute', top: 4, right: 4, color: '#FFB347' }} />}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          )}
-
-                          {/* Ver todos / búsqueda extendida */}
-                          {currentScenario !== 'custom' && (
-                            <button
-                              type="button"
-                              onClick={() => setShowIconPicker(v => !v)}
-                              style={{ marginTop: 8, fontSize: 10, color: '#E8341A', background: 'none', border: '1px solid rgba(232,52,26,0.25)', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', width: '100%', fontWeight: 600, letterSpacing: '0.04em' }}
-                            >
-                              {showIconPicker ? '▲ Ocultar librería' : '▼ Ver todos los íconos'}
-                            </button>
-                          )}
-
-                          {showIconPicker && currentScenario !== 'custom' && (() => {
-                            const filtered = STAMP_ICONS_EXTENDED.filter(ic =>
-                              ic.id !== 'custom' &&
-                              (!iconSearch || ic.label.toLowerCase().includes(iconSearch.toLowerCase()) || ic.category.toLowerCase().includes(iconSearch.toLowerCase()))
-                            );
-                            return (
-                              <div style={{ marginTop: 8, background: '#0A0A0A', border: '1px solid rgba(245,240,235,0.08)', borderRadius: 10, padding: 10 }}>
-                                <input
-                                  type="text"
-                                  placeholder="Buscar ícono..."
-                                  value={iconSearch}
-                                  onChange={e => setIconSearch(e.target.value)}
-                                  style={{ width: '100%', background: '#1A1713', border: '1px solid rgba(245,240,235,0.12)', borderRadius: 6, padding: '6px 10px', fontSize: 11, color: '#F5F0EB', outline: 'none', marginBottom: 10, boxSizing: 'border-box' }}
-                                />
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 5, maxHeight: 220, overflowY: 'auto' }}>
-                                  {filtered.map(ic => {
-                                    const locked = !canUse(tier, ic.tier);
-                                    const IconComp = ic.icon;
-                                    const isActive = s.stampIcon === ic.id;
-                                    return (
-                                      <button
-                                        key={ic.id}
-                                        type="button"
-                                        title={`${ic.label} · ${ic.category}`}
-                                        onClick={() => {
-                                          if (locked) { upgrade(ic.tier); return; }
-                                          set('stampIcon', ic.id as StampIconId);
-                                          setShowIconPicker(false);
-                                        }}
-                                        style={{ aspectRatio: '1', borderRadius: 7, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, cursor: locked ? 'not-allowed' : 'pointer', background: isActive ? 'rgba(232,52,26,0.15)' : 'rgba(255,255,255,0.03)', border: `1px solid ${isActive ? '#E8341A' : 'rgba(245,240,235,0.08)'}`, opacity: locked ? 0.4 : 1, transition: 'all 0.12s', position: 'relative' }}
-                                      >
-                                        <IconComp size={16} color={isActive ? '#E8341A' : '#6B6560'} />
-                                        <span style={{ fontSize: 8, color: isActive ? '#E8341A' : '#4A4540', textAlign: 'center', lineHeight: 1.2 }}>{ic.label}</span>
-                                        {locked && <Lock size={7} style={{ position: 'absolute', top: 2, right: 2, color: '#FFB347' }} />}
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            );
-                          })()}
-
-                          {currentScenario === 'custom' && canUse(tier, 'elite') && (
-                            <div style={{ marginTop: 10, padding: '10px', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 8 }}>
-                              <CtrlInput
-                                label="URL del Sello (Imagen)"
-                                value={s.customStampUrl ?? ''}
-                                onChange={(v) => set('customStampUrl', v)}
-                                placeholder="https://ejemplo.com/sello.png"
-                              />
-                              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 4 }}>
-                                Pega la URL de una imagen PNG con fondo transparente.
-                              </div>
-                            </div>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </Section>
-                )}
-
                 <Section label="Elementos adicionales">
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                     <span style={{ fontSize: 12 }}>Badge de nivel</span>
@@ -1036,7 +1335,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                     <select
                       value={s.badgeText}
                       onChange={(e) => set('badgeText', e.target.value)}
-                      style={{ width: '100%', background: '#201D18', border: '1px solid rgba(245,240,235,0.12)', borderRadius: 7, padding: '8px 10px', fontSize: 12, color: '#F5F0EB', marginBottom: 10, fontFamily: 'Space Grotesk,sans-serif' }}
+                      style={{ width: '100%', background: 'var(--cb-input)', border: '1px solid rgba(var(--cb-fg-rgb),0.12)', borderRadius: 7, padding: '8px 10px', fontSize: 12, color: 'var(--cb-fg)', marginBottom: 10, fontFamily: 'Space Grotesk,sans-serif' }}
                     >
                       {BADGE_OPTIONS.map((b) => <option key={b}>{b}</option>)}
                     </select>
@@ -1051,7 +1350,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                   {!canUse(tier, 'elite') ? (
                     <UpgradeBanner tier="elite" label="Efectos foil, sombras custom y animaciones de tarjeta." onUpgrade={() => upgrade('elite')} />
                   ) : (
-                    <div style={{ fontSize: 12, color: '#6B6560' }}>Próximamente: foil, emboss, glow</div>
+                    <div style={{ fontSize: 12, color: 'var(--cb-muted)' }}>Próximamente: foil, emboss, glow</div>
                   )}
                 </Section>
 
@@ -1063,7 +1362,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                         key={t}
                         type="button"
                         onClick={() => setTier(t)}
-                        style={{ padding: '4px 10px', borderRadius: 5, border: `1px solid ${tier === t ? '#E8341A' : 'rgba(245,240,235,0.12)'}`, background: tier === t ? '#E8341A' : 'transparent', fontSize: 10, cursor: 'pointer', color: '#F5F0EB', fontFamily: 'Space Grotesk,sans-serif', fontWeight: 600, textTransform: 'capitalize' }}
+                        style={{ padding: '4px 10px', borderRadius: 5, border: `1px solid ${tier === t ? '#E8341A' : 'rgba(var(--cb-fg-rgb),0.12)'}`, background: tier === t ? '#E8341A' : 'transparent', fontSize: 10, cursor: 'pointer', color: 'var(--cb-fg)', fontFamily: 'Space Grotesk,sans-serif', fontWeight: 600, textTransform: 'capitalize' }}
                       >
                         {t}
                       </button>
@@ -1072,6 +1371,8 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                 </Section>
               </>
             )}
+            {/* closes activeView === 'front' wrapper */}
+            </>)}
           </div>
         </div>
 
@@ -1083,7 +1384,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
             width: 8,
             cursor: 'col-resize',
             background: isDragging ? 'rgba(232,52,26,0.3)' : 'transparent',
-            borderRight: '1px solid rgba(245,240,235,0.07)',
+            borderRight: '1px solid rgba(var(--cb-fg-rgb),0.07)',
             transition: 'background 0.2s',
             zIndex: 10,
             position: 'relative',
@@ -1095,17 +1396,17 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
             if (!isDragging) e.currentTarget.style.background = 'transparent';
           }}
         >
-          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 2, height: 24, background: 'rgba(245,240,235,0.2)', borderRadius: 2 }} />
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 2, height: 24, background: 'rgba(var(--cb-fg-rgb),0.2)', borderRadius: 2 }} />
         </div>
 
         {/* ── Canvas ── */}
         <div
-          style={{ background: '#0D0B09', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', pointerEvents: isDragging ? 'none' : 'auto' }}
+          style={{ background: 'var(--cb-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', pointerEvents: isDragging ? 'none' : 'auto' }}
           onMouseMove={handleCardMouseMove}
           onMouseLeave={handleCardMouseLeave}
         >
           {/* Dot grid background */}
-          <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(#2E2A26 1px, transparent 1px)', backgroundSize: '24px 24px', opacity: 0.4, pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(var(--cb-deep) 1px, transparent 1px)', backgroundSize: '24px 24px', opacity: 0.4, pointerEvents: 'none' }} />
           {/* Ambient glow */}
           <div style={{ position: 'absolute', width: 320, height: 160, borderRadius: '50%', background: `radial-gradient(ellipse, ${pal.primary}18 0%, transparent 70%)`, pointerEvents: 'none', transition: 'background 0.5s' }} />
 
@@ -1114,9 +1415,9 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
             type="button"
             onClick={() => setLeftCollapsed((v) => !v)}
             title={leftCollapsed ? 'Mostrar panel' : 'Ocultar panel'}
-            style={{ position: 'absolute', top: 12, left: 12, zIndex: 2, width: 24, height: 24, borderRadius: 6, background: '#1A1713', border: '1px solid rgba(245,240,235,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#6B6560', fontSize: 12, transition: 'all 0.15s' }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#F5F0EB'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(245,240,235,0.25)'; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#6B6560'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(245,240,235,0.1)'; }}
+            style={{ position: 'absolute', top: 12, left: 12, zIndex: 2, width: 24, height: 24, borderRadius: 6, background: 'var(--cb-panel-2)', border: '1px solid rgba(var(--cb-fg-rgb),0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--cb-muted)', fontSize: 12, transition: 'all 0.15s' }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--cb-fg)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(var(--cb-fg-rgb),0.25)'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--cb-muted)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(var(--cb-fg-rgb),0.1)'; }}
           >
             {leftCollapsed ? '›' : '‹'}
           </button>
@@ -1128,12 +1429,6 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
 
             {/* Left: two-view card with from-above transition */}
             {(() => {
-              const IconComp = STAMP_ICONS_EXTENDED.find(x => x.id === s.stampIcon)?.icon ?? STAMP_ICONS_EXTENDED[0]!.icon;
-              const totalStamps = Math.min(s.cardType === 'stamps' ? pointsForReward : 10, 20);
-              const filled = Math.round(totalStamps * 0.7);
-              const cols = Math.min(totalStamps, 5);
-              const rows = Math.ceil(totalStamps / cols);
-
               const faceStyle = (active: boolean): React.CSSProperties => ({
                 position: 'absolute', inset: 0, borderRadius: 18, overflow: 'hidden',
                 transformOrigin: '50% 50%',
@@ -1157,7 +1452,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                     >
                       {/* Tilt + float + shadow */}
                       <div
-                        onClick={() => setIsFlipped(v => !v)}
+                        onClick={() => { if (!s.freeLayout) { setIsFlipped(v => { setActiveView(!v ? 'back' : 'front'); return !v; }); } }}
                         style={{
                           width: 380, height: 230,
                           position: 'relative',
@@ -1166,87 +1461,168 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                           animation: cardAnimating ? 'none' : 'cardFloat 5s ease-in-out infinite',
                           filter: `drop-shadow(0 28px 52px ${pal.primary}38)`,
                           willChange: 'transform',
-                          cursor: 'pointer',
+                          cursor: s.freeLayout ? 'default' : 'pointer',
                         }}>
 
                         {/* ── FRONT: selected template — clean when cardType=stamps (stamps shown on back) ── */}
-                        <div style={faceStyle(!isFlipped)}>
-                          {(() => { const FrontCard = CARD_RENDERERS[s.template] ?? ClassicCard; return <FrontCard s={s} pal={pal} font={font} pattern={pattern} W={380} H={230} noShadow hidePoints={s.cardType === 'stamps'} />; })()}
+                        <div style={{ ...faceStyle(!isFlipped), cursor: s.freeLayout ? 'default' : 'pointer' }}
+                          onClick={s.freeLayout ? (e) => e.stopPropagation() : undefined}>
+                          {s.freeLayout ? (
+                            /* Free layout mode: template bg + draggable overlay elements */
+                            <div style={{ position: 'relative', width: 380, height: 230 }}>
+                              {(() => { const BgCard = CARD_RENDERERS[s.template] ?? ClassicCard; return <BgCard s={s} pal={pal} font={font} pattern={pattern} W={380} H={230} noShadow bgOnly />; })()}
+                              {/* Snap point indicators — subtle dots visible during any drag */}
+                              {freeDragRef.current && SNAP_POINTS.map(pt => (
+                                <div key={pt.id} style={{ position: 'absolute', left: pt.x, top: pt.y, width: 4, height: 4, borderRadius: '50%', background: 'rgba(167,139,250,0.35)', transform: 'translate(-50%,-50%)', pointerEvents: 'none' }} />
+                              ))}
+                              {/* Draggable elements */}
+                              {freeElems.filter(el => el.visible).map(el => {
+                                const isLive = freeLivePos?.id === el.id;
+                                const ex = isLive ? freeLivePos!.x : el.x;
+                                const ey = isLive ? freeLivePos!.y : el.y;
+                                const labelMap: Record<string, string> = { biz: 'Negocio', cardname: 'Tarjeta', logo: 'Logo', points: 'Pts', member: 'Miembro', qr: 'QR' };
+                                return (
+                                  <div
+                                    key={el.id}
+                                    onPointerDown={(e) => {
+                                      e.stopPropagation();
+                                      e.currentTarget.setPointerCapture(e.pointerId);
+                                      freeDragRef.current = { elemId: el.id, startPtrX: e.clientX, startPtrY: e.clientY, startElemX: el.x, startElemY: el.y };
+                                      setFreeLivePos({ id: el.id, x: el.x, y: el.y });
+                                    }}
+                                    onPointerMove={(e) => {
+                                      if (!freeDragRef.current || freeDragRef.current.elemId !== el.id) return;
+                                      const nx = Math.max(0, Math.min(370, freeDragRef.current.startElemX + (e.clientX - freeDragRef.current.startPtrX)));
+                                      const ny = Math.max(0, Math.min(220, freeDragRef.current.startElemY + (e.clientY - freeDragRef.current.startPtrY)));
+                                      setFreeLivePos({ id: el.id, x: nx, y: ny });
+                                    }}
+                                    onPointerUp={(e) => {
+                                      if (!freeDragRef.current || freeDragRef.current.elemId !== el.id) return;
+                                      const nx = Math.max(0, Math.min(370, freeDragRef.current.startElemX + (e.clientX - freeDragRef.current.startPtrX)));
+                                      const ny = Math.max(0, Math.min(220, freeDragRef.current.startElemY + (e.clientY - freeDragRef.current.startPtrY)));
+                                      const snapped = nearestSnap(nx, ny);
+                                      freeDragRef.current = null;
+                                      setFreeLivePos(null);
+                                      setS(prev => ({ ...prev, freeElems: (prev.freeElems.length > 0 ? prev.freeElems : defaultFreeElems(pal)).map(fe => fe.id === el.id ? { ...fe, x: snapped.x, y: snapped.y } : fe) }));
+                                    }}
+                                    style={{
+                                      position: 'absolute', left: ex, top: ey,
+                                      padding: '3px 5px',
+                                      border: isLive ? '1.5px solid #A78BFA' : '1.5px dashed rgba(167,139,250,0.3)',
+                                      borderRadius: 5,
+                                      cursor: 'grab',
+                                      background: isLive ? 'rgba(167,139,250,0.12)' : 'transparent',
+                                      zIndex: isLive ? 30 : 20,
+                                      transition: isLive ? 'none' : 'border-color 0.15s, background 0.15s',
+                                      userSelect: 'none',
+                                      transform: 'translate(-2px, -2px)',
+                                    }}
+                                  >
+                                    <span style={{ fontSize: 7, fontWeight: 700, color: isLive ? '#A78BFA' : 'rgba(167,139,250,0.5)', letterSpacing: '0.05em', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
+                                      {labelMap[el.id] ?? el.id}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                              {/* Actual content rendered at live positions */}
+                              <FreeLayoutOverlay
+                                s={s} pal={pal} font={font} pattern={pattern} W={380} H={230}
+                                elemsOverride={freeElems.map(fe => freeLivePos?.id === fe.id ? { ...fe, x: freeLivePos.x, y: freeLivePos.y } : fe)}
+                              />
+                            </div>
+                          ) : (
+                            (() => { const FrontCard = CARD_RENDERERS[s.template] ?? ClassicCard; return <FrontCard s={s} pal={pal} font={font} pattern={pattern} W={380} H={230} noShadow hidePoints={s.cardType === 'stamps'} />; })()
+                          )}
                         </div>
 
-                        {/* ── BACK: stamps or points ── */}
-                        <div style={{ ...faceStyle(isFlipped), background: `linear-gradient(135deg, #1A1712 0%, #111009 100%)` }}>
-                          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'rgba(255,255,255,0.07)' }} />
-                          <div style={{ position: 'absolute', right: -30, top: -30, width: 140, height: 140, borderRadius: '50%', background: `${pal.primary}12`, pointerEvents: 'none' }} />
-                          <div style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%', padding: '16px 18px 12px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                            <div style={{ flexShrink: 0 }}>
-                              <div style={{ fontSize: 11, fontWeight: 800, fontFamily: 'Syne,sans-serif', color: pal.primary, letterSpacing: '-0.01em' }}>{s.businessName || 'Tu Negocio'}</div>
-                              <div style={{ fontSize: 7.5, color: 'rgba(245,240,235,0.28)', letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: 2 }}>{s.cardType === 'stamps' ? 'Stamp Card' : 'Loyalty Points'}</div>
-                            </div>
-
-                            {s.cardType === 'stamps' ? (
-                              <>
-                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 7, justifyContent: 'center' }}>
-                                  {Array.from({ length: rows }, (_, r) => (
-                                    <div key={r} style={{ display: 'flex', gap: 7 }}>
-                                      {Array.from({ length: cols }, (_, c) => {
-                                        const i = r * cols + c;
-                                        if (i >= totalStamps) return <div key={c} style={{ flex: 1 }} />;
-                                        return (
-                                          <div key={c} style={{ flex: 1, aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 10, background: i < filled ? pal.primary : 'rgba(245,240,235,0.06)', border: i < filled ? 'none' : '1.5px solid rgba(245,240,235,0.12)' }}>
-                                            <IconComp size={16} color={i < filled ? '#fff' : 'rgba(245,240,235,0.2)'} />
-                                          </div>
-                                        );
-                                      })}
+                        {/* ── BACK: points → template renderer | stamps → stamp grid over template bg ── */}
+                        <div style={faceStyle(isFlipped)}>
+                          {(() => {
+                            const BACK_BG_MAP: Record<BuilderState['backBg'], string> = {
+                              warm:   'linear-gradient(135deg,#1A1712 0%,#111009 100%)',
+                              dark:   'linear-gradient(135deg,#0C0A07 0%,#080604 100%)',
+                              deep:   'linear-gradient(160deg,#060810 0%,#0B0D18 100%)',
+                              accent: `linear-gradient(160deg,#111009 0%,${pal.primary}35 100%)`,
+                            };
+                            const backPal = { ...pal, bg: BACK_BG_MAP[s.backBg] };
+                            return s.cardType === 'points' ? (
+                            (() => {
+                              const BackCard = CARD_RENDERERS[s.template] ?? ClassicCard;
+                              return <BackCard s={s} pal={backPal} font={font} pattern={pattern} W={380} H={230} noShadow hidePoints={false} />;
+                            })()
+                          ) : (
+                            (() => {
+                              const BackCard = CARD_RENDERERS[s.template] ?? ClassicCard;
+                              const IconComp = STAMP_ICONS_EXTENDED.find(x => x.id === s.stampIcon)?.icon ?? STAMP_ICONS_EXTENDED[0]!.icon;
+                              const totalStamps = Math.min(pointsForReward, 20);
+                              const filled = Math.round(totalStamps * 0.7);
+                              let cols = Math.min(totalStamps, 5);
+                              let minWaste = cols * Math.ceil(totalStamps / cols) - totalStamps;
+                              for (let c = Math.min(totalStamps, 7); c >= 2; c--) {
+                                const w = c * Math.ceil(totalStamps / c) - totalStamps;
+                                if (w < minWaste) { minWaste = w; cols = c; }
+                                if (w === 0) break;
+                              }
+                              const rows = Math.ceil(totalStamps / cols);
+                              const iconSize = cols <= 3 ? 20 : cols <= 4 ? 17 : cols <= 5 ? 14 : cols <= 6 ? 12 : 10;
+                              return (
+                                <div style={{ position: 'relative', width: 380, height: 230 }}>
+                                  {/* Template bg layer */}
+                                  <div style={{ position: 'absolute', inset: 0 }}>
+                                    <BackCard s={s} pal={backPal} font={font} pattern={pattern} W={380} H={230} noShadow bgOnly />
+                                  </div>
+                                  {/* Stamp grid overlay */}
+                                  <div style={{ position: 'absolute', inset: 0, padding: '14px 18px 12px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    <div style={{ flexShrink: 0 }}>
+                                      <div style={{ fontSize: 10, fontWeight: 800, fontFamily: `'${font.display}',sans-serif`, color: pal.primary, letterSpacing: '-0.01em' }}>{s.businessName || 'Tu Negocio'}</div>
+                                      <div style={{ fontSize: 7, color: 'rgba(var(--cb-fg-rgb),0.35)', letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: 1 }}>Stamp Card</div>
                                     </div>
-                                  ))}
-                                </div>
-                                <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <div style={{ fontSize: 9, color: 'rgba(245,240,235,0.3)' }}>
-                                    {filled}/{totalStamps} · <span style={{ color: pal.primary, fontWeight: 700 }}>{totalStamps - filled} para la recompensa</span>
-                                  </div>
-                                  <div style={{ fontSize: 7.5, fontWeight: 800, fontFamily: 'Syne,sans-serif', color: 'rgba(245,240,235,0.12)', letterSpacing: '0.12em' }}>SELLIO</div>
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-                                  <div style={{ textAlign: 'center' }}>
-                                    <div style={{ fontSize: 56, fontWeight: 800, fontFamily: 'Syne,sans-serif', color: pal.primary, lineHeight: 1, letterSpacing: '-0.04em' }}>{filled * 10}</div>
-                                    <div style={{ fontSize: 9, color: 'rgba(245,240,235,0.3)', marginTop: 4, letterSpacing: '0.1em', textTransform: 'uppercase' }}>puntos acumulados</div>
-                                  </div>
-                                  <div style={{ width: '80%' }}>
-                                    <div style={{ height: 5, background: 'rgba(245,240,235,0.08)', borderRadius: 3, overflow: 'hidden' }}>
-                                      <div style={{ height: '100%', width: `${Math.min(100, Math.round(filled / totalStamps * 100))}%`, background: pal.primary, borderRadius: 3, transition: 'width 0.3s' }} />
+                                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, justifyContent: 'center' }}>
+                                      {Array.from({ length: rows }, (_, r) => (
+                                        <div key={r} style={{ display: 'flex', gap: 6 }}>
+                                          {Array.from({ length: cols }, (_, c) => {
+                                            const i = r * cols + c;
+                                            if (i >= totalStamps) return <div key={c} style={{ flex: 1 }} />;
+                                            return (
+                                              <div key={c} style={{ flex: 1, aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 9, background: i < filled ? pal.primary : 'rgba(var(--cb-fg-rgb),0.08)', border: i < filled ? 'none' : '1.5px solid rgba(var(--cb-fg-rgb),0.14)', backdropFilter: 'blur(4px)' }}>
+                                                <IconComp size={iconSize} color={i < filled ? '#fff' : 'rgba(var(--cb-fg-rgb),0.22)'} />
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      ))}
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
-                                      <div style={{ fontSize: 8, color: 'rgba(245,240,235,0.25)' }}>{filled * 10} pts</div>
-                                      <div style={{ fontSize: 8, color: 'rgba(245,240,235,0.25)' }}>Meta: {totalStamps * 10} pts</div>
+                                    <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <div style={{ fontSize: 8.5, color: 'rgba(var(--cb-fg-rgb),0.3)', fontFamily: `'${font.display}',sans-serif` }}>
+                                        {filled}/{totalStamps} · <span style={{ color: pal.primary, fontWeight: 700 }}>{totalStamps - filled} para la recompensa</span>
+                                      </div>
+                                      <div style={{ fontSize: 7, fontWeight: 800, color: 'rgba(var(--cb-fg-rgb),0.1)', letterSpacing: '0.12em' }}>SELLIO</div>
                                     </div>
                                   </div>
                                 </div>
-                                <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <div style={{ fontSize: 9, color: 'rgba(245,240,235,0.3)' }}>
-                                    Faltan <span style={{ color: pal.primary, fontWeight: 700 }}>{(totalStamps - filled) * 10} pts</span> para la recompensa
-                                  </div>
-                                  <div style={{ fontSize: 7.5, fontWeight: 800, fontFamily: 'Syne,sans-serif', color: 'rgba(245,240,235,0.12)', letterSpacing: '0.12em' }}>SELLIO</div>
-                                </div>
-                              </>
-                            )}
-                          </div>
+                              );
+                            })()
+                          );
+                          })()}
                         </div>
 
                       </div>
                     </div>
                   </div>
 
-                  {/* flip label below card */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, opacity: 0.45 }}>
-                    <span style={{ fontSize: 9, fontWeight: 600, color: '#7A7470', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                      {isFlipped ? 'Ver frente' : s.cardType === 'stamps' ? 'Ver sellos' : 'Ver puntos'}
-                    </span>
-                    <span style={{ fontSize: 11, color: '#7A7470' }}>↻</span>
-                  </div>
+                  {/* flip label / free layout hint below card */}
+                  {s.freeLayout ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, opacity: 0.6 }}>
+                      <span style={{ fontSize: 9, fontWeight: 600, color: '#A78BFA', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Modo Libre — arrastra · snap a zonas</span>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, opacity: 0.45 }}>
+                      <span style={{ fontSize: 9, fontWeight: 600, color: '#7A7470', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                        {isFlipped ? 'Ver frente' : s.cardType === 'stamps' ? 'Ver sellos' : 'Ver puntos'}
+                      </span>
+                      <span style={{ fontSize: 11, color: '#7A7470' }}>↻</span>
+                    </div>
+                  )}
                 </div>
               );
             })()}
@@ -1259,11 +1635,18 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
               const WIconComp = STAMP_ICONS_EXTENDED.find(x => x.id === s.stampIcon)?.icon ?? STAMP_ICONS_EXTENDED[0]!.icon;
               const wTotal = Math.min(s.cardType === 'stamps' ? pointsForReward : 10, 20);
               const wFilled = Math.round(wTotal * 0.7);
-              const wCols = Math.min(wTotal, 5);
+              let wCols = Math.min(wTotal, 5);
+              let wMinWaste = wCols * Math.ceil(wTotal / wCols) - wTotal;
+              for (let c = Math.min(wTotal, 7); c >= 2; c--) {
+                const w = c * Math.ceil(wTotal / c) - wTotal;
+                if (w < wMinWaste) { wMinWaste = w; wCols = c; }
+                if (w === 0) break;
+              }
               const wRows = Math.ceil(wTotal / wCols);
+              const wIconSize = wCols <= 3 ? 11 : wCols <= 5 ? 9 : 7;
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                  <div style={{ fontSize: 9, fontWeight: 600, color: '#4A4540', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Vista en Wallet</div>
+                  <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--cb-subtle)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Vista en Wallet</div>
                   {/* iPhone shell */}
                   <div style={{ width: 230, height: 460, borderRadius: 42, background: '#000', border: '7px solid #1C1C1E', boxShadow: '0 0 0 1px rgba(255,255,255,0.08), inset 0 0 0 1px rgba(255,255,255,0.04), 0 40px 80px rgba(0,0,0,0.8)', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                     {/* Status bar */}
@@ -1276,7 +1659,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                     </div>
 
                     {/* Wallet content */}
-                    <div style={{ flex: 1, background: '#111', display: 'flex', flexDirection: 'column', padding: '12px 10px 10px', gap: 10 }}>
+                    <div style={{ flex: 1, background: '#111', display: 'flex', flexDirection: 'column', padding: '10px 10px 8px', gap: 8 }}>
                       {/* Wallet header */}
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', fontFamily: 'Syne,sans-serif' }}>Wallet</span>
@@ -1309,13 +1692,13 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                           pointerEvents: !walletFlipped ? 'auto' : 'none',
                         }}>
                           <div style={{ width: 380, height: 230, transformOrigin: 'top left', transform: `scale(${wScale})`, pointerEvents: 'none' }}>
-                            <CardFrontPreview s={s} pal={pal} font={font} />
+                            <CardFrontPreview s={s} pal={pal} font={font} pattern={pattern} />
                           </div>
                         </div>
                         {/* Back face */}
                         <div style={{
                           position: 'absolute', inset: 0, borderRadius: 12, overflow: 'hidden',
-                          background: `linear-gradient(135deg, #1A1712 0%, #111009 100%)`,
+                          background: `linear-gradient(135deg, #1A1712 0%, var(--cb-panel) 100%)`,
                           transformOrigin: '50% 0%',
                           transform: walletFlipped ? 'rotateX(0deg) scale(1)' : 'rotateX(-72deg) scale(0.96)',
                           opacity: walletFlipped ? 1 : 0,
@@ -1328,18 +1711,18 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                           <div style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%', padding: '10px 12px 8px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 6 }}>
                             <div>
                               <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 10, color: pal.primary }}>{s.businessName || 'Tu Negocio'}</div>
-                              <div style={{ fontSize: 6, color: 'rgba(245,240,235,0.3)', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 1 }}>{s.cardType === 'stamps' ? 'Stamp Card' : 'Loyalty Points'}</div>
+                              <div style={{ fontSize: 6, color: 'rgba(var(--cb-fg-rgb),0.3)', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 1 }}>{s.cardType === 'stamps' ? 'Stamp Card' : 'Loyalty Points'}</div>
                             </div>
                             {s.cardType === 'stamps' ? (
-                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, justifyContent: 'center' }}>
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: wRows > 3 ? 2 : 3, justifyContent: 'center', overflow: 'hidden' }}>
                                 {Array.from({ length: wRows }, (_, r) => (
-                                  <div key={r} style={{ display: 'flex', gap: 4 }}>
+                                  <div key={r} style={{ display: 'flex', gap: wRows > 3 ? 2 : 3 }}>
                                     {Array.from({ length: wCols }, (_, c) => {
                                       const i = r * wCols + c;
                                       if (i >= wTotal) return <div key={c} style={{ flex: 1 }} />;
                                       return (
-                                        <div key={c} style={{ flex: 1, aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 5, background: i < wFilled ? pal.primary : 'rgba(245,240,235,0.07)', border: i < wFilled ? 'none' : '1px solid rgba(245,240,235,0.12)' }}>
-                                          <WIconComp size={9} color={i < wFilled ? '#fff' : 'rgba(245,240,235,0.2)'} />
+                                        <div key={c} style={{ flex: 1, aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 5, background: i < wFilled ? pal.primary : 'rgba(var(--cb-fg-rgb),0.07)', border: i < wFilled ? 'none' : '1px solid rgba(var(--cb-fg-rgb),0.12)' }}>
+                                          <WIconComp size={wIconSize} color={i < wFilled ? '#fff' : 'rgba(var(--cb-fg-rgb),0.2)'} />
                                         </div>
                                       );
                                     })}
@@ -1349,13 +1732,13 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                             ) : (
                               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
                                 <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 28, color: pal.primary, letterSpacing: '-0.03em', lineHeight: 1 }}>70</div>
-                                <div style={{ fontSize: 6, color: 'rgba(245,240,235,0.3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>puntos</div>
-                                <div style={{ width: '80%', height: 3, background: 'rgba(245,240,235,0.08)', borderRadius: 2, overflow: 'hidden' }}>
+                                <div style={{ fontSize: 6, color: 'rgba(var(--cb-fg-rgb),0.3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>puntos</div>
+                                <div style={{ width: '80%', height: 3, background: 'rgba(var(--cb-fg-rgb),0.08)', borderRadius: 2, overflow: 'hidden' }}>
                                   <div style={{ height: '100%', width: '70%', background: pal.primary, borderRadius: 2 }} />
                                 </div>
                               </div>
                             )}
-                            <div style={{ fontSize: 6, color: 'rgba(245,240,235,0.35)' }}>
+                            <div style={{ fontSize: 6, color: 'rgba(var(--cb-fg-rgb),0.35)' }}>
                               {s.cardType === 'stamps'
                                 ? <>Faltan <span style={{ color: pal.primary, fontWeight: 700 }}>{wTotal - wFilled}</span> sellos</>
                                 : <>Faltan <span style={{ color: pal.primary, fontWeight: 700 }}>30 pts</span> para la recompensa</>}
@@ -1364,14 +1747,14 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                         </div>
                       </div>
                       {/* Tap hint */}
-                      <div style={{ textAlign: 'center', fontSize: 8, color: '#3A3530', letterSpacing: '0.06em' }}>
+                      <div style={{ textAlign: 'center', fontSize: 8, color: 'var(--cb-dim)', letterSpacing: '0.06em' }}>
                         {walletFlipped ? '↑ toca para ver el frente' : `↓ toca para ver ${s.cardType === 'stamps' ? 'sellos' : 'puntos'}`}
                       </div>
 
-                      {/* Stacked other cards */}
-                      <div style={{ position: 'relative', height: 48, marginTop: 'auto' }}>
+                      {/* Stacked other cards — peek effect, bottom of wallet */}
+                      <div style={{ marginTop: 'auto', flexShrink: 0, position: 'relative', height: 56, overflow: 'hidden' }}>
                         {[['#A855F7', 'redBus'], ['#22C55E', 'Rewards'], ['#3B82F6', 'Coffee Club']].map(([color, label], i) => (
-                          <div key={label} style={{ position: 'absolute', bottom: i * 10, left: 0, right: 0, height: 44, borderRadius: 10, background: color, display: 'flex', alignItems: 'center', padding: '0 10px', zIndex: i, boxShadow: '0 -4px 12px rgba(0,0,0,0.5)' }}>
+                          <div key={label} style={{ position: 'absolute', top: i * 12, left: 0, right: 0, height: 44, borderRadius: 8, background: color, display: 'flex', alignItems: 'center', padding: '0 10px', zIndex: i + 1, boxShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
                             <span style={{ fontSize: 8, fontWeight: 700, color: '#fff', fontFamily: 'Syne,sans-serif' }}>{label}</span>
                           </div>
                         ))}
@@ -1407,18 +1790,18 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
         </div>
 
         {/* ── Right panel ── */}
-        <div style={{ background: '#111009', borderLeft: '1px solid rgba(245,240,235,0.07)', overflowY: 'auto' }}>
+        <div style={{ background: 'var(--cb-panel)', borderLeft: '1px solid rgba(var(--cb-fg-rgb),0.07)', overflowY: 'auto' }}>
 
           {/* Tipo de recompensa — primera decisión, visible siempre al inicio */}
-          <div style={{ padding: '16px 16px', borderBottom: '1px solid rgba(245,240,235,0.07)', background: '#0D0B09' }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: '#6B6560', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>Tipo de recompensa</div>
+          <div style={{ padding: '16px 16px', borderBottom: '1px solid rgba(var(--cb-fg-rgb),0.07)', background: 'var(--cb-bg)' }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--cb-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>Tipo de recompensa</div>
             {isEdit ? (
               // Editing: read-only badge
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 10, background: s.cardType === 'stamps' ? 'rgba(232,52,26,0.08)' : 'rgba(167,139,250,0.08)', border: `1px solid ${s.cardType === 'stamps' ? 'rgba(232,52,26,0.22)' : 'rgba(167,139,250,0.22)'}` }}>
                 {s.cardType === 'stamps' ? <Ticket size={18} color="#E8341A" /> : <Star size={18} color="#A78BFA" />}
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 700, color: s.cardType === 'stamps' ? '#E8341A' : '#A78BFA' }}>{s.cardType === 'stamps' ? 'Tarjeta de Sellos' : 'Tarjeta de Puntos'}</div>
-                  <div style={{ fontSize: 9.5, color: '#4A4540', marginTop: 1 }}>No se puede cambiar después de guardar</div>
+                  <div style={{ fontSize: 9.5, color: 'var(--cb-subtle)', marginTop: 1 }}>No se puede cambiar después de guardar</div>
                 </div>
               </div>
             ) : (
@@ -1430,14 +1813,14 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                   return (
                     <button key={type} type="button"
                       onClick={() => { if (!typeConfirmed || type !== s.cardType) setPendingCardType(type); }}
-                      style={{ background: active ? `${accentColor}12` : '#201D18', border: `1.5px solid ${active ? `${accentColor}40` : 'rgba(245,240,235,0.08)'}`, borderRadius: 10, padding: '14px 10px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%' }}
+                      style={{ background: active ? `${accentColor}12` : 'var(--cb-input)', border: `1.5px solid ${active ? `${accentColor}40` : 'rgba(var(--cb-fg-rgb),0.08)'}`, borderRadius: 10, padding: '14px 10px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%' }}
                     >
                       {active && <div style={{ position: 'absolute', top: 7, right: 7, width: 6, height: 6, borderRadius: '50%', background: accentColor }} />}
                       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
-                        {type === 'stamps' ? <Ticket size={22} color={active ? '#E8341A' : '#4A4540'} /> : <Star size={22} color={active ? '#A78BFA' : '#4A4540'} />}
+                        {type === 'stamps' ? <Ticket size={22} color={active ? '#E8341A' : 'var(--cb-subtle)'} /> : <Star size={22} color={active ? '#A78BFA' : 'var(--cb-subtle)'} />}
                       </div>
-                      <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 12, color: active ? accentColor : '#F5F0EB', marginBottom: 3 }}>{label}</div>
-                      <div style={{ fontSize: 9, color: '#4A4540', lineHeight: 1.3, textAlign: 'center' }}>{sub}</div>
+                      <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 12, color: active ? accentColor : 'var(--cb-fg)', marginBottom: 3 }}>{label}</div>
+                      <div style={{ fontSize: 9, color: 'var(--cb-subtle)', lineHeight: 1.3, textAlign: 'center' }}>{sub}</div>
                     </button>
                   );
                 })}
@@ -1447,11 +1830,11 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
 
           {/* Rest of right panel — locked until type is confirmed */}
           {!typeConfirmed && (
-            <div style={{ padding: '20px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, borderBottom: '1px solid rgba(245,240,235,0.07)', textAlign: 'center' }}>
-              <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(245,240,235,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Lock size={14} color="#4A4540" />
+            <div style={{ padding: '20px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, borderBottom: '1px solid rgba(var(--cb-fg-rgb),0.07)', textAlign: 'center' }}>
+              <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(var(--cb-fg-rgb),0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Lock size={14} color="var(--cb-subtle)" />
               </div>
-              <div style={{ fontSize: 11, color: '#4A4540', lineHeight: 1.6 }}>Elige y confirma el tipo de recompensa para continuar personalizando tu tarjeta.</div>
+              <div style={{ fontSize: 11, color: 'var(--cb-subtle)', lineHeight: 1.6 }}>Elige y confirma el tipo de recompensa para continuar personalizando tu tarjeta.</div>
             </div>
           )}
 
@@ -1471,13 +1854,22 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
             {s.cardType === 'points' && (
               <CtrlInput label="Puntos por visita" value={String(pointsPerCheckin)} onChange={(v) => setPointsPerCheckin(Math.max(1, Number(v) || 1))} type="number" error={fieldErrors.pointsPerCheckin} />
             )}
-            <CtrlInput
-              label={s.cardType === 'stamps' ? 'Número de sellos' : 'Puntos para recompensa'}
-              value={String(pointsForReward)}
-              onChange={(v) => setPointsForReward(Math.max(1, Math.min(s.cardType === 'stamps' ? 20 : 9999, Number(v) || 1)))}
-              type="number"
-              error={fieldErrors.pointsForReward}
-            />
+            {s.cardType === 'stamps' ? (
+              <StampCountField
+                value={pointsForReward}
+                onChange={setPointsForReward}
+                activeUserCount={cardActiveUserCount}
+                error={fieldErrors.pointsForReward}
+              />
+            ) : (
+              <CtrlInput
+                label="Puntos para recompensa"
+                value={String(pointsForReward)}
+                onChange={(v) => setPointsForReward(Math.max(1, Math.min(9999, Number(v) || 1)))}
+                type="number"
+                error={fieldErrors.pointsForReward}
+              />
+            )}
             <CtrlInput label="Máximo de miembros" value={maxMembers} onChange={setMaxMembers} type="number" placeholder="Sin límite" error={fieldErrors.maxMembers} />
           </RightSection>
 
@@ -1488,11 +1880,11 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
               return (
                 <div key={fmt}
                   onClick={() => locked ? upgrade(req) : undefined}
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid rgba(245,240,235,0.07)', cursor: locked ? 'pointer' : 'default', opacity: locked ? 0.5 : 1 }}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid rgba(var(--cb-fg-rgb),0.07)', cursor: locked ? 'pointer' : 'default', opacity: locked ? 0.5 : 1 }}
                 >
                   <div>
                     <div style={{ fontSize: 12, fontWeight: 600 }}>{fmt}</div>
-                    <div style={{ fontSize: 10, color: '#6B6560' }}>{desc}</div>
+                    <div style={{ fontSize: 10, color: 'var(--cb-muted)' }}>{desc}</div>
                   </div>
                   {locked ? <Lock size={10} style={{ color: '#FFB347', flexShrink: 0 }} /> : <button type="button" style={{ display: 'flex', alignItems: 'center', color: '#E8341A', background: 'none', border: 'none', cursor: 'pointer' }}><DownloadIcon size={10} /></button>}
                 </div>
@@ -1503,8 +1895,8 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
           {/* Compartir */}
           {cardSlug && (
             <RightSection title="Compartir">
-              <div style={{ background: '#201D18', borderRadius: 8, padding: 12 }}>
-                <div style={{ fontSize: 10, color: '#6B6560', marginBottom: 6 }}>Link público de la tarjeta</div>
+              <div style={{ background: 'var(--cb-input)', borderRadius: 8, padding: 12 }}>
+                <div style={{ fontSize: 10, color: 'var(--cb-muted)', marginBottom: 6 }}>Link público de la tarjeta</div>
                 <div style={{ fontSize: 11, color: '#E8341A', wordBreak: 'break-all', marginBottom: 8 }}>{cardSlug}</div>
                 <button
                   type="button"
@@ -1519,10 +1911,10 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
 
           {/* Impresión */}
           <RightSection title="Impresión física">
-            <div style={{ fontSize: 11, color: '#6B6560', lineHeight: 1.6, marginBottom: 10 }}>Descarga el PDF listo para imprimir en casa o imprenta. Incluido en todos los planes.</div>
+            <div style={{ fontSize: 11, color: 'var(--cb-muted)', lineHeight: 1.6, marginBottom: 10 }}>Descarga el PDF listo para imprimir en casa o imprenta. Incluido en todos los planes.</div>
             <button
               type="button"
-              style={{ width: '100%', background: '#201D18', border: '1px solid rgba(245,240,235,0.12)', borderRadius: 7, padding: 9, fontSize: 12, color: '#F5F0EB', cursor: 'pointer', fontFamily: 'Space Grotesk,sans-serif', fontWeight: 600 }}
+              style={{ width: '100%', background: 'var(--cb-input)', border: '1px solid rgba(var(--cb-fg-rgb),0.12)', borderRadius: 7, padding: 9, fontSize: 12, color: 'var(--cb-fg)', cursor: 'pointer', fontFamily: 'Space Grotesk,sans-serif', fontWeight: 600 }}
             >
               <PrinterIcon size={12} style={{ display: 'inline', marginRight: 5, verticalAlign: 'middle' }} /> Descargar para imprimir
             </button>
@@ -1534,7 +1926,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
       </div>
 
       {(success || error) && (
-        <div style={{ borderTop: '1px solid rgba(245,240,235,0.07)', padding: '12px 16px' }}>
+        <div style={{ borderTop: '1px solid rgba(var(--cb-fg-rgb),0.07)', padding: '12px 16px' }}>
           {success && <Alert variant="success">Cambios guardados correctamente.</Alert>}
           {error && <Alert variant="error">{error}</Alert>}
         </div>
@@ -1560,55 +1952,20 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
 
 // ── Card front preview (customer-facing view) ──────────────────
 
-function CardFrontPreview({ s, pal, font }: { s: BuilderState; pal: { primary: string; bg: string }; font: FontOption }) {
-  return (
-    <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg, ${pal.bg} 0%, #0D0B09 65%, ${pal.primary}18 100%)`, borderRadius: 18, overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', right: -40, top: -40, width: 180, height: 180, borderRadius: '50%', background: `${pal.primary}12`, pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', left: -20, bottom: -50, width: 140, height: 140, borderRadius: '50%', background: `${pal.primary}08`, pointerEvents: 'none' }} />
-      <div style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%', padding: '20px 24px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-        {/* Top: business name + logo */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <div style={{ fontFamily: `${font.display},Syne,sans-serif`, fontWeight: 800, fontSize: 18, color: pal.primary, letterSpacing: '-0.02em', lineHeight: 1 }}>{s.businessName || 'Tu Negocio'}</div>
-            <div style={{ fontSize: 7.5, color: 'rgba(245,240,235,0.32)', letterSpacing: '0.14em', textTransform: 'uppercase', marginTop: 4 }}>{s.cardType === 'stamps' ? 'Stamp Card' : 'Loyalty Card'}</div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: pal.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 16, color: '#fff', boxShadow: `0 4px 14px ${pal.primary}55` }}>
-              {(s.businessName || 'S').charAt(0).toUpperCase()}
-            </div>
-            {s.showBadge && s.badgeText && (
-              <div style={{ background: `${pal.primary}18`, border: `1px solid ${pal.primary}40`, borderRadius: 20, padding: '2px 8px', fontSize: 7, color: pal.primary, fontWeight: 700, whiteSpace: 'nowrap' }}>{s.badgeText}</div>
-            )}
-          </div>
-        </div>
-        {/* Center: accumulated value */}
-        <div>
-          <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 58, color: '#F5F0EB', letterSpacing: '-0.04em', lineHeight: 1 }}>
-            {s.cardType === 'points' ? '847' : '7'}
-          </div>
-          <div style={{ fontSize: 9, color: 'rgba(245,240,235,0.32)', letterSpacing: '0.14em', textTransform: 'uppercase', marginTop: 5 }}>
-            {s.cardType === 'points' ? 'Puntos acumulados' : 'Sellos acumulados'}
-          </div>
-        </div>
-        {/* Bottom: member info + QR */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-          <div>
-            <div style={{ fontSize: 8, color: 'rgba(245,240,235,0.28)', letterSpacing: '0.1em', marginBottom: 2 }}>Nº 00847291</div>
-            <div style={{ fontSize: 8, color: 'rgba(245,240,235,0.28)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 3 }}>Miembro</div>
-            <div style={{ fontFamily: `${font.display},Syne,sans-serif`, fontWeight: 700, fontSize: 13, color: 'rgba(245,240,235,0.75)' }}>Ana García</div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3, opacity: 0.32 }}>
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} style={{ width: 18, height: 18, borderRadius: 3, border: '1.5px solid rgba(245,240,235,0.7)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, padding: 3, boxSizing: 'border-box' }}>
-                <div style={{ background: 'rgba(245,240,235,0.85)', borderRadius: 1 }} />
-                <div style={{ background: i === 1 || i === 3 ? 'transparent' : 'rgba(245,240,235,0.85)', borderRadius: 1 }} />
-                <div style={{ background: i === 2 ? 'transparent' : 'rgba(245,240,235,0.85)', borderRadius: 1 }} />
-                <div style={{ background: 'rgba(245,240,235,0.85)', borderRadius: 1 }} />
-              </div>
-            ))}
-          </div>
-        </div>
+function CardFrontPreview({ s, pal, font, pattern }: { s: BuilderState; pal: { primary: string; bg: string }; font: FontOption; pattern: typeof PATTERNS[0] }) {
+  const CardComp = CARD_RENDERERS[s.template] ?? ClassicCard;
+  const freeElems: FreeLayoutElem[] = s.freeElems.length > 0 ? s.freeElems : defaultFreeElems(pal);
+  if (s.freeLayout) {
+    return (
+      <div style={{ position: 'absolute', inset: 0, borderRadius: 12, overflow: 'hidden' }}>
+        <CardComp s={s} pal={pal} font={font} pattern={pattern} W={380} H={230} noShadow bgOnly />
+        <FreeLayoutOverlay s={s} pal={pal} font={font} pattern={pattern} W={380} H={230} elemsOverride={freeElems} />
       </div>
+    );
+  }
+  return (
+    <div style={{ position: 'absolute', inset: 0, borderRadius: 12, overflow: 'hidden' }}>
+      <CardComp s={s} pal={pal} font={font} pattern={pattern} W={380} H={230} noShadow hidePoints={s.cardType === 'stamps'} />
     </div>
   );
 }
@@ -1624,16 +1981,16 @@ function CardTypeConfirmModal({ type, onAccept, onCancel }: { type: CardType; on
       onClick={onCancel}
     >
       <div
-        style={{ background: '#1A1712', border: '1px solid rgba(245,240,235,0.1)', borderRadius: 20, padding: '28px 28px 24px', maxWidth: 360, width: 'calc(100% - 32px)', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}
+        style={{ background: '#1A1712', border: '1px solid rgba(var(--cb-fg-rgb),0.1)', borderRadius: 20, padding: '28px 28px 24px', maxWidth: 360, width: 'calc(100% - 32px)', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
           {isStamps ? <Ticket size={32} color="#E8341A" /> : <Star size={32} color="#A78BFA" />}
         </div>
-        <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 19, color: '#F5F0EB', marginBottom: 8, textAlign: 'center' }}>
+        <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 19, color: 'var(--cb-fg)', marginBottom: 8, textAlign: 'center' }}>
           {isStamps ? 'Tarjeta de Sellos' : 'Tarjeta de Puntos'}
         </div>
-        <div style={{ fontSize: 13, color: '#6B6560', lineHeight: 1.65, marginBottom: 16, textAlign: 'center' }}>
+        <div style={{ fontSize: 13, color: 'var(--cb-muted)', lineHeight: 1.65, marginBottom: 16, textAlign: 'center' }}>
           {isStamps
             ? 'Los clientes acumularán un sello por cada visita hasta completar la tarjeta y ganar su recompensa.'
             : 'Los clientes acumularán puntos por visita. Tú configuras cuántos puntos vale cada visita y cuántos se necesitan para la recompensa.'}
@@ -1643,7 +2000,7 @@ function CardTypeConfirmModal({ type, onAccept, onCancel }: { type: CardType; on
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button type="button" onClick={onCancel}
-            style={{ flex: 1, background: 'transparent', border: '1px solid rgba(245,240,235,0.14)', borderRadius: 10, padding: '11px 0', fontSize: 13, fontWeight: 600, color: '#6B6560', cursor: 'pointer', fontFamily: 'Space Grotesk,sans-serif' }}>
+            style={{ flex: 1, background: 'transparent', border: '1px solid rgba(var(--cb-fg-rgb),0.14)', borderRadius: 10, padding: '11px 0', fontSize: 13, fontWeight: 600, color: 'var(--cb-muted)', cursor: 'pointer', fontFamily: 'Space Grotesk,sans-serif' }}>
             Cancelar
           </button>
           <button type="button" onClick={onAccept}
@@ -1662,7 +2019,7 @@ function Section({ label, action, children }: { label: string; action?: React.Re
   return (
     <div style={{ marginBottom: 20 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-        <span style={{ fontSize: 10, fontWeight: 600, color: '#6B6560', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{label}</span>
+        <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--cb-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{label}</span>
         {action}
       </div>
       {children}
@@ -1672,8 +2029,8 @@ function Section({ label, action, children }: { label: string; action?: React.Re
 
 function RightSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(245,240,235,0.07)' }}>
-      <div style={{ fontSize: 10, fontWeight: 600, color: '#6B6560', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>{title}</div>
+    <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(var(--cb-fg-rgb),0.07)' }}>
+      <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--cb-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>{title}</div>
       {children}
     </div>
   );

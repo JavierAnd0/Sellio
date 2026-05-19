@@ -9,7 +9,7 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type OrgRole = 'owner' | 'admin' | 'cashier';
-export type OrgPlan = 'free' | 'basic' | 'elite';
+export type OrgPlan = 'free' | 'basic' | 'elite' | 'enterprise';
 export type SubscriptionStatus =
   | 'trialing'
   | 'active'
@@ -229,6 +229,7 @@ export interface Database {
           customer_id: string;
           slug: string;
           points: number;
+          member_number: number;
           joined_at: string;
           last_activity_at: string | null;
         };
@@ -238,6 +239,7 @@ export interface Database {
           customer_id: string;
           slug?: string;
           points?: number;
+          member_number?: number;
           joined_at?: string;
           last_activity_at?: string | null;
         };
@@ -247,6 +249,7 @@ export interface Database {
           customer_id?: string;
           slug?: string;
           points?: number;
+          member_number?: number;
           joined_at?: string;
           last_activity_at?: string | null;
         };
