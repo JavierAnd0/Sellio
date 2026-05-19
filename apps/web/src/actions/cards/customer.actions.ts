@@ -41,6 +41,21 @@ export async function addPointsAction(
 
   if (!user) return { ok: false, error: 'Sesión expirada.' };
 
+  const org = await new SupabaseOrganizationRepository().findByOwner(user.id);
+  if (!org) return { ok: false, error: 'Organización no encontrada.' };
+
+  // Verify the membership belongs to a card in the caller's org
+  const { data: membershipRow } = await db
+    .from('memberships')
+    .select('card_id')
+    .eq('id', membershipId)
+    .single();
+
+  if (!membershipRow) return { ok: false, error: 'Membresía no encontrada.' };
+
+  const card = await new SupabaseCardRepository().findById(membershipRow.card_id);
+  if (!card || card.orgId !== org.id) return { ok: false, error: 'No autorizado.' };
+
   try {
     const newPoints = await new SupabaseMembershipRepository().addPoints(
       membershipId,

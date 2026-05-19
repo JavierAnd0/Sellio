@@ -1,0 +1,178 @@
+{
+  "nav": {
+    "menu": "Menu",
+    "dashboard": "Dashboard",
+    "cards": "Cards",
+    "customers": "Customers",
+    "analytics": "Analytics",
+    "settings": "Settings"
+  },
+  "sidebar": {
+    "closeMenu": "Close menu",
+    "freeTrial": "Free trial",
+    "trialExpired": "Trial expired",
+    "readOnly": "Read only — upgrade your plan",
+    "daysLeft": "{days} days left",
+    "oneDay": "1 day left",
+    "clients": "{count} customers",
+    "cards": "{count} card",
+    "cardsPlural": "{count} cards",
+    "noLimits": "✦ No active limits",
+    "upgradeButton": "Upgrade plan →",
+    "aboutToExpire": "⚠ Your trial is about to expire",
+    "upgradeWhenReady": "Upgrade when you're ready"
+  },
+  "topbar": {
+    "openMenu": "Open menu",
+    "signOut": "Sign out",
+    "myProfile": "My profile",
+    "routes": {
+      "dashboard": "Overview",
+      "settings": "Settings",
+      "profile": "Profile",
+      "cards": "Cards",
+      "customers": "Customers",
+      "analytics": "Analytics",
+      "default": "Sellio"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "breadcrumb": "Panel / Settings",
+    "nav": {
+      "general": "General",
+      "password": "Password",
+      "privacy": "Privacy",
+      "billing": "Billing",
+      "deleteAccount": "Delete account"
+    },
+    "profile": {
+      "title": "General",
+      "subtitle": "Update your profile and account information.",
+      "username": "Username",
+      "notEditable": "(not editable)",
+      "email": "Email",
+      "businessName": "Business name",
+      "phone": "Phone",
+      "saveChanges": "Save changes",
+      "saveSuccess": "Changes saved successfully."
+    },
+    "preferences": {
+      "title": "Preferences",
+      "subtitle": "Customize the interface appearance.",
+      "appearance": "Appearance",
+      "language": "Language"
+    }
+  },
+  "theme": {
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome back.",
+      "subtitle": "Sign in to your account to manage your loyalty cards.",
+      "email": "Email",
+      "emailPlaceholder": "you@business.com",
+      "password": "Password",
+      "passwordPlaceholder": "••••••••",
+      "showPassword": "Show",
+      "hidePassword": "Hide",
+      "forgotPassword": "Forgot your password?",
+      "signIn": "Sign in",
+      "orContinueWith": "or continue with",
+      "continueWithGoogle": "Continue with Google",
+      "comingSoon": "Coming soon",
+      "noAccount": "Don't have an account?",
+      "createAccount": "Create account",
+      "resetSuccess": "Password updated successfully. Sign in with your new password."
+    },
+    "register": {
+      "title": "Create your account.",
+      "subtitle": "Start for free. No credit card required.",
+      "fullName": "Full name",
+      "fullNamePlaceholder": "Maria Garcia",
+      "businessName": "Business name",
+      "businessNamePlaceholder": "Don Luis Coffee Shop",
+      "email": "Email",
+      "emailPlaceholder": "you@business.com",
+      "password": "Password",
+      "passwordPlaceholder": "At least 8 characters",
+      "showPassword": "Show",
+      "hidePassword": "Hide",
+      "strengthWeak": "Weak",
+      "strengthFair": "Fair",
+      "strengthGood": "Good",
+      "strengthStrong": "Strong",
+      "createAccount": "Create free account",
+      "alreadyHaveAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "terms": "By creating an account you agree to our",
+      "termsLink": "Terms and conditions",
+      "orContinueWith": "or continue with",
+      "continueWithGoogle": "Continue with Google",
+      "comingSoon": "Coming soon"
+    },
+    "forgotPassword": {
+      "title": "Reset password",
+      "subtitle": "Enter your email and we'll send you a link to reset your password.",
+      "email": "Email",
+      "emailPlaceholder": "you@business.com",
+      "sendLink": "Send link",
+      "backToLogin": "Back to sign in",
+      "checkEmail": "Check your email",
+      "checkEmailSubtitle": "If your email is registered, you'll receive a link in the next few minutes."
+    }
+  },
+  "dashboard": {
+    "welcome": "Welcome to Sellio",
+    "greeting": "Hello,",
+    "stats": {
+      "totalCustomers": "Total customers",
+      "pointsIssued": "Points issued",
+      "activeMemberships": "Active memberships",
+      "cards": "Active cards"
+    },
+    "recentActivity": "Recent activity",
+    "noCards": {
+      "title": "Create your first loyalty card",
+      "subtitle": "Design a custom card in minutes and start building customer loyalty today.",
+      "cta": "Create first card"
+    }
+  },
+  "cards": {
+    "title": "Loyalty cards",
+    "newCard": "New card",
+    "empty": {
+      "title": "No cards yet",
+      "subtitle": "Create your first loyalty card to get started."
+    },
+    "stats": {
+      "members": "Members",
+      "points": "Points",
+      "scans": "Scans"
+    },
+    "edit": "Edit",
+    "builder": "Open Builder",
+    "viewCustomers": "View customers",
+    "share": "Share",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "saved": "Saved",
+    "error": "Error",
+    "retry": "Retry",
+    "back": "Back",
+    "next": "Next",
+    "create": "Create",
+    "delete": "Delete",
+    "edit": "Edit",
+    "comingSoon": "Coming soon"
+  }
+}

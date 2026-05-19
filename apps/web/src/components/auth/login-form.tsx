@@ -3,12 +3,14 @@
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { type FormEvent, useState, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 
 import { Alert, Button, FormField, Input, Separator } from '@sellio/ui';
 
 import { loginAction } from '@/actions/auth/login.action';
 
 export function LoginForm() {
+  const t = useTranslations('auth.login');
   const searchParams = useSearchParams();
   const resetSuccess = searchParams.get('reset') === 'success';
 
@@ -35,16 +37,16 @@ export function LoginForm() {
     <div className="animate-fade-slide-in">
       <div className="mb-8">
         <h1 className="mb-2 font-display text-3xl font-extrabold tracking-tight text-fg">
-          Bienvenido de nuevo.
+          {t('title')}
         </h1>
         <p className="text-sm leading-relaxed text-muted">
-          Ingresa a tu cuenta para gestionar tus tarjetas de lealtad.
+          {t('subtitle')}
         </p>
       </div>
 
       {resetSuccess && (
         <Alert variant="success" className="mb-4">
-          Contraseña actualizada correctamente. Ingresa con tu nueva contraseña.
+          {t('resetSuccess')}
         </Alert>
       )}
 
@@ -55,25 +57,25 @@ export function LoginForm() {
       )}
 
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
-        <FormField label="Email" htmlFor="email" error={fieldErrors.email}>
+        <FormField label={t('email')} htmlFor="email" error={fieldErrors.email}>
           <Input
             id="email"
             name="email"
             type="email"
             autoComplete="email"
-            placeholder="tu@negocio.com"
+            placeholder={t('emailPlaceholder')}
             error={!!fieldErrors.email}
           />
         </FormField>
 
-        <FormField label="Contraseña" htmlFor="password" error={fieldErrors.password}>
+        <FormField label={t('password')} htmlFor="password" error={fieldErrors.password}>
           <div className="relative">
             <Input
               id="password"
               name="password"
               type={showPass ? 'text' : 'password'}
               autoComplete="current-password"
-              placeholder="••••••••"
+              placeholder={t('passwordPlaceholder')}
               error={!!fieldErrors.password}
               className="pr-12"
             />
@@ -83,23 +85,23 @@ export function LoginForm() {
               className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted hover:text-fg transition-colors"
               tabIndex={-1}
             >
-              {showPass ? 'Ocultar' : 'Ver'}
+              {showPass ? t('hidePassword') : t('showPassword')}
             </button>
           </div>
         </FormField>
 
         <div className="flex justify-end">
           <Link href="/forgot-password" className="text-xs text-coral hover:opacity-80 transition-opacity">
-            ¿Olvidaste tu contraseña?
+            {t('forgotPassword')}
           </Link>
         </div>
 
         <Button type="submit" fullWidth loading={isPending} className="mt-2">
-          Ingresar
+          {t('signIn')}
         </Button>
       </form>
 
-      <Separator label="o continúa con" className="my-5" />
+      <Separator label={t('orContinueWith')} className="my-5" />
 
       <button
         type="button"
@@ -107,16 +109,16 @@ export function LoginForm() {
         className="flex w-full cursor-not-allowed items-center justify-center gap-2.5 rounded-lg border border-border/20 bg-surface-2 px-4 py-3 text-sm font-semibold text-muted opacity-60"
       >
         <GoogleIcon />
-        Continuar con Google
+        {t('continueWithGoogle')}
         <span className="ml-auto rounded-md bg-surface px-2 py-0.5 text-[10px] text-muted">
-          Próximamente
+          {t('comingSoon')}
         </span>
       </button>
 
       <p className="mt-6 text-center text-sm text-muted">
-        ¿No tienes cuenta?{' '}
+        {t('noAccount')}{' '}
         <Link href="/register" className="font-semibold text-coral hover:opacity-80 transition-opacity">
-          Crear cuenta
+          {t('createAccount')}
         </Link>
       </p>
     </div>

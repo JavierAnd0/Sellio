@@ -4,25 +4,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, User } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 import { cn } from '@sellio/ui';
 
 import { signoutAction } from '@/actions/auth/signout.action';
 import { useUiStore } from '@/lib/stores/ui.store';
-
-const ROUTE_TITLES: Record<string, string> = {
-  '/app/dashboard': 'Overview',
-  '/app/settings/profile': 'Perfil',
-  '/app/settings': 'Configuración',
-  '/app': 'Dashboard',
-};
-
-function getPageTitle(pathname: string): string {
-  for (const [route, title] of Object.entries(ROUTE_TITLES)) {
-    if (pathname === route || pathname.startsWith(`${route}/`)) return title;
-  }
-  return 'Sellio';
-}
 
 interface TopbarProps {
   userEmail?: string;
@@ -33,6 +20,24 @@ export function Topbar({ userEmail, userFullName }: TopbarProps) {
   const { setSidebarOpen } = useUiStore();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const t = useTranslations('topbar');
+  const tRoutes = useTranslations('topbar.routes');
+
+  const ROUTE_TITLES: Record<string, string> = {
+    '/app/dashboard':        tRoutes('dashboard'),
+    '/app/settings/profile': tRoutes('profile'),
+    '/app/settings':         tRoutes('settings'),
+    '/app/cards':            tRoutes('cards'),
+    '/app/analytics':        tRoutes('analytics'),
+    '/app':                  tRoutes('dashboard'),
+  };
+
+  function getPageTitle(p: string): string {
+    for (const [route, title] of Object.entries(ROUTE_TITLES)) {
+      if (p === route || p.startsWith(`${route}/`)) return title;
+    }
+    return tRoutes('default');
+  }
 
   const initials = userFullName
     ? userFullName.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()
@@ -44,7 +49,7 @@ export function Topbar({ userEmail, userFullName }: TopbarProps) {
         type="button"
         className="text-muted hover:text-fg transition-colors md:hidden"
         onClick={() => setSidebarOpen(true)}
-        aria-label="Abrir menú"
+        aria-label={t('openMenu')}
       >
         <Menu size={20} />
       </button>
@@ -59,7 +64,7 @@ export function Topbar({ userEmail, userFullName }: TopbarProps) {
           type="button"
           onClick={() => setMenuOpen((v) => !v)}
           className="flex h-8 w-8 items-center justify-center rounded-full bg-coral font-display text-sm font-bold text-white hover:bg-coral-dim transition-colors"
-          aria-label="Menú de usuario"
+          aria-label={t('myProfile')}
           aria-expanded={menuOpen}
         >
           {initials}
@@ -87,7 +92,7 @@ export function Topbar({ userEmail, userFullName }: TopbarProps) {
                   onClick={() => setMenuOpen(false)}
                 >
                   <User size={14} />
-                  Ver perfil
+                  {t('myProfile')}
                 </Link>
                 <form action={signoutAction}>
                   <button
@@ -99,7 +104,7 @@ export function Topbar({ userEmail, userFullName }: TopbarProps) {
                       <polyline points="16 17 21 12 16 7" />
                       <line x1="21" y1="12" x2="9" y2="12" />
                     </svg>
-                    Cerrar sesión
+                    {t('signOut')}
                   </button>
                 </form>
               </div>

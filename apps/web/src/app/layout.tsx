@@ -4,6 +4,8 @@ import {
   Playfair_Display, DM_Sans, Cormorant_Garamond, Lato,
   Plus_Jakarta_Sans, Bebas_Neue, Inter, Josefin_Sans, Source_Serif_4,
 } from 'next/font/google';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
 
 import './globals.css';
 
@@ -49,7 +51,7 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const fontVars = [
     syne.variable, spaceGrotesk.variable, outfit.variable, nunito.variable,
     playfairDisplay.variable, dmSans.variable, cormorantGaramond.variable, lato.variable,
@@ -57,9 +59,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     sourceSerif4.variable,
   ].join(' ');
 
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="es" suppressHydrationWarning>
-      <body className={fontVars}>{children}</body>
+    <html lang={locale} suppressHydrationWarning>
+      {/* Inline script runs before paint — prevents theme flash */}
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('sellio-theme');if(t==='dark'||t==='light'){document.documentElement.classList.add(t)}}catch(e){}})()`,
+          }}
+        />
+      </head>
+      <body className={fontVars}>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          {children}
+        </NextIntlClientProvider>
+      </body>
     </html>
   );
 }

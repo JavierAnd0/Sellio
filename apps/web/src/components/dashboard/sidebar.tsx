@@ -3,6 +3,7 @@
 import { X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 import { Logo, cn } from '@sellio/ui';
 import { useUiStore } from '@/lib/stores/ui.store';
@@ -98,6 +99,8 @@ function SidebarItem({ href, icon: Icon, children, badge, activeIcon: ActiveIcon
 
 export function Sidebar({ plan = 'free', trialDaysLeft, totalCards = 0, totalCustomers = 0, firstCardId, orgName, userEmail }: SidebarProps) {
   const { sidebarOpen, setSidebarOpen } = useUiStore();
+  const tNav = useTranslations('nav');
+  const tSidebar = useTranslations('sidebar');
   const config = PLAN_CONFIG[plan];
   const isElite = plan === 'elite';
   const isTrial = plan === 'free' && trialDaysLeft !== null && trialDaysLeft !== undefined && trialDaysLeft > 0;
@@ -122,7 +125,7 @@ export function Sidebar({ plan = 'free', trialDaysLeft, totalCards = 0, totalCus
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex h-screen w-[260px] flex-col border-r border-border/20 bg-[#F9F7F4] dark:bg-surface transition-transform duration-300',
+          'fixed inset-y-0 left-0 z-50 flex h-screen w-[260px] flex-col border-r border-border/20 bg-surface transition-transform duration-300',
           'md:sticky md:top-0 md:inset-auto md:z-auto md:shrink-0 md:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full',
         )}
@@ -134,7 +137,7 @@ export function Sidebar({ plan = 'free', trialDaysLeft, totalCards = 0, totalCus
             type="button"
             className="text-muted hover:text-fg transition-colors md:hidden"
             onClick={() => setSidebarOpen(false)}
-            aria-label="Cerrar menú"
+            aria-label={tSidebar('closeMenu')}
           >
             <X size={20} />
           </button>
@@ -144,41 +147,41 @@ export function Sidebar({ plan = 'free', trialDaysLeft, totalCards = 0, totalCus
         <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-6">
           <div>
             <p className="mb-2 px-4 text-[10px] font-bold uppercase tracking-[0.15em] text-muted/60">
-              Menú
+              {tNav('menu')}
             </p>
             <nav className="flex flex-col gap-1">
               <SidebarItem href="/app/dashboard" icon={HexIcon}>
-                Dashboard
+                {tNav('dashboard')}
               </SidebarItem>
-              <SidebarItem 
-                href="/app/cards" 
-                icon={DiamondIcon} 
+              <SidebarItem
+                href="/app/cards"
+                icon={DiamondIcon}
                 activeIcon={DiamondIcon}
                 activePattern={/^\/app\/cards(\/[^/]+)?$/}
               >
-                Tarjetas
+                {tNav('cards')}
               </SidebarItem>
-              <SidebarItem 
-                href={clientesHref} 
-                icon={DotCircleIcon} 
+              <SidebarItem
+                href={clientesHref}
+                icon={DotCircleIcon}
                 activeIcon={DotCircleIcon}
                 activePattern={/^\/app\/cards\/[^/]+\/customers/}
               >
-                Clientes
+                {tNav('customers')}
               </SidebarItem>
-              
+
               <div className="mt-2 pointer-events-none opacity-50 grayscale">
                 <SidebarItem href="/app/analytics" icon={StarIcon} badge="PRO">
-                  Analytics
+                  {tNav('analytics')}
                 </SidebarItem>
               </div>
-              <SidebarItem 
-                href="/app/settings/profile" 
+              <SidebarItem
+                href="/app/settings/profile"
                 icon={DiamondIcon}
                 activeIcon={DiamondIcon}
                 activePattern={/^\/app\/settings(\/.*)?$/}
               >
-                Configuración
+                {tNav('settings')}
               </SidebarItem>
             </nav>
           </div>
@@ -189,7 +192,7 @@ export function Sidebar({ plan = 'free', trialDaysLeft, totalCards = 0, totalCus
           
           {/* User Profile Info */}
           <div className="flex items-center gap-3 px-6 mb-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#EAE7DF] text-[#718096]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-muted">
               <UserIcon />
             </div>
             <div className="flex flex-col min-w-0">
@@ -199,26 +202,26 @@ export function Sidebar({ plan = 'free', trialDaysLeft, totalCards = 0, totalCus
           </div>
 
           {/* Plan Widget */}
-          <div className={`mx-4 rounded-[20px] p-5 shadow-sm ${isTrialExpired ? 'bg-[#FFF0EE] border border-[#E8341A]/20' : 'bg-[#F5E6DE]'}`}>
+          <div className={`mx-4 rounded-[20px] p-5 shadow-sm ${isTrialExpired ? 'bg-coral-50 border border-coral/20 dark:bg-coral/10 dark:border-coral/20' : 'bg-coral-50 dark:bg-coral/10'}`}>
             <div className="mb-2">
               <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[#D02B13] mb-1">
-                {isTrial ? 'Prueba gratuita' : isTrialExpired ? 'Prueba expirada' : config.label}
+                {isTrial ? tSidebar('freeTrial') : isTrialExpired ? tSidebar('trialExpired') : config.label}
               </p>
               {isTrial ? (
                 <p className="text-xs font-semibold text-muted">
-                  {trialDaysLeft === 1 ? 'Queda 1 día' : `Quedan ${trialDaysLeft} días`}
+                  {trialDaysLeft === 1 ? tSidebar('oneDay') : tSidebar('daysLeft', { days: trialDaysLeft })}
                 </p>
               ) : isTrialExpired ? (
                 <p className="text-xs font-semibold text-[#D02B13]">
-                  Solo lectura — actualiza tu plan
+                  {tSidebar('readOnly')}
                 </p>
               ) : isElite ? (
                 <p className="text-xs font-semibold text-muted">
-                  {totalCustomers} clientes · {totalCards} tarjeta{totalCards !== 1 ? 's' : ''}
+                  {tSidebar('clients', { count: totalCustomers })} · {totalCards !== 1 ? tSidebar('cardsPlural', { count: totalCards }) : tSidebar('cards', { count: totalCards })}
                 </p>
               ) : (
                 <p className="text-xs font-semibold text-muted">
-                  {totalCustomers}/{config.maxCustomers} clientes · {totalCards} tarjeta{config.maxCards !== 1 ? 's' : ''}
+                  {totalCustomers}/{config.maxCustomers} {tSidebar('clients', { count: totalCustomers })} · {totalCards !== 1 ? tSidebar('cardsPlural', { count: totalCards }) : tSidebar('cards', { count: totalCards })}
                 </p>
               )}
             </div>
@@ -232,14 +235,14 @@ export function Sidebar({ plan = 'free', trialDaysLeft, totalCards = 0, totalCus
                   />
                 </div>
                 <p className="text-[11px] font-semibold text-[#D02B13]/70">
-                  {trialDaysLeft! <= 3 ? '⚠ Tu prueba está por vencer' : 'Actualiza cuando estés listo'}
+                  {trialDaysLeft! <= 3 ? tSidebar('aboutToExpire') : tSidebar('upgradeWhenReady')}
                 </p>
               </>
             )}
 
             {isTrialExpired && (
               <button className="mt-3 w-full rounded-xl bg-[#E8341A] py-2 text-[12px] font-bold text-white hover:bg-[#D02B13] transition-colors">
-                Actualizar plan →
+                {tSidebar('upgradeButton')}
               </button>
             )}
 
@@ -258,7 +261,7 @@ export function Sidebar({ plan = 'free', trialDaysLeft, totalCards = 0, totalCus
 
             {isElite && (
               <p className="text-[11px] font-semibold text-[#D02B13]/70">
-                ✦ Sin límites activos
+                {tSidebar('noLimits')}
               </p>
             )}
           </div>

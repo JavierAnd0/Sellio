@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Hand, PartyPopper } from 'lucide-react';
 
 import { updateBusinessAction } from '@/actions/onboarding/onboarding.actions';
 import type { Palette } from './palettes';
@@ -63,7 +64,7 @@ export function Step3Done({ businessName, category: _category, cardName, palette
 
         <main className="p-10">
           <h1 className="font-display text-[56px] font-extrabold tracking-tight leading-none">
-            Hola, <span className="text-coral">{businessName || 'cafe mountain'}👋</span>
+            Hola, <span className="text-coral">{businessName || 'cafe mountain'}</span> <Hand size={48} className="inline-block text-coral" />
           </h1>
 
           <div className="mt-8 rounded-[22px] border border-coral/20 bg-[#fff6f2] p-9 shadow-[0_20px_60px_rgba(0,0,0,0.04)]">
@@ -72,7 +73,7 @@ export function Step3Done({ businessName, category: _category, cardName, palette
                 <p className="font-display text-[54px] font-extrabold leading-[0.9] tracking-tight">
                   ¡Tu tarjeta de
                   <br />
-                  lealtad está lista!🎉
+                  lealtad está lista! <PartyPopper size={48} className="inline-block" />
                 </p>
                 <p className="mt-4 max-w-[540px] text-[38px] leading-[1.15] text-[#6f6660]">
                   Comparte tu QR con tus primeros clientes y empieza a fidelizarlos hoy.

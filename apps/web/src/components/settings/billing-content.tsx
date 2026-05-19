@@ -9,7 +9,7 @@ export function BillingContent() {
   const [isAnnual, setIsAnnual] = useState(false);
 
   return (
-    <div className="rounded-2xl bg-white shadow-sm border border-border/10 p-8">
+    <div className="rounded-2xl bg-surface shadow-sm border border-border/10 p-8">
       <div className="mb-8">
         <h2 className="font-display text-[28px] font-black tracking-tight text-fg mb-1">
           Facturación
@@ -20,13 +20,13 @@ export function BillingContent() {
       </div>
 
       {/* Tabs */}
-      <div className="inline-flex bg-[#F1EFEB] rounded-xl p-1.5 mb-10">
+      <div className="inline-flex bg-surface-2 rounded-xl p-1.5 mb-10">
         <button
           onClick={() => setActiveTab('plan')}
           className={cn(
             "px-6 py-2.5 text-[15px] font-bold rounded-lg transition-all",
             activeTab === 'plan' 
-              ? "bg-white text-fg shadow-sm" 
+              ? "bg-surface text-fg shadow-sm"
               : "text-muted hover:text-fg"
           )}
         >
@@ -37,7 +37,7 @@ export function BillingContent() {
           className={cn(
             "px-6 py-2.5 text-[15px] font-bold rounded-lg transition-all",
             activeTab === 'payment' 
-              ? "bg-white text-fg shadow-sm" 
+              ? "bg-surface text-fg shadow-sm"
               : "text-muted hover:text-fg"
           )}
         >
@@ -48,7 +48,7 @@ export function BillingContent() {
           className={cn(
             "px-6 py-2.5 text-[15px] font-bold rounded-lg transition-all",
             activeTab === 'invoices' 
-              ? "bg-white text-fg shadow-sm" 
+              ? "bg-surface text-fg shadow-sm"
               : "text-muted hover:text-fg"
           )}
         >
@@ -69,7 +69,7 @@ export function BillingContent() {
             >
               <div 
                 className={cn(
-                  "absolute top-1 w-6 h-6 rounded-full bg-white transition-all duration-300 shadow-sm",
+                  "absolute top-1 w-6 h-6 rounded-full bg-surface transition-all duration-300 shadow-sm",
                   isAnnual ? "left-[30px]" : "left-1"
                 )}
               />
@@ -109,7 +109,7 @@ export function BillingContent() {
                 <FeatureItem text="Soporte por email" />
               </div>
 
-              <button disabled className="w-full py-3.5 rounded-xl bg-[#F1EFEB] text-muted font-bold text-[15px] cursor-not-allowed">
+              <button disabled className="w-full py-3.5 rounded-xl bg-surface-2 text-muted font-bold text-[15px] cursor-not-allowed">
                 Plan actual
               </button>
             </div>
@@ -188,7 +188,7 @@ export function BillingContent() {
 function FeatureItem({ text }: { text: string }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="flex-shrink-0 mt-0.5 rounded-full bg-[#FFEFEF] p-1">
+      <div className="flex-shrink-0 mt-0.5 rounded-full bg-coral/10 p-1">
         <Check size={12} strokeWidth={4} className="text-[#E8341A]" />
       </div>
       <span className="text-[15px] font-medium text-fg leading-tight">{text}</span>

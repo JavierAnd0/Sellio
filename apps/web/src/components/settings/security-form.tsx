@@ -32,7 +32,7 @@ export function SecurityForm() {
   };
 
   return (
-    <div className="rounded-2xl bg-white shadow-sm border border-border/10 p-8 max-w-[560px]">
+    <div className="rounded-2xl bg-surface shadow-sm border border-border/10 p-8 max-w-[560px]">
       <div className="mb-8">
         <h2 className="font-display text-[28px] font-black tracking-tight text-fg mb-1">
           Contraseña
@@ -56,7 +56,7 @@ export function SecurityForm() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="flex flex-col gap-2">
-          <label htmlFor="currentPassword" className="text-[15px] font-bold text-[#333]">
+          <label htmlFor="currentPassword" className="text-[15px] font-bold text-fg">
             Contraseña actual
           </label>
           <Input
@@ -74,7 +74,7 @@ export function SecurityForm() {
         </div>
 
         <div className="flex flex-col gap-2">
-          <label htmlFor="newPassword" className="text-[15px] font-bold text-[#333]">
+          <label htmlFor="newPassword" className="text-[15px] font-bold text-fg">
             Nueva contraseña
           </label>
           <Input
@@ -92,7 +92,7 @@ export function SecurityForm() {
         </div>
 
         <div className="flex flex-col gap-2">
-          <label htmlFor="confirmPassword" className="text-[15px] font-bold text-[#333]">
+          <label htmlFor="confirmPassword" className="text-[15px] font-bold text-fg">
             Confirmar nueva contraseña
           </label>
           <Input

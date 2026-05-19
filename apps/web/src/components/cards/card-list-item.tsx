@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Eye, Pencil, Download } from 'lucide-react';
 
 import type { Card } from '@sellio/domain';
 
@@ -16,7 +17,7 @@ export function CardListItem({ card, memberCount = 0, totalPoints = 0, totalScan
   const primaryColor = typeof design.primaryColor === 'string' ? design.primaryColor : '#E8341A';
 
   return (
-    <div className="group relative overflow-hidden rounded-[28px] border border-border/40 bg-[#EAE7DF]/40 p-6 shadow-sm transition-all hover:border-border/60 hover:shadow-md dark:bg-surface-2">
+    <div className="group relative overflow-hidden rounded-[28px] border border-border/40 bg-surface-2/60 p-6 shadow-sm transition-all hover:border-border/60 hover:shadow-md dark:bg-surface-2">
       {/* Header */}
       <div className="mb-6 flex items-start justify-between">
         <div className="pr-4">
@@ -81,7 +82,7 @@ export function CardListItem({ card, memberCount = 0, totalPoints = 0, totalScan
           className="flex flex-col items-center justify-center gap-0.5 rounded-[12px] bg-[#E8341A] py-2 text-[12px] xl:text-[13px] font-bold leading-none text-white shadow-sm transition-all hover:bg-[#D02B13] hover:shadow-md"
         >
           <div className="flex items-center gap-1">
-            <span>👁</span> <span>Ver</span>
+            <Eye size={13} /> <span>Ver</span>
           </div>
           <span className="mt-0.5">tarjeta</span>
         </Link>
@@ -89,14 +90,14 @@ export function CardListItem({ card, memberCount = 0, totalPoints = 0, totalScan
           href={`/app/cards/${card.id}/builder`}
           className="flex items-center justify-center gap-1.5 rounded-[12px] border border-border/40 bg-[#E1DED5]/40 py-2 text-[12px] xl:text-[13px] font-bold text-fg transition-all hover:bg-[#E1DED5]/80 dark:bg-surface"
         >
-          <span>✏️</span>
+          <Pencil size={13} />
           <span>Editar</span>
         </Link>
         <button
           type="button"
           className="flex items-center justify-center gap-1.5 rounded-[12px] border border-border/40 bg-[#E1DED5]/40 py-2 text-[11px] xl:text-[12px] font-bold text-fg transition-all hover:bg-[#E1DED5]/80 dark:bg-surface"
         >
-          <span>↓</span>
+          <Download size={13} />
           <span>Descargar QR</span>
         </button>
       </div>

@@ -4,7 +4,7 @@ import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState, useT
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { type LucideIcon, Lock, ChevronLeft, Download as DownloadIcon, Printer as PrinterIcon, Building2, Tag, Star, User, QrCode, Badge } from 'lucide-react';
+import { type LucideIcon, Lock, ChevronLeft, Download as DownloadIcon, Printer as PrinterIcon, Building2, Tag, Star, User, QrCode, Badge, Coffee, UtensilsCrossed, Leaf, Dumbbell, BookOpen, Scissors, ShoppingBag, Beer, Ticket } from 'lucide-react';
 
 import { Alert, Button } from '@sellio/ui';
 import type { Card } from '@sellio/domain';
@@ -12,7 +12,7 @@ import type { Card } from '@sellio/domain';
 import { createCardAction, updateCardAction } from '@/actions/cards/card.actions';
 import type { CreateCardResult } from '@/actions/cards/card.actions';
 import {
-  type Tier, type TabId, type TemplateId, type PointsStyleId,
+  type Tier, type TabId, type TemplateId, type PointsStyleId, type CardType,
   type CustomGradient, type BuilderState, type StampIconId, type FontOption,
   canUse, BASE_PALETTES, PATTERNS, FONTS, TEMPLATES,
   BADGE_OPTIONS, POINTS_STYLES, STAMP_CATEGORIES, STAMP_ICONS_EXTENDED, DEFAULT_BUILDER, QR, ClassicCard, CARD_RENDERERS,
@@ -128,6 +128,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
       customElemMember:   (savedDesign?.customElemMember   as boolean) ?? true,
       customElemQr:       (savedDesign?.customElemQr       as boolean) ?? true,
       customElemLogo:     (savedDesign?.customElemLogo     as boolean) ?? true,
+      cardType:           (savedDesign?.cardType as CardType) ?? DEFAULT_BUILDER.cardType,
     };
   }
 
@@ -147,16 +148,28 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
   const [iconSearch, setIconSearch] = useState('');
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [cardAnimating, setCardAnimating] = useState(false);
+  const [pendingCardType, setPendingCardType] = useState<CardType | null>(null);
+  // For new cards, the type must be explicitly confirmed before the rest of the form unlocks
+  const [typeConfirmed, setTypeConfirmed] = useState(isEdit);
+  const [walletFlipped, setWalletFlipped] = useState(false);
+  const walletTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevDesignSig = useRef('');
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // 3D tilt handler
+  // 3D tilt on hover
   const handleCardMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientY - rect.top) / rect.height - 0.5) * -16;
-    const y = ((e.clientX - rect.left) / rect.width - 0.5) * 16;
-    setTilt({ x, y });
+    setTilt({
+      x: ((e.clientY - rect.top) / rect.height - 0.5) * -14,
+      y: ((e.clientX - rect.left) / rect.width - 0.5) * 14,
+    });
   }, []);
-  const handleCardMouseLeave = useCallback(() => setTilt({ x: 0, y: 0 }), []);
+
+  const handleCardMouseLeave = useCallback(() => {
+    setTilt({ x: 0, y: 0 });
+  }, []);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -225,7 +238,6 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
     return FONTS.find((f) => f.id === s.font) ?? FONTS[0]!;
   }, [s.font, s.customFontFamily]);
   const pattern = useMemo(() => (PATTERNS.find((p) => p.id === s.pattern) ?? PATTERNS[0])!, [s.pattern]);
-  const CardComp = useMemo(() => CARD_RENDERERS[s.template] ?? ClassicCard, [s.template]);
 
   const upgrade = useCallback((_required: string) => {
     window.confirm('Esta función requiere el plan Elite ($29.99/mes). ¿Ver planes?');
@@ -244,6 +256,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
     customElemBiz: s.customElemBiz, customElemCardName: s.customElemCardName,
     customElemPoints: s.customElemPoints, customElemMember: s.customElemMember,
     customElemQr: s.customElemQr, customElemLogo: s.customElemLogo,
+    cardType: s.cardType,
   }), [s]);
 
   const designPayloadJSON = useMemo(() => JSON.stringify(designPayload), [designPayload]);
@@ -306,6 +319,36 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s, designPayloadJSON, description, pointsPerCheckin, rewardDescription, pointsForReward, maxMembers]);
+
+  // Flash animation whenever the visible card design changes
+  useEffect(() => {
+    const sig = `${s.template}|${s.palette}|${s.customPrimary ?? ''}|${s.customGradient?.id ?? ''}|${s.font}`;
+    prevDesignSig.current = sig;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps — init only
+
+  useEffect(() => {
+    const sig = `${s.template}|${s.palette}|${s.customPrimary ?? ''}|${s.customGradient?.id ?? ''}|${s.font}`;
+    if (!prevDesignSig.current || prevDesignSig.current === sig) { prevDesignSig.current = sig; return; }
+    prevDesignSig.current = sig;
+    setCardAnimating(true);
+    const t = setTimeout(() => setCardAnimating(false), 380);
+    return () => clearTimeout(t);
+  }, [s.template, s.palette, s.customPrimary, s.customGradient, s.font]);
+
+  // Wallet auto-flip loop: 3.5s front → flip to back → 2s back → flip to front → repeat
+  useEffect(() => {
+    function scheduleFlip() {
+      walletTimerRef.current = setTimeout(() => {
+        setWalletFlipped(true);
+        walletTimerRef.current = setTimeout(() => {
+          setWalletFlipped(false);
+          scheduleFlip();
+        }, 2400);
+      }, 3500);
+    }
+    scheduleFlip();
+    return () => { if (walletTimerRef.current) clearTimeout(walletTimerRef.current); };
+  }, []);
 
   // Inject custom font into the document when the user sets one
   useEffect(() => {
@@ -386,7 +429,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
               {saveStatus === 'saving' ? 'Guardando...' : saveStatus === 'saved' ? '✓ Guardado' : saveStatus === 'error' ? 'Error al guardar' : '·'}
             </span>
           ) : (
-            <Button type="submit" form="card-builder-form" loading={isPending} size="sm">
+            <Button type="submit" form="card-builder-form" loading={isPending} size="sm" disabled={!typeConfirmed}>
               {saved ? '✓ Guardado' : isEdit ? 'Guardar cambios' : 'Crear tarjeta'}
             </Button>
           )}
@@ -412,7 +455,14 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
           </div>
 
           {/* Tab content */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
+          <div style={{ flex: 1, overflowY: 'auto', padding: 16, position: 'relative' }}>
+            {!typeConfirmed && (
+              <div style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'rgba(13,11,9,0.82)', backdropFilter: 'blur(4px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: 24, textAlign: 'center' }}>
+                <div style={{ fontSize: 28 }}>🎯</div>
+                <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 14, color: '#F5F0EB' }}>Elige el tipo primero</div>
+                <div style={{ fontSize: 11, color: '#4A4540', lineHeight: 1.6 }}>Selecciona Sellos o Puntos en el panel derecho para desbloquear la personalización.</div>
+              </div>
+            )}
 
             {/* Templates tab — two sections: Personalizar + Plantillas */}
             {activeTab === 'templates' && (() => {
@@ -421,8 +471,10 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
               const colH = Math.round(colW * (230 / 380));
               const colScale = colW / 380;
 
-              // ── Layouts that live in Personalizar (all renderers except 'custom')
-              const DESIGN_LAYOUTS = TEMPLATES.filter(t => t.id !== 'custom');
+              // ── Layouts filtered by cardType:
+              // stamps: any clean-front template (Stamp template excluded — stamps are always on the back via flip)
+              // points: any template except Stamp (Stamp is stamps-specific)
+              const DESIGN_LAYOUTS = TEMPLATES.filter(t => t.id !== 'custom' && t.id !== 'stamp');
 
               // ── Custom layout distribution options
               const CUSTOM_DISTRIBUTIONS = [
@@ -441,32 +493,27 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                 { key: 'customElemLogo',     label: 'Logo / badge',       Icon: Badge     },
               ];
 
-              // ── Two base styles
-              const BASE_STYLES = [
-                { id: 'classic' as TemplateId, label: 'Member Card', sub: 'Puntos' },
-                { id: 'stamp'   as TemplateId, label: 'Stamp Card',  sub: 'Sellos' },
-              ];
-
-              // ── Business template presets (only classic or stamp)
+              // ── Business template presets filtered by confirmed cardType
               type BizPreset = Partial<BuilderState>;
-              const BUSINESS_TEMPLATES: Array<{ id: string; name: string; icon: string; preset: BizPreset }> = [
-                { id: 'cafe',      name: 'Cafetería',       icon: '☕',
-                  preset: { template: 'stamp',   palette: 'amber',   font: 'syne',   businessName: 'Tu Cafetería',    cardName: 'Tarjeta Café',      pointsStyle: 'stamps', stampIcon: 'coffee'   } },
-                { id: 'restaurant',name: 'Restaurante',     icon: '🍽️',
-                  preset: { template: 'classic', palette: 'emerald', font: 'syne',   businessName: 'Tu Restaurante',  cardName: 'Club Gastronómico', pointsStyle: 'number'                        } },
-                { id: 'spa',       name: 'Spa & Wellness',  icon: '💆',
-                  preset: { template: 'classic', palette: 'violet',  font: 'outfit', businessName: 'Tu Spa',          cardName: 'Club Wellness',     pointsStyle: 'number'                        } },
-                { id: 'gym',       name: 'Gym / Fitness',   icon: '🏋️',
-                  preset: { template: 'stamp',   palette: 'coral',   font: 'syne',   businessName: 'Tu Gym',          cardName: 'Plan Fitness',      pointsStyle: 'stamps', stampIcon: 'dumbbell' } },
-                { id: 'classes',   name: 'Clases Privadas', icon: '📚',
-                  preset: { template: 'classic', palette: 'indigo',  font: 'outfit', businessName: 'Tu Academia',     cardName: 'Tarjeta Educativa', pointsStyle: 'number'                        } },
-                { id: 'salon',     name: 'Peluquería',      icon: '💇',
-                  preset: { template: 'stamp',   palette: 'teal',    font: 'syne',   businessName: 'Tu Salón',        cardName: 'Membership Card',   pointsStyle: 'stamps', stampIcon: 'scissors' } },
-                { id: 'retail',    name: 'Tienda / Retail', icon: '🛍️',
-                  preset: { template: 'classic', palette: 'indigo',  font: 'syne',   businessName: 'Tu Tienda',       cardName: 'VIP Member',        pointsStyle: 'number'                        } },
-                { id: 'bar',       name: 'Bar / Drinks',    icon: '🍺',
-                  preset: { template: 'stamp',   palette: 'violet',  font: 'syne',   businessName: 'Tu Bar',          cardName: 'Night Pass',        pointsStyle: 'stamps', stampIcon: 'cup-soda' } },
+              const ALL_BUSINESS_TEMPLATES: Array<{ id: string; name: string; icon: LucideIcon; preset: BizPreset; forType: CardType }> = [
+                { id: 'cafe',       name: 'Cafetería',       icon: Coffee,          forType: 'stamps',
+                  preset: { template: 'stamp',   palette: 'amber',   font: 'syne',   businessName: 'Tu Cafetería',   cardName: 'Tarjeta Café',      pointsStyle: 'stamps', stampIcon: 'coffee'   } },
+                { id: 'salon',      name: 'Peluquería',      icon: Scissors,        forType: 'stamps',
+                  preset: { template: 'stamp',   palette: 'teal',    font: 'syne',   businessName: 'Tu Salón',       cardName: 'Membership Card',   pointsStyle: 'stamps', stampIcon: 'scissors' } },
+                { id: 'gym-stamp',  name: 'Gym / Fitness',   icon: Dumbbell,        forType: 'stamps',
+                  preset: { template: 'stamp',   palette: 'coral',   font: 'syne',   businessName: 'Tu Gym',         cardName: 'Plan Fitness',      pointsStyle: 'stamps', stampIcon: 'dumbbell' } },
+                { id: 'bar',        name: 'Bar / Drinks',    icon: Beer,            forType: 'stamps',
+                  preset: { template: 'stamp',   palette: 'violet',  font: 'syne',   businessName: 'Tu Bar',         cardName: 'Night Pass',        pointsStyle: 'stamps', stampIcon: 'cup-soda' } },
+                { id: 'restaurant', name: 'Restaurante',     icon: UtensilsCrossed, forType: 'points',
+                  preset: { template: 'classic', palette: 'emerald', font: 'syne',   businessName: 'Tu Restaurante', cardName: 'Club Gastronómico', pointsStyle: 'number' } },
+                { id: 'spa',        name: 'Spa & Wellness',  icon: Leaf,            forType: 'points',
+                  preset: { template: 'classic', palette: 'violet',  font: 'outfit', businessName: 'Tu Spa',         cardName: 'Club Wellness',     pointsStyle: 'number' } },
+                { id: 'classes',    name: 'Clases Privadas', icon: BookOpen,        forType: 'points',
+                  preset: { template: 'classic', palette: 'indigo',  font: 'outfit', businessName: 'Tu Academia',    cardName: 'Tarjeta Educativa', pointsStyle: 'number' } },
+                { id: 'retail',     name: 'Tienda / Retail', icon: ShoppingBag,     forType: 'points',
+                  preset: { template: 'classic', palette: 'indigo',  font: 'syne',   businessName: 'Tu Tienda',      cardName: 'VIP Member',        pointsStyle: 'number' } },
               ];
+              const BUSINESS_TEMPLATES = ALL_BUSINESS_TEMPLATES.filter(t => t.forType === s.cardType);
 
               return (
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -502,7 +549,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                                   opacity: locked ? 0.45 : 1,
                                 }}>
                                   <div style={{ position: 'absolute', top: 0, left: 0, width: 380, height: 230, transformOrigin: 'top left', transform: `scale(${colScale})`, pointerEvents: 'none' }}>
-                                    <MiniCard s={s} pal={pal} font={font} pattern={pattern} W={380} H={230} noShadow />
+                                    <MiniCard s={s} pal={pal} font={font} pattern={pattern} W={380} H={230} noShadow hidePoints={s.cardType === 'stamps'} />
                                   </div>
                                   {locked && (
                                     <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)' }}>
@@ -533,7 +580,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                                   transition: 'all 0.15s',
                                 }}>
                                   <div style={{ position: 'absolute', top: 0, left: 0, width: 380, height: 230, transformOrigin: 'top left', transform: `scale(${colScale})`, pointerEvents: 'none' }}>
-                                    <CustomCard s={s} pal={pal} font={font} pattern={pattern} W={380} H={230} noShadow />
+                                    <CustomCard s={s} pal={pal} font={font} pattern={pattern} W={380} H={230} noShadow hidePoints={s.cardType === 'stamps'} />
                                   </div>
                                 </div>
                                 <span style={{ fontSize: 9, fontWeight: 600, color: isActive ? '#E8341A' : '#4A4540', transition: 'color 0.15s' }}>Custom</span>
@@ -628,46 +675,10 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                   <div>
                     <div style={{ fontSize: 10, fontWeight: 700, color: '#F5F0EB', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 12 }}>Plantillas</div>
 
-                    {/* ── Two base styles ── */}
-                    <div style={{ fontSize: 9, color: '#4A4540', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Estilo base</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6, marginBottom: 18 }}>
-                      {BASE_STYLES.map(({ id, label, sub }) => {
-                        const BaseComp = CARD_RENDERERS[id];
-                        const isActive = s.template === id;
-                        return (
-                          <button
-                            key={id}
-                            type="button"
-                            onClick={() => set('template', id)}
-                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                          >
-                            <div style={{
-                              position: 'relative', width: colW, height: colH,
-                              borderRadius: 7, overflow: 'hidden',
-                              border: `2px solid ${isActive ? '#E8341A' : 'rgba(245,240,235,0.1)'}`,
-                              boxShadow: isActive ? '0 0 0 2px rgba(232,52,26,0.18)' : 'none',
-                              transition: 'all 0.15s',
-                            }}>
-                              <div style={{ position: 'absolute', top: 0, left: 0, width: 380, height: 230, transformOrigin: 'top left', transform: `scale(${colScale})`, pointerEvents: 'none' }}>
-                                <BaseComp s={s} pal={pal} font={font} pattern={pattern} W={380} H={230} noShadow />
-                              </div>
-                            </div>
-                            <div style={{ textAlign: 'center' }}>
-                              <div style={{ fontSize: 10, fontWeight: 700, color: isActive ? '#E8341A' : '#F5F0EB', transition: 'color 0.15s' }}>{label}</div>
-                              <div style={{ fontSize: 9, color: '#4A4540' }}>{sub}</div>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Divider */}
-                    <div style={{ height: 1, background: 'rgba(245,240,235,0.07)', marginBottom: 14 }} />
-
                     {/* ── By business ── */}
                     <div style={{ fontSize: 9, color: '#4A4540', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Por negocio</div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
-                      {BUSINESS_TEMPLATES.map(({ id, name, icon, preset }) => {
+                      {BUSINESS_TEMPLATES.map(({ id, name, icon: BizIcon, preset }) => {
                         const mergedState: BuilderState = { ...s, ...preset };
                         const TemplateComp = CARD_RENDERERS[preset.template ?? s.template] ?? ClassicCard;
                         const presetPalId = preset.palette ?? s.palette;
@@ -693,7 +704,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                               </div>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                              <span style={{ fontSize: 11 }}>{icon}</span>
+                              <BizIcon size={11} color="#6B6560" />
                               <span style={{ fontSize: 10, fontWeight: 600, color: '#6B6560' }}>{name}</span>
                             </div>
                           </button>
@@ -873,8 +884,8 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
             {/* Elements */}
             {activeTab === 'elements' && (
               <>
-                <Section label="Display de puntos">
-                  {POINTS_STYLES.map((ps) => {
+                <Section label={s.cardType === 'stamps' ? 'Display de sellos' : 'Display de puntos'}>
+                  {POINTS_STYLES.filter(ps => s.cardType === 'stamps' ? (ps.id === 'stamps' || ps.id === 'stars') : (ps.id === 'number' || ps.id === 'bar' || ps.id === 'stars')).map((ps) => {
                     const locked = !canUse(tier, ps.tier);
                     return (
                       <div key={ps.id}
@@ -891,7 +902,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                   })}
                 </Section>
 
-                {(s.pointsStyle === 'stamps' || s.template === 'stamp') && (
+                {s.cardType === 'stamps' && (
                   <Section label="Diseño de sellos">
                     {(() => {
                       const currentScenario = STAMP_CATEGORIES.find(c => c.icons.some(i => i.id === s.stampIcon))?.id || 'generic';
@@ -1097,7 +1108,8 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
           <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(#2E2A26 1px, transparent 1px)', backgroundSize: '24px 24px', opacity: 0.4, pointerEvents: 'none' }} />
           {/* Ambient glow */}
           <div style={{ position: 'absolute', width: 320, height: 160, borderRadius: '50%', background: `radial-gradient(ellipse, ${pal.primary}18 0%, transparent 70%)`, pointerEvents: 'none', transition: 'background 0.5s' }} />
-          {/* Panel toggle button */}
+
+          {/* Panel collapse toggle */}
           <button
             type="button"
             onClick={() => setLeftCollapsed((v) => !v)}
@@ -1109,173 +1121,342 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
             {leftCollapsed ? '›' : '‹'}
           </button>
 
-          <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 32, overflowY: 'auto', padding: '32px 24px' }}>
-            {/* ── Card with 3D tilt ── */}
-            <div
-              ref={cardRef}
-              style={{
-                perspective: 800,
-                transformStyle: 'preserve-3d',
-              }}
-            >
-              <div style={{
-                transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
-                transition: tilt.x === 0 && tilt.y === 0 ? 'transform 0.6s cubic-bezier(0.16,1,0.3,1)' : 'transform 0.1s ease-out',
-                animation: tilt.x === 0 && tilt.y === 0 ? 'cardFloat 5s ease-in-out infinite' : 'none',
-                filter: `drop-shadow(0 24px 40px ${pal.primary}30)`,
-                willChange: 'transform',
-              }}>
-                <CardComp s={s} pal={pal} font={font} pattern={pattern} W={380} H={230} />
-              </div>
-            </div>
-            <div style={{ fontSize: 10, color: '#6B6560', letterSpacing: '0.08em', marginTop: -16 }}>85.6 × 54mm · Estándar ISO</div>
+          {/* ── Main canvas row: card left, wallet right ── */}
+          <div
+            style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 52, padding: '48px 40px 32px', width: '100%', overflowY: 'auto' }}
+          >
 
-            {/* ── Apple Wallet-style device preview ── */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-              <div style={{ fontSize: 9, fontWeight: 600, color: '#4A4540', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Vista en Wallet</div>
-              {/* iPhone shell */}
-              <div style={{
-                width: 230,
-                height: 460,
-                borderRadius: 42,
-                background: '#000',
-                border: '7px solid #1C1C1E',
-                boxShadow: '0 0 0 1px rgba(255,255,255,0.08), inset 0 0 0 1px rgba(255,255,255,0.04), 0 40px 80px rgba(0,0,0,0.8)',
-                position: 'relative',
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-              }}>
-                {/* Status bar */}
-                <div style={{ height: 28, background: '#000', display: 'flex', alignItems: 'center', padding: '0 16px', flexShrink: 0 }}>
-                  <span style={{ fontSize: 9, fontWeight: 700, color: '#fff', fontFamily: 'Syne,sans-serif' }}>1:21</span>
-                  <div style={{ marginLeft: 'auto', display: 'flex', gap: 4, alignItems: 'center' }}>
-                    <span style={{ fontSize: 7, color: '#fff' }}>▪▪▪</span>
-                    <span style={{ fontSize: 7, color: '#fff' }}>WiFi</span>
-                    <span style={{ fontSize: 7, color: '#fff', background: '#4ADE80', borderRadius: 3, padding: '1px 3px' }}>77</span>
-                  </div>
-                </div>
+            {/* Left: two-view card with from-above transition */}
+            {(() => {
+              const IconComp = STAMP_ICONS_EXTENDED.find(x => x.id === s.stampIcon)?.icon ?? STAMP_ICONS_EXTENDED[0]!.icon;
+              const totalStamps = Math.min(s.cardType === 'stamps' ? pointsForReward : 10, 20);
+              const filled = Math.round(totalStamps * 0.7);
+              const cols = Math.min(totalStamps, 5);
+              const rows = Math.ceil(totalStamps / cols);
 
-                {/* Wallet pass area */}
-                <div style={{ flex: 1, background: '#000', display: 'flex', flexDirection: 'column', padding: '0 10px 0', gap: 0, overflowY: 'auto' }}>
-                  {/* The pass card — full width, native wallet style */}
-                  <div style={{ borderRadius: 18, overflow: 'hidden', position: 'relative', flexShrink: 0, marginBottom: 0 }}>
-                    {/* Pass background — uses card's palette */}
-                    <div style={{ background: pal.primary, padding: '14px 14px 10px', position: 'relative' }}>
-                      {/* Business name */}
-                      <div style={{ marginBottom: 10 }}>
-                        <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 16, color: '#fff', letterSpacing: '-0.02em' }}>
-                          {s.businessName || 'Tu Negocio'}
+              const faceStyle = (active: boolean): React.CSSProperties => ({
+                position: 'absolute', inset: 0, borderRadius: 18, overflow: 'hidden',
+                transformOrigin: '50% 50%',
+                transform: active ? 'perspective(1000px) rotateY(0deg) scale(1)' : 'perspective(1000px) rotateY(-90deg) scale(0.94)',
+                opacity: active ? 1 : 0,
+                transition: active
+                  ? 'transform 0.5s cubic-bezier(0.16,1,0.3,1), opacity 0.35s ease 0.12s'
+                  : 'transform 0.28s ease-in, opacity 0.18s ease-in',
+                pointerEvents: active ? 'auto' : 'none',
+                zIndex: active ? 1 : 0,
+              });
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, flexShrink: 0 }}>
+
+                  {/* Card — swap animation wraps the whole tilt+float unit */}
+                  <div style={{ animation: cardAnimating ? 'cardSwap 0.45s cubic-bezier(0.22,1,0.36,1) both' : 'none' }}>
+                    <div
+                      ref={cardRef}
+                      style={{ display: 'inline-block' }}
+                    >
+                      {/* Tilt + float + shadow */}
+                      <div
+                        onClick={() => setIsFlipped(v => !v)}
+                        style={{
+                          width: 380, height: 230,
+                          position: 'relative',
+                          transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
+                          transition: 'transform 0.65s cubic-bezier(0.23, 1, 0.32, 1)',
+                          animation: cardAnimating ? 'none' : 'cardFloat 5s ease-in-out infinite',
+                          filter: `drop-shadow(0 28px 52px ${pal.primary}38)`,
+                          willChange: 'transform',
+                          cursor: 'pointer',
+                        }}>
+
+                        {/* ── FRONT: selected template — clean when cardType=stamps (stamps shown on back) ── */}
+                        <div style={faceStyle(!isFlipped)}>
+                          {(() => { const FrontCard = CARD_RENDERERS[s.template] ?? ClassicCard; return <FrontCard s={s} pal={pal} font={font} pattern={pattern} W={380} H={230} noShadow hidePoints={s.cardType === 'stamps'} />; })()}
                         </div>
-                        <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 1 }}>
-                          {s.cardName || 'Loyalty Card'}
-                        </div>
-                      </div>
 
-                      {/* Stamp grid — 2 rows of 5 */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 5, marginBottom: 12 }}>
-                        {Array.from({ length: 10 }, (_, i) => {
-                          const isStamped = i < 2;
-                          return (
-                            <div key={i} style={{
-                              aspectRatio: '1',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            }}>
-                              <div style={{
-                                width: 28, height: 28,
-                                borderRadius: '50%',
-                                background: isStamped ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.2)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              }}>
-                                {(() => {
-                                  const match = STAMP_ICONS_EXTENDED.find(x => x.id === s.stampIcon);
-                                  const IconComp = (match ?? STAMP_ICONS_EXTENDED[0])?.icon ?? (() => null);
-                                  return <IconComp size={14} color={isStamped ? pal.primary : 'rgba(255,255,255,0.7)'} />;
-                                })()}
-                              </div>
+                        {/* ── BACK: stamps or points ── */}
+                        <div style={{ ...faceStyle(isFlipped), background: `linear-gradient(135deg, #1A1712 0%, #111009 100%)` }}>
+                          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: 'rgba(255,255,255,0.07)' }} />
+                          <div style={{ position: 'absolute', right: -30, top: -30, width: 140, height: 140, borderRadius: '50%', background: `${pal.primary}12`, pointerEvents: 'none' }} />
+                          <div style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%', padding: '16px 18px 12px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            <div style={{ flexShrink: 0 }}>
+                              <div style={{ fontSize: 11, fontWeight: 800, fontFamily: 'Syne,sans-serif', color: pal.primary, letterSpacing: '-0.01em' }}>{s.businessName || 'Tu Negocio'}</div>
+                              <div style={{ fontSize: 7.5, color: 'rgba(245,240,235,0.28)', letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: 2 }}>{s.cardType === 'stamps' ? 'Stamp Card' : 'Loyalty Points'}</div>
                             </div>
-                          );
-                        })}
-                      </div>
 
-                      {/* Stamps counter */}
-                      <div style={{ marginBottom: 12 }}>
-                        <div style={{ fontSize: 7, fontWeight: 700, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                          STAMPS REQUIRED UNTIL NEXT REWARD
+                            {s.cardType === 'stamps' ? (
+                              <>
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 7, justifyContent: 'center' }}>
+                                  {Array.from({ length: rows }, (_, r) => (
+                                    <div key={r} style={{ display: 'flex', gap: 7 }}>
+                                      {Array.from({ length: cols }, (_, c) => {
+                                        const i = r * cols + c;
+                                        if (i >= totalStamps) return <div key={c} style={{ flex: 1 }} />;
+                                        return (
+                                          <div key={c} style={{ flex: 1, aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 10, background: i < filled ? pal.primary : 'rgba(245,240,235,0.06)', border: i < filled ? 'none' : '1.5px solid rgba(245,240,235,0.12)' }}>
+                                            <IconComp size={16} color={i < filled ? '#fff' : 'rgba(245,240,235,0.2)'} />
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  ))}
+                                </div>
+                                <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <div style={{ fontSize: 9, color: 'rgba(245,240,235,0.3)' }}>
+                                    {filled}/{totalStamps} · <span style={{ color: pal.primary, fontWeight: 700 }}>{totalStamps - filled} para la recompensa</span>
+                                  </div>
+                                  <div style={{ fontSize: 7.5, fontWeight: 800, fontFamily: 'Syne,sans-serif', color: 'rgba(245,240,235,0.12)', letterSpacing: '0.12em' }}>SELLIO</div>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                                  <div style={{ textAlign: 'center' }}>
+                                    <div style={{ fontSize: 56, fontWeight: 800, fontFamily: 'Syne,sans-serif', color: pal.primary, lineHeight: 1, letterSpacing: '-0.04em' }}>{filled * 10}</div>
+                                    <div style={{ fontSize: 9, color: 'rgba(245,240,235,0.3)', marginTop: 4, letterSpacing: '0.1em', textTransform: 'uppercase' }}>puntos acumulados</div>
+                                  </div>
+                                  <div style={{ width: '80%' }}>
+                                    <div style={{ height: 5, background: 'rgba(245,240,235,0.08)', borderRadius: 3, overflow: 'hidden' }}>
+                                      <div style={{ height: '100%', width: `${Math.min(100, Math.round(filled / totalStamps * 100))}%`, background: pal.primary, borderRadius: 3, transition: 'width 0.3s' }} />
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
+                                      <div style={{ fontSize: 8, color: 'rgba(245,240,235,0.25)' }}>{filled * 10} pts</div>
+                                      <div style={{ fontSize: 8, color: 'rgba(245,240,235,0.25)' }}>Meta: {totalStamps * 10} pts</div>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <div style={{ fontSize: 9, color: 'rgba(245,240,235,0.3)' }}>
+                                    Faltan <span style={{ color: pal.primary, fontWeight: 700 }}>{(totalStamps - filled) * 10} pts</span> para la recompensa
+                                  </div>
+                                  <div style={{ fontSize: 7.5, fontWeight: 800, fontFamily: 'Syne,sans-serif', color: 'rgba(245,240,235,0.12)', letterSpacing: '0.12em' }}>SELLIO</div>
+                                </div>
+                              </>
+                            )}
+                          </div>
                         </div>
-                        <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', fontFamily: 'Syne,sans-serif', lineHeight: 1.1, marginTop: 2 }}>8</div>
-                      </div>
 
-                      {/* Barcode area */}
-                      <div style={{ background: '#fff', borderRadius: 10, padding: '10px 8px 6px', textAlign: 'center' }}>
-                        {/* Fake barcode visual */}
-                        <div style={{ display: 'flex', gap: 1.5, justifyContent: 'center', alignItems: 'flex-end', height: 38, marginBottom: 4 }}>
-                          {Array.from({ length: 38 }, (_, i) => (
-                            <div key={i} style={{
-                              width: i % 3 === 0 ? 3 : i % 5 === 0 ? 4 : 2,
-                              height: i % 7 === 0 ? 38 : i % 4 === 0 ? 30 : 24,
-                              background: '#000',
-                              borderRadius: 1,
-                              flexShrink: 0,
-                            }} />
-                          ))}
-                        </div>
-                        <div style={{ fontSize: 8, color: '#555', fontFamily: 'Space Grotesk,sans-serif' }}>
-                          Tap ··· for details
-                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Info button */}
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 4px' }}>
-                    <div style={{ width: 22, height: 22, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: 700 }}>i</span>
+                  {/* flip label below card */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, opacity: 0.45 }}>
+                    <span style={{ fontSize: 9, fontWeight: 600, color: '#7A7470', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                      {isFlipped ? 'Ver frente' : s.cardType === 'stamps' ? 'Ver sellos' : 'Ver puntos'}
+                    </span>
+                    <span style={{ fontSize: 11, color: '#7A7470' }}>↻</span>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Right: iPhone wallet with animated flip card */}
+            {(() => {
+              const W_CARD = 192;
+              const H_CARD = Math.round(W_CARD * 230 / 380);
+              const wScale = W_CARD / 380;
+              const WIconComp = STAMP_ICONS_EXTENDED.find(x => x.id === s.stampIcon)?.icon ?? STAMP_ICONS_EXTENDED[0]!.icon;
+              const wTotal = Math.min(s.cardType === 'stamps' ? pointsForReward : 10, 20);
+              const wFilled = Math.round(wTotal * 0.7);
+              const wCols = Math.min(wTotal, 5);
+              const wRows = Math.ceil(wTotal / wCols);
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  <div style={{ fontSize: 9, fontWeight: 600, color: '#4A4540', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Vista en Wallet</div>
+                  {/* iPhone shell */}
+                  <div style={{ width: 230, height: 460, borderRadius: 42, background: '#000', border: '7px solid #1C1C1E', boxShadow: '0 0 0 1px rgba(255,255,255,0.08), inset 0 0 0 1px rgba(255,255,255,0.04), 0 40px 80px rgba(0,0,0,0.8)', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                    {/* Status bar */}
+                    <div style={{ height: 28, background: '#000', display: 'flex', alignItems: 'center', padding: '0 16px', flexShrink: 0 }}>
+                      <span style={{ fontSize: 9, fontWeight: 700, color: '#fff', fontFamily: 'Syne,sans-serif' }}>9:41</span>
+                      <div style={{ marginLeft: 'auto', display: 'flex', gap: 4, alignItems: 'center' }}>
+                        <span style={{ fontSize: 7, color: '#fff' }}>▪▪▪</span>
+                        <span style={{ fontSize: 7, color: '#fff', background: '#4ADE80', borderRadius: 3, padding: '1px 3px' }}>85</span>
+                      </div>
+                    </div>
+
+                    {/* Wallet content */}
+                    <div style={{ flex: 1, background: '#111', display: 'flex', flexDirection: 'column', padding: '12px 10px 10px', gap: 10 }}>
+                      {/* Wallet header */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', fontFamily: 'Syne,sans-serif' }}>Wallet</span>
+                        <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <span style={{ fontSize: 11, color: '#fff' }}>+</span>
+                        </div>
+                      </div>
+
+                      {/* ── Two-view card — from-above transition ── */}
+                      <div
+                        style={{ width: W_CARD, height: H_CARD, alignSelf: 'center', cursor: 'pointer', flexShrink: 0, position: 'relative', perspective: '600px', perspectiveOrigin: '50% 50%' }}
+                        onClick={() => {
+                          if (walletTimerRef.current) clearTimeout(walletTimerRef.current);
+                          setWalletFlipped(f => {
+                            const next = !f;
+                            walletTimerRef.current = setTimeout(() => setWalletFlipped(false), next ? 2400 : 0);
+                            return next;
+                          });
+                        }}
+                      >
+                        {/* Front face */}
+                        <div style={{
+                          position: 'absolute', inset: 0, borderRadius: 12, overflow: 'hidden',
+                          transformOrigin: '50% 0%',
+                          transform: !walletFlipped ? 'rotateX(0deg) scale(1)' : 'rotateX(-72deg) scale(0.96)',
+                          opacity: !walletFlipped ? 1 : 0,
+                          transition: !walletFlipped
+                            ? 'transform 0.46s cubic-bezier(0.16,1,0.3,1), opacity 0.38s ease'
+                            : 'transform 0.26s ease-in, opacity 0.2s ease-in',
+                          pointerEvents: !walletFlipped ? 'auto' : 'none',
+                        }}>
+                          <div style={{ width: 380, height: 230, transformOrigin: 'top left', transform: `scale(${wScale})`, pointerEvents: 'none' }}>
+                            <CardFrontPreview s={s} pal={pal} font={font} />
+                          </div>
+                        </div>
+                        {/* Back face */}
+                        <div style={{
+                          position: 'absolute', inset: 0, borderRadius: 12, overflow: 'hidden',
+                          background: `linear-gradient(135deg, #1A1712 0%, #111009 100%)`,
+                          transformOrigin: '50% 0%',
+                          transform: walletFlipped ? 'rotateX(0deg) scale(1)' : 'rotateX(-72deg) scale(0.96)',
+                          opacity: walletFlipped ? 1 : 0,
+                          transition: walletFlipped
+                            ? 'transform 0.46s cubic-bezier(0.16,1,0.3,1), opacity 0.38s ease'
+                            : 'transform 0.26s ease-in, opacity 0.2s ease-in',
+                          pointerEvents: walletFlipped ? 'auto' : 'none',
+                        }}>
+                          <div style={{ position: 'absolute', right: -10, top: -10, width: 60, height: 60, borderRadius: '50%', background: `${pal.primary}18` }} />
+                          <div style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%', padding: '10px 12px 8px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            <div>
+                              <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 10, color: pal.primary }}>{s.businessName || 'Tu Negocio'}</div>
+                              <div style={{ fontSize: 6, color: 'rgba(245,240,235,0.3)', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 1 }}>{s.cardType === 'stamps' ? 'Stamp Card' : 'Loyalty Points'}</div>
+                            </div>
+                            {s.cardType === 'stamps' ? (
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, justifyContent: 'center' }}>
+                                {Array.from({ length: wRows }, (_, r) => (
+                                  <div key={r} style={{ display: 'flex', gap: 4 }}>
+                                    {Array.from({ length: wCols }, (_, c) => {
+                                      const i = r * wCols + c;
+                                      if (i >= wTotal) return <div key={c} style={{ flex: 1 }} />;
+                                      return (
+                                        <div key={c} style={{ flex: 1, aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 5, background: i < wFilled ? pal.primary : 'rgba(245,240,235,0.07)', border: i < wFilled ? 'none' : '1px solid rgba(245,240,235,0.12)' }}>
+                                          <WIconComp size={9} color={i < wFilled ? '#fff' : 'rgba(245,240,235,0.2)'} />
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                                <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 28, color: pal.primary, letterSpacing: '-0.03em', lineHeight: 1 }}>70</div>
+                                <div style={{ fontSize: 6, color: 'rgba(245,240,235,0.3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>puntos</div>
+                                <div style={{ width: '80%', height: 3, background: 'rgba(245,240,235,0.08)', borderRadius: 2, overflow: 'hidden' }}>
+                                  <div style={{ height: '100%', width: '70%', background: pal.primary, borderRadius: 2 }} />
+                                </div>
+                              </div>
+                            )}
+                            <div style={{ fontSize: 6, color: 'rgba(245,240,235,0.35)' }}>
+                              {s.cardType === 'stamps'
+                                ? <>Faltan <span style={{ color: pal.primary, fontWeight: 700 }}>{wTotal - wFilled}</span> sellos</>
+                                : <>Faltan <span style={{ color: pal.primary, fontWeight: 700 }}>30 pts</span> para la recompensa</>}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      {/* Tap hint */}
+                      <div style={{ textAlign: 'center', fontSize: 8, color: '#3A3530', letterSpacing: '0.06em' }}>
+                        {walletFlipped ? '↑ toca para ver el frente' : `↓ toca para ver ${s.cardType === 'stamps' ? 'sellos' : 'puntos'}`}
+                      </div>
+
+                      {/* Stacked other cards */}
+                      <div style={{ position: 'relative', height: 48, marginTop: 'auto' }}>
+                        {[['#A855F7', 'redBus'], ['#22C55E', 'Rewards'], ['#3B82F6', 'Coffee Club']].map(([color, label], i) => (
+                          <div key={label} style={{ position: 'absolute', bottom: i * 10, left: 0, right: 0, height: 44, borderRadius: 10, background: color, display: 'flex', alignItems: 'center', padding: '0 10px', zIndex: i, boxShadow: '0 -4px 12px rgba(0,0,0,0.5)' }}>
+                            <span style={{ fontSize: 8, fontWeight: 700, color: '#fff', fontFamily: 'Syne,sans-serif' }}>{label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Home indicator */}
+                    <div style={{ height: 20, background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <div style={{ width: 60, height: 3, background: 'rgba(255,255,255,0.15)', borderRadius: 2 }} />
                     </div>
                   </div>
-
-                  {/* Stacked other cards at bottom */}
-                  <div style={{ position: 'relative', height: 44, marginTop: 'auto' }}>
-                    {[['#A855F7', 'redBus'], ['#22C55E', 'Rewards'], ['#3B82F6', 'Coffee']].map(([color, label], i) => (
-                      <div key={label} style={{
-                        position: 'absolute',
-                        bottom: i * 10,
-                        left: 0, right: 0,
-                        height: 44,
-                        borderRadius: 12,
-                        background: color,
-                        display: 'flex', alignItems: 'center', padding: '0 12px',
-                        zIndex: i,
-                        boxShadow: '0 -4px 12px rgba(0,0,0,0.4)',
-                      }}>
-                        <span style={{ fontSize: 9, fontWeight: 700, color: '#fff', fontFamily: 'Syne,sans-serif' }}>{label}</span>
-                      </div>
-                    ))}
-                  </div>
                 </div>
-
-                {/* Home indicator */}
-                <div style={{ height: 22, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <div style={{ width: 70, height: 3.5, background: 'rgba(255,255,255,0.25)', borderRadius: 2 }} />
-                </div>
-              </div>
-            </div>
-
-          </div>
+              );
+            })()}
+          </div>{/* closes main canvas row */}
 
           {/* Floating card animation keyframe injection */}
           <style>{`
             @keyframes cardFloat {
-              0%, 100% { transform: translateY(0px) rotateX(0deg) rotateY(0deg); }
-              25% { transform: translateY(-6px) rotateX(1deg) rotateY(-1deg); }
-              50% { transform: translateY(-10px) rotateX(-1deg) rotateY(1deg); }
-              75% { transform: translateY(-4px) rotateX(0.5deg) rotateY(-0.5deg); }
+              0%   { transform: translateY(0px)   rotateX(0deg)    rotateY(0deg)   scale(1);    }
+              15%  { transform: translateY(-7px)  rotateX(2.5deg)  rotateY(-4deg)  scale(1.01); }
+              35%  { transform: translateY(-13px) rotateX(-1.5deg) rotateY(5deg)   scale(1.02); }
+              55%  { transform: translateY(-16px) rotateX(1deg)    rotateY(-3deg)  scale(1.015);}
+              75%  { transform: translateY(-9px)  rotateX(-2deg)   rotateY(3.5deg) scale(1.01); }
+              100% { transform: translateY(0px)   rotateX(0deg)    rotateY(0deg)   scale(1);    }
+            }
+            @keyframes cardSwap {
+              0%   { transform: perspective(1200px) rotateX(-40deg) translateY(-22px) scale(0.93); opacity: 0.4; }
+              55%  { transform: perspective(1200px) rotateX(5deg)   translateY(3px)   scale(1.01); opacity: 1;   }
+              100% { transform: perspective(1200px) rotateX(0deg)   translateY(0)     scale(1);    opacity: 1;   }
             }
           `}</style>
         </div>
 
         {/* ── Right panel ── */}
         <div style={{ background: '#111009', borderLeft: '1px solid rgba(245,240,235,0.07)', overflowY: 'auto' }}>
+
+          {/* Tipo de recompensa — primera decisión, visible siempre al inicio */}
+          <div style={{ padding: '16px 16px', borderBottom: '1px solid rgba(245,240,235,0.07)', background: '#0D0B09' }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: '#6B6560', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>Tipo de recompensa</div>
+            {isEdit ? (
+              // Editing: read-only badge
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 10, background: s.cardType === 'stamps' ? 'rgba(232,52,26,0.08)' : 'rgba(167,139,250,0.08)', border: `1px solid ${s.cardType === 'stamps' ? 'rgba(232,52,26,0.22)' : 'rgba(167,139,250,0.22)'}` }}>
+                {s.cardType === 'stamps' ? <Ticket size={18} color="#E8341A" /> : <Star size={18} color="#A78BFA" />}
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: s.cardType === 'stamps' ? '#E8341A' : '#A78BFA' }}>{s.cardType === 'stamps' ? 'Tarjeta de Sellos' : 'Tarjeta de Puntos'}</div>
+                  <div style={{ fontSize: 9.5, color: '#4A4540', marginTop: 1 }}>No se puede cambiar después de guardar</div>
+                </div>
+              </div>
+            ) : (
+              // New card: interactive picker
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, alignItems: 'stretch' }}>
+                {([['stamps', 'Sellos', 'Visita por visita'], ['points', 'Puntos', 'Totalmente configurable']] as const).map(([type, label, sub]) => {
+                  const active = s.cardType === type;
+                  const accentColor = type === 'stamps' ? '#E8341A' : '#A78BFA';
+                  return (
+                    <button key={type} type="button"
+                      onClick={() => { if (!typeConfirmed || type !== s.cardType) setPendingCardType(type); }}
+                      style={{ background: active ? `${accentColor}12` : '#201D18', border: `1.5px solid ${active ? `${accentColor}40` : 'rgba(245,240,235,0.08)'}`, borderRadius: 10, padding: '14px 10px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%' }}
+                    >
+                      {active && <div style={{ position: 'absolute', top: 7, right: 7, width: 6, height: 6, borderRadius: '50%', background: accentColor }} />}
+                      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
+                        {type === 'stamps' ? <Ticket size={22} color={active ? '#E8341A' : '#4A4540'} /> : <Star size={22} color={active ? '#A78BFA' : '#4A4540'} />}
+                      </div>
+                      <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 700, fontSize: 12, color: active ? accentColor : '#F5F0EB', marginBottom: 3 }}>{label}</div>
+                      <div style={{ fontSize: 9, color: '#4A4540', lineHeight: 1.3, textAlign: 'center' }}>{sub}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Rest of right panel — locked until type is confirmed */}
+          {!typeConfirmed && (
+            <div style={{ padding: '20px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, borderBottom: '1px solid rgba(245,240,235,0.07)', textAlign: 'center' }}>
+              <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(245,240,235,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Lock size={14} color="#4A4540" />
+              </div>
+              <div style={{ fontSize: 11, color: '#4A4540', lineHeight: 1.6 }}>Elige y confirma el tipo de recompensa para continuar personalizando tu tarjeta.</div>
+            </div>
+          )}
+
+          {typeConfirmed && (
+          <>
 
           {/* Contenido visual */}
           <RightSection title="Contenido">
@@ -1287,8 +1468,16 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
           <RightSection title="Configuración">
             <CtrlInput label="Descripción" value={description} onChange={setDescription} error={fieldErrors.description} />
             <CtrlInput label="Recompensa" value={rewardDescription} onChange={setRewardDescription} placeholder="1 café gratis" error={fieldErrors.rewardDescription} />
-            <CtrlInput label="Puntos por visita" value={String(pointsPerCheckin)} onChange={(v) => setPointsPerCheckin(Math.max(1, Number(v) || 1))} type="number" error={fieldErrors.pointsPerCheckin} />
-            <CtrlInput label="Puntos para recompensa" value={String(pointsForReward)} onChange={(v) => setPointsForReward(Math.max(1, Number(v) || 1))} type="number" error={fieldErrors.pointsForReward} />
+            {s.cardType === 'points' && (
+              <CtrlInput label="Puntos por visita" value={String(pointsPerCheckin)} onChange={(v) => setPointsPerCheckin(Math.max(1, Number(v) || 1))} type="number" error={fieldErrors.pointsPerCheckin} />
+            )}
+            <CtrlInput
+              label={s.cardType === 'stamps' ? 'Número de sellos' : 'Puntos para recompensa'}
+              value={String(pointsForReward)}
+              onChange={(v) => setPointsForReward(Math.max(1, Math.min(s.cardType === 'stamps' ? 20 : 9999, Number(v) || 1)))}
+              type="number"
+              error={fieldErrors.pointsForReward}
+            />
             <CtrlInput label="Máximo de miembros" value={maxMembers} onChange={setMaxMembers} type="number" placeholder="Sin límite" error={fieldErrors.maxMembers} />
           </RightSection>
 
@@ -1338,6 +1527,9 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
               <PrinterIcon size={12} style={{ display: 'inline', marginRight: 5, verticalAlign: 'middle' }} /> Descargar para imprimir
             </button>
           </RightSection>
+
+          </>
+          )}
         </div>
       </div>
 
@@ -1347,6 +1539,119 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
           {error && <Alert variant="error">{error}</Alert>}
         </div>
       )}
+
+      {/* Card type confirmation modal */}
+      {pendingCardType && (
+        <CardTypeConfirmModal
+          type={pendingCardType}
+          onAccept={() => {
+            set('cardType', pendingCardType);
+            set('pointsStyle', pendingCardType === 'stamps' ? 'stamps' : 'number');
+            set('template', 'classic');
+            setTypeConfirmed(true);
+            setPendingCardType(null);
+          }}
+          onCancel={() => setPendingCardType(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Card front preview (customer-facing view) ──────────────────
+
+function CardFrontPreview({ s, pal, font }: { s: BuilderState; pal: { primary: string; bg: string }; font: FontOption }) {
+  return (
+    <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg, ${pal.bg} 0%, #0D0B09 65%, ${pal.primary}18 100%)`, borderRadius: 18, overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', right: -40, top: -40, width: 180, height: 180, borderRadius: '50%', background: `${pal.primary}12`, pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', left: -20, bottom: -50, width: 140, height: 140, borderRadius: '50%', background: `${pal.primary}08`, pointerEvents: 'none' }} />
+      <div style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%', padding: '20px 24px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        {/* Top: business name + logo */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <div style={{ fontFamily: `${font.display},Syne,sans-serif`, fontWeight: 800, fontSize: 18, color: pal.primary, letterSpacing: '-0.02em', lineHeight: 1 }}>{s.businessName || 'Tu Negocio'}</div>
+            <div style={{ fontSize: 7.5, color: 'rgba(245,240,235,0.32)', letterSpacing: '0.14em', textTransform: 'uppercase', marginTop: 4 }}>{s.cardType === 'stamps' ? 'Stamp Card' : 'Loyalty Card'}</div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: pal.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 16, color: '#fff', boxShadow: `0 4px 14px ${pal.primary}55` }}>
+              {(s.businessName || 'S').charAt(0).toUpperCase()}
+            </div>
+            {s.showBadge && s.badgeText && (
+              <div style={{ background: `${pal.primary}18`, border: `1px solid ${pal.primary}40`, borderRadius: 20, padding: '2px 8px', fontSize: 7, color: pal.primary, fontWeight: 700, whiteSpace: 'nowrap' }}>{s.badgeText}</div>
+            )}
+          </div>
+        </div>
+        {/* Center: accumulated value */}
+        <div>
+          <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 58, color: '#F5F0EB', letterSpacing: '-0.04em', lineHeight: 1 }}>
+            {s.cardType === 'points' ? '847' : '7'}
+          </div>
+          <div style={{ fontSize: 9, color: 'rgba(245,240,235,0.32)', letterSpacing: '0.14em', textTransform: 'uppercase', marginTop: 5 }}>
+            {s.cardType === 'points' ? 'Puntos acumulados' : 'Sellos acumulados'}
+          </div>
+        </div>
+        {/* Bottom: member info + QR */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+          <div>
+            <div style={{ fontSize: 8, color: 'rgba(245,240,235,0.28)', letterSpacing: '0.1em', marginBottom: 2 }}>Nº 00847291</div>
+            <div style={{ fontSize: 8, color: 'rgba(245,240,235,0.28)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 3 }}>Miembro</div>
+            <div style={{ fontFamily: `${font.display},Syne,sans-serif`, fontWeight: 700, fontSize: 13, color: 'rgba(245,240,235,0.75)' }}>Ana García</div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3, opacity: 0.32 }}>
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} style={{ width: 18, height: 18, borderRadius: 3, border: '1.5px solid rgba(245,240,235,0.7)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, padding: 3, boxSizing: 'border-box' }}>
+                <div style={{ background: 'rgba(245,240,235,0.85)', borderRadius: 1 }} />
+                <div style={{ background: i === 1 || i === 3 ? 'transparent' : 'rgba(245,240,235,0.85)', borderRadius: 1 }} />
+                <div style={{ background: i === 2 ? 'transparent' : 'rgba(245,240,235,0.85)', borderRadius: 1 }} />
+                <div style={{ background: 'rgba(245,240,235,0.85)', borderRadius: 1 }} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Card type confirmation modal ────────────────────────────────
+
+function CardTypeConfirmModal({ type, onAccept, onCancel }: { type: CardType; onAccept: () => void; onCancel: () => void }) {
+  const isStamps = type === 'stamps';
+  const accent = isStamps ? '#E8341A' : '#A78BFA';
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)' }}
+      onClick={onCancel}
+    >
+      <div
+        style={{ background: '#1A1712', border: '1px solid rgba(245,240,235,0.1)', borderRadius: 20, padding: '28px 28px 24px', maxWidth: 360, width: 'calc(100% - 32px)', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+          {isStamps ? <Ticket size={32} color="#E8341A" /> : <Star size={32} color="#A78BFA" />}
+        </div>
+        <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 19, color: '#F5F0EB', marginBottom: 8, textAlign: 'center' }}>
+          {isStamps ? 'Tarjeta de Sellos' : 'Tarjeta de Puntos'}
+        </div>
+        <div style={{ fontSize: 13, color: '#6B6560', lineHeight: 1.65, marginBottom: 16, textAlign: 'center' }}>
+          {isStamps
+            ? 'Los clientes acumularán un sello por cada visita hasta completar la tarjeta y ganar su recompensa.'
+            : 'Los clientes acumularán puntos por visita. Tú configuras cuántos puntos vale cada visita y cuántos se necesitan para la recompensa.'}
+        </div>
+        <div style={{ background: 'rgba(232,52,26,0.08)', border: '1px solid rgba(232,52,26,0.2)', borderRadius: 10, padding: '10px 14px', marginBottom: 20, fontSize: 12, color: '#F87171', lineHeight: 1.55 }}>
+          ⚠ Esta elección no podrá cambiarse una vez que guardes la tarjeta.
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button type="button" onClick={onCancel}
+            style={{ flex: 1, background: 'transparent', border: '1px solid rgba(245,240,235,0.14)', borderRadius: 10, padding: '11px 0', fontSize: 13, fontWeight: 600, color: '#6B6560', cursor: 'pointer', fontFamily: 'Space Grotesk,sans-serif' }}>
+            Cancelar
+          </button>
+          <button type="button" onClick={onAccept}
+            style={{ flex: 1, background: accent, border: 'none', borderRadius: 10, padding: '11px 0', fontSize: 13, fontWeight: 700, fontFamily: 'Syne,sans-serif', color: '#fff', cursor: 'pointer', boxShadow: `0 4px 16px ${accent}40` }}>
+            Elegir {isStamps ? 'Sellos' : 'Puntos'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

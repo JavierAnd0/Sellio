@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { type FormEvent, useState, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 
 import { Alert, Button, FormField, Input } from '@sellio/ui';
 
@@ -17,10 +18,11 @@ function passwordStrength(p: string): number {
   return s;
 }
 
-const STRENGTH_LABELS = ['', 'Débil', 'Regular', 'Buena', 'Fuerte'];
 const STRENGTH_COLORS = ['', '#FF4444', '#E8B96A', '#4FC3F7', '#52D699'];
 
 export function RegisterForm() {
+  const t = useTranslations('auth.register');
+
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [password, setPassword] = useState('');
@@ -28,6 +30,7 @@ export function RegisterForm() {
   const [isPending, startTransition] = useTransition();
 
   const strength = passwordStrength(password);
+  const STRENGTH_LABELS = ['', t('strengthWeak'), t('strengthFair'), t('strengthGood'), t('strengthStrong')];
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -47,10 +50,10 @@ export function RegisterForm() {
     <div className="animate-fade-slide-in">
       <div className="mb-8">
         <h1 className="mb-2 font-display text-3xl font-extrabold tracking-tight text-fg">
-          Crea tu cuenta.
+          {t('title')}
         </h1>
         <p className="text-sm leading-relaxed text-muted">
-          Empieza gratis. Sin tarjeta de crédito.
+          {t('subtitle')}
         </p>
       </div>
 
@@ -61,47 +64,47 @@ export function RegisterForm() {
       )}
 
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
-        <FormField label="Nombre completo" htmlFor="fullName" error={fieldErrors.fullName} required>
+        <FormField label={t('fullName')} htmlFor="fullName" error={fieldErrors.fullName} required>
           <Input
             id="fullName"
             name="fullName"
             type="text"
             autoComplete="name"
-            placeholder="María García"
+            placeholder={t('fullNamePlaceholder')}
             error={!!fieldErrors.fullName}
           />
         </FormField>
 
-        <FormField label="Nombre de tu negocio" htmlFor="businessName" error={fieldErrors.businessName} required>
+        <FormField label={t('businessName')} htmlFor="businessName" error={fieldErrors.businessName} required>
           <Input
             id="businessName"
             name="businessName"
             type="text"
             autoComplete="organization"
-            placeholder="Café La Rosa"
+            placeholder={t('businessNamePlaceholder')}
             error={!!fieldErrors.businessName}
           />
         </FormField>
 
-        <FormField label="Email" htmlFor="email" error={fieldErrors.email} required>
+        <FormField label={t('email')} htmlFor="email" error={fieldErrors.email} required>
           <Input
             id="email"
             name="email"
             type="email"
             autoComplete="email"
-            placeholder="tu@negocio.com"
+            placeholder={t('emailPlaceholder')}
             error={!!fieldErrors.email}
           />
         </FormField>
 
-        <FormField label="Contraseña" htmlFor="password" error={fieldErrors.password} required>
+        <FormField label={t('password')} htmlFor="password" error={fieldErrors.password} required>
           <div className="relative">
             <Input
               id="password"
               name="password"
               type={showPass ? 'text' : 'password'}
               autoComplete="new-password"
-              placeholder="Mínimo 8 caracteres"
+              placeholder={t('passwordPlaceholder')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               error={!!fieldErrors.password}
@@ -113,10 +116,9 @@ export function RegisterForm() {
               className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted hover:text-fg transition-colors"
               tabIndex={-1}
             >
-              {showPass ? 'Ocultar' : 'Ver'}
+              {showPass ? t('hidePassword') : t('showPassword')}
             </button>
           </div>
-          {/* Barra de fortaleza */}
           {password && (
             <div className="mt-2">
               <div className="flex gap-1">
@@ -138,25 +140,21 @@ export function RegisterForm() {
         </FormField>
 
         <Button type="submit" fullWidth loading={isPending} className="mt-2">
-          Crear cuenta
+          {t('createAccount')}
         </Button>
       </form>
 
       <p className="mt-6 text-center text-sm text-muted">
-        ¿Ya tienes cuenta?{' '}
+        {t('alreadyHaveAccount')}{' '}
         <Link href="/login" className="font-semibold text-coral hover:opacity-80 transition-opacity">
-          Ingresar
+          {t('signIn')}
         </Link>
       </p>
 
       <p className="mt-4 text-center text-xs text-muted">
-        Al crear tu cuenta aceptas nuestros{' '}
+        {t('terms')}{' '}
         <a href="#" className="underline hover:text-fg transition-colors">
-          Términos de servicio
-        </a>{' '}
-        y{' '}
-        <a href="#" className="underline hover:text-fg transition-colors">
-          Política de privacidad
+          {t('termsLink')}
         </a>
         .
       </p>

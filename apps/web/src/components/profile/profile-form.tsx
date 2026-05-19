@@ -1,11 +1,14 @@
 'use client';
 
 import { type FormEvent, useState, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 
 import { Alert, Button, Input } from '@sellio/ui';
 import type { Organization, Profile } from '@sellio/domain';
 
 import { updateProfileAction } from '@/actions/profile/update-profile.action';
+import { ThemeToggle } from '@/components/settings/theme-toggle';
+import { LanguageToggle } from '@/components/settings/language-toggle';
 
 interface ProfileFormProps {
   initialProfile: Profile | null;
@@ -14,6 +17,9 @@ interface ProfileFormProps {
 }
 
 export function ProfileForm({ initialProfile, initialOrg, userEmail = '' }: ProfileFormProps) {
+  const t = useTranslations('settings.profile');
+  const tPref = useTranslations('settings.preferences');
+
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -37,19 +43,19 @@ export function ProfileForm({ initialProfile, initialOrg, userEmail = '' }: Prof
   };
 
   return (
-    <div className="rounded-2xl bg-white shadow-sm border border-border/10 p-8 max-w-[700px]">
+    <div className="rounded-2xl bg-surface shadow-sm border border-border/10 p-8 max-w-[700px]">
       <div className="mb-8">
         <h2 className="font-display text-[28px] font-black tracking-tight text-fg mb-1">
-          General
+          {t('title')}
         </h2>
         <p className="text-[15px] text-muted">
-          Actualiza tu información de perfil y cuenta.
+          {t('subtitle')}
         </p>
       </div>
 
       {success && (
         <Alert variant="success" className="mb-6">
-          Cambios guardados correctamente.
+          {t('saveSuccess')}
         </Alert>
       )}
 
@@ -60,24 +66,22 @@ export function ProfileForm({ initialProfile, initialOrg, userEmail = '' }: Prof
       )}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-8">
-        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
-          {/* Row 1 */}
           <div className="flex flex-col gap-2">
-            <label className="text-[15px] font-bold text-[#333]">
-              Nombre de usuario <span className="text-muted font-normal ml-1">(no editable)</span>
+            <label className="text-[15px] font-bold text-fg">
+              {t('username')} <span className="text-muted font-normal ml-1">{t('notEditable')}</span>
             </label>
             <Input
               readOnly
               disabled
               value={initialOrg?.slug || ''}
-              className="h-[46px] rounded-xl border-border/20 shadow-sm px-4 bg-[#F9F7F4]/50 cursor-not-allowed opacity-80"
+              className="h-[46px] rounded-xl border-border/20 shadow-sm px-4 bg-surface-2/60 cursor-not-allowed opacity-80"
             />
           </div>
 
           <div className="flex flex-col gap-2">
-            <label htmlFor="email" className="text-[15px] font-bold text-[#333]">
-              Correo electrónico
+            <label htmlFor="email" className="text-[15px] font-bold text-fg">
+              {t('email')}
             </label>
             <Input
               id="email"
@@ -85,14 +89,13 @@ export function ProfileForm({ initialProfile, initialOrg, userEmail = '' }: Prof
               type="email"
               readOnly
               value={userEmail}
-              className="h-[46px] rounded-xl border-border/20 shadow-sm px-4 bg-[#F9F7F4]/20 cursor-default"
+              className="h-[46px] rounded-xl border-border/20 shadow-sm px-4 bg-surface-2/30 cursor-default"
             />
           </div>
 
-          {/* Row 2 */}
           <div className="flex flex-col gap-2">
-            <label htmlFor="orgName" className="text-[15px] font-bold text-[#333]">
-              Nombre del negocio
+            <label htmlFor="orgName" className="text-[15px] font-bold text-fg">
+              {t('businessName')}
             </label>
             <Input
               id="orgName"
@@ -108,8 +111,8 @@ export function ProfileForm({ initialProfile, initialOrg, userEmail = '' }: Prof
           </div>
 
           <div className="flex flex-col gap-2">
-            <label htmlFor="phone" className="text-[15px] font-bold text-[#333]">
-              Teléfono
+            <label htmlFor="phone" className="text-[15px] font-bold text-fg">
+              {t('phone')}
             </label>
             <Input
               id="phone"
@@ -126,15 +129,25 @@ export function ProfileForm({ initialProfile, initialOrg, userEmail = '' }: Prof
         </div>
 
         <div className="flex justify-end pt-2">
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             loading={isPending}
             className="bg-[#E8341A] hover:bg-[#D02B13] text-white font-bold px-6 py-3.5 h-auto rounded-xl shadow-sm transition-colors text-[15px]"
           >
-            Guardar cambios
+            {t('saveChanges')}
           </Button>
         </div>
       </form>
+
+      {/* Preferencias */}
+      <div className="mt-8 pt-8 border-t border-border/10">
+        <h3 className="text-[15px] font-bold text-fg mb-1">{tPref('title')}</h3>
+        <p className="text-[13px] text-muted mb-2">{tPref('subtitle')}</p>
+        <div className="divide-y divide-border/10">
+          <ThemeToggle />
+          <LanguageToggle />
+        </div>
+      </div>
     </div>
   );
 }

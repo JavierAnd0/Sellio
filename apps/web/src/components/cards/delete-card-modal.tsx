@@ -97,7 +97,7 @@ export function DeleteCardModal({ cardId, cardName, memberCount, onClose }: Dele
             onKeyDown={(e) => { if (e.key === 'Enter' && confirmed) handleDelete(); }}
             placeholder={CONFIRM_PHRASE}
             autoComplete="off"
-            className="w-full rounded-xl border border-border/40 bg-[#F9F7F4] px-4 py-2.5 text-[14px] font-medium text-fg placeholder:text-muted/40 focus:border-[#E8341A] focus:outline-none focus:ring-2 focus:ring-[#E8341A]/20"
+            className="w-full rounded-xl border border-border/40 bg-surface-2 px-4 py-2.5 text-[14px] font-medium text-fg placeholder:text-muted/40 focus:border-[#E8341A] focus:outline-none focus:ring-2 focus:ring-[#E8341A]/20"
           />
         </div>
 

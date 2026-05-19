@@ -1,0 +1,178 @@
+{
+  "nav": {
+    "menu": "Menú",
+    "dashboard": "Dashboard",
+    "cards": "Tarjetas",
+    "customers": "Clientes",
+    "analytics": "Analytics",
+    "settings": "Configuración"
+  },
+  "sidebar": {
+    "closeMenu": "Cerrar menú",
+    "freeTrial": "Prueba gratuita",
+    "trialExpired": "Prueba expirada",
+    "readOnly": "Solo lectura — actualiza tu plan",
+    "daysLeft": "Quedan {days} días",
+    "oneDay": "Queda 1 día",
+    "clients": "{count} clientes",
+    "cards": "{count} tarjeta",
+    "cardsPlural": "{count} tarjetas",
+    "noLimits": "✦ Sin límites activos",
+    "upgradeButton": "Actualizar plan →",
+    "aboutToExpire": "⚠ Tu prueba está por vencer",
+    "upgradeWhenReady": "Actualiza cuando estés listo"
+  },
+  "topbar": {
+    "openMenu": "Abrir menú",
+    "signOut": "Cerrar sesión",
+    "myProfile": "Mi perfil",
+    "routes": {
+      "dashboard": "Overview",
+      "settings": "Configuración",
+      "profile": "Perfil",
+      "cards": "Tarjetas",
+      "customers": "Clientes",
+      "analytics": "Analytics",
+      "default": "Sellio"
+    }
+  },
+  "settings": {
+    "title": "Configuración",
+    "breadcrumb": "Panel / Configuración",
+    "nav": {
+      "general": "General",
+      "password": "Contraseña",
+      "privacy": "Privacidad",
+      "billing": "Facturación",
+      "deleteAccount": "Eliminar cuenta"
+    },
+    "profile": {
+      "title": "General",
+      "subtitle": "Actualiza tu información de perfil y cuenta.",
+      "username": "Nombre de usuario",
+      "notEditable": "(no editable)",
+      "email": "Correo electrónico",
+      "businessName": "Nombre del negocio",
+      "phone": "Teléfono",
+      "saveChanges": "Guardar cambios",
+      "saveSuccess": "Cambios guardados correctamente."
+    },
+    "preferences": {
+      "title": "Preferencias",
+      "subtitle": "Personaliza la apariencia de la interfaz.",
+      "appearance": "Apariencia",
+      "language": "Idioma"
+    }
+  },
+  "theme": {
+    "system": "Sistema",
+    "light": "Claro",
+    "dark": "Oscuro"
+  },
+  "auth": {
+    "login": {
+      "title": "Bienvenido de nuevo.",
+      "subtitle": "Ingresa a tu cuenta para gestionar tus tarjetas de lealtad.",
+      "email": "Email",
+      "emailPlaceholder": "tu@negocio.com",
+      "password": "Contraseña",
+      "passwordPlaceholder": "••••••••",
+      "showPassword": "Ver",
+      "hidePassword": "Ocultar",
+      "forgotPassword": "¿Olvidaste tu contraseña?",
+      "signIn": "Ingresar",
+      "orContinueWith": "o continúa con",
+      "continueWithGoogle": "Continuar con Google",
+      "comingSoon": "Próximamente",
+      "noAccount": "¿No tienes cuenta?",
+      "createAccount": "Crear cuenta",
+      "resetSuccess": "Contraseña actualizada correctamente. Ingresa con tu nueva contraseña."
+    },
+    "register": {
+      "title": "Crea tu cuenta.",
+      "subtitle": "Empieza gratis. Sin tarjeta de crédito.",
+      "fullName": "Nombre completo",
+      "fullNamePlaceholder": "María García",
+      "businessName": "Nombre de tu negocio",
+      "businessNamePlaceholder": "Cafetería Don Luis",
+      "email": "Email",
+      "emailPlaceholder": "tu@negocio.com",
+      "password": "Contraseña",
+      "passwordPlaceholder": "Mínimo 8 caracteres",
+      "showPassword": "Ver",
+      "hidePassword": "Ocultar",
+      "strengthWeak": "Débil",
+      "strengthFair": "Regular",
+      "strengthGood": "Buena",
+      "strengthStrong": "Fuerte",
+      "createAccount": "Crear cuenta gratis",
+      "alreadyHaveAccount": "¿Ya tienes cuenta?",
+      "signIn": "Iniciar sesión",
+      "terms": "Al crear una cuenta aceptas nuestros",
+      "termsLink": "Términos y condiciones",
+      "orContinueWith": "o continúa con",
+      "continueWithGoogle": "Continuar con Google",
+      "comingSoon": "Próximamente"
+    },
+    "forgotPassword": {
+      "title": "Recuperar contraseña",
+      "subtitle": "Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña.",
+      "email": "Email",
+      "emailPlaceholder": "tu@negocio.com",
+      "sendLink": "Enviar enlace",
+      "backToLogin": "Volver al inicio de sesión",
+      "checkEmail": "Revisa tu correo",
+      "checkEmailSubtitle": "Si tu email está registrado, recibirás un enlace en los próximos minutos."
+    }
+  },
+  "dashboard": {
+    "welcome": "Bienvenido a Sellio",
+    "greeting": "Hola,",
+    "stats": {
+      "totalCustomers": "Clientes totales",
+      "pointsIssued": "Puntos emitidos",
+      "activeMemberships": "Membresías activas",
+      "cards": "Tarjetas activas"
+    },
+    "recentActivity": "Actividad reciente",
+    "noCards": {
+      "title": "Crea tu primera tarjeta de lealtad",
+      "subtitle": "Diseña una tarjeta personalizada en minutos y empieza a fidelizar a tus clientes hoy.",
+      "cta": "Crear primera tarjeta"
+    }
+  },
+  "cards": {
+    "title": "Tarjetas de lealtad",
+    "newCard": "Nueva tarjeta",
+    "empty": {
+      "title": "Aún no tienes tarjetas",
+      "subtitle": "Crea tu primera tarjeta de lealtad para empezar."
+    },
+    "stats": {
+      "members": "Miembros",
+      "points": "Puntos",
+      "scans": "Escaneos"
+    },
+    "edit": "Editar",
+    "builder": "Abrir Builder",
+    "viewCustomers": "Ver clientes",
+    "share": "Compartir",
+    "active": "Activa",
+    "inactive": "Inactiva"
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "loading": "Cargando...",
+    "saving": "Guardando...",
+    "saved": "Guardado",
+    "error": "Error",
+    "retry": "Reintentar",
+    "back": "Volver",
+    "next": "Siguiente",
+    "create": "Crear",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "comingSoon": "Próximamente"
+  }
+}

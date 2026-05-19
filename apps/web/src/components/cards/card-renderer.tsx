@@ -30,7 +30,10 @@ export type StampIconId =
 export interface Palette { id: string; primary: string; bg: string; name: string }
 export interface CustomGradient { id: string; primary: string; bg: string; name: string }
 export interface FontOption { id: string; display: string; body: string; name: string; tier: Tier }
+export type CardType = 'points' | 'stamps';
+
 export interface BuilderState {
+  cardType: CardType;
   template: TemplateId;
   palette: string;
   customGradient: CustomGradient | null;
@@ -241,6 +244,7 @@ export const STAMP_ICONS_EXTENDED: Array<{ id: StampIconId | string; label: stri
 const STAMP_SLOTS = Array.from({ length: 10 }, (_, i) => i);
 
 export const DEFAULT_BUILDER: BuilderState = {
+  cardType: 'stamps',
   template: 'classic',
   palette: 'coral',
   customGradient: null,
@@ -296,11 +300,13 @@ export interface CardProps {
   W?: number;
   H?: number;
   noShadow?: boolean;
+  /** When true, hides the points/stamps section from the front face (clean front design) */
+  hidePoints?: boolean;
 }
 
 // ── Classic ───────────────────────────────────────────────────
 
-export function ClassicCard({ s, pal, font, pattern, W = 380, H = 230, noShadow }: CardProps) {
+export function ClassicCard({ s, pal, font, pattern, W = 380, H = 230, noShadow, hidePoints }: CardProps) {
   return (
     <div style={{ width: W, height: H, background: s.customGradient?.bg ?? pal.bg, borderRadius: 20, padding: '22px 24px', position: 'relative', overflow: 'hidden', boxShadow: noShadow ? 'none' : '0 32px 80px rgba(0,0,0,0.6)', transition: 'all 0.3s', flexShrink: 0, fontFamily: `'${font.display}', sans-serif` }}>
       {pattern.id !== 'none' && (
@@ -318,7 +324,7 @@ export function ClassicCard({ s, pal, font, pattern, W = 380, H = 230, noShadow 
           {s.showBadge && H > 80 && (<div style={{ background: `${pal.primary}25`, border: `1px solid ${pal.primary}40`, borderRadius: 100, padding: '2px 8px', fontSize: 8, color: pal.primary, fontWeight: 700, letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>{s.badgeText}</div>)}
         </div>
       </div>
-      {H > 80 && (
+      {H > 80 && !hidePoints && (
         <div style={{ position: 'relative', marginBottom: 20 }}>
           {s.pointsStyle === 'number' && (<><div style={{ fontFamily: `'${font.display}', sans-serif`, fontWeight: 800, fontSize: 44, color: '#fff', lineHeight: 1 }}>847</div><div style={{ fontSize: 9, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: 4 }}>puntos acumulados</div></>)}
           {s.pointsStyle === 'bar' && (<><div style={{ fontFamily: `'${font.display}', sans-serif`, fontWeight: 800, fontSize: 32, color: '#fff', lineHeight: 1 }}>847 pts</div><div style={{ marginTop: 8, height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2 }}><div style={{ height: '100%', width: '68%', background: pal.primary, borderRadius: 2 }} /></div></>)}
@@ -350,7 +356,7 @@ export function ClassicCard({ s, pal, font, pattern, W = 380, H = 230, noShadow 
   );
 }
 
-export function BoldCard({ s, pal, font, W = 380, H = 230, noShadow }: CardProps) {
+export function BoldCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints }: CardProps) {
   return (
     <div style={{ width: W, height: H, background: '#0A0A0A', borderRadius: 20, padding: '22px 24px', position: 'relative', overflow: 'hidden', boxShadow: noShadow ? 'none' : '0 32px 80px rgba(0,0,0,0.6)', border: `1px solid ${pal.primary}30`, flexShrink: 0, fontFamily: `'${font.display}', sans-serif` }}>
       <div style={{ position: 'absolute', left: -20, top: -20, width: 200, height: 200, borderRadius: '50%', background: `radial-gradient(circle, ${pal.primary}15 0%, transparent 70%)` }} />
@@ -361,9 +367,9 @@ export function BoldCard({ s, pal, font, W = 380, H = 230, noShadow }: CardProps
           {s.showBadge && H > 80 && <div style={{ fontSize: 9, color: pal.primary, fontWeight: 700 }}>{s.badgeText}</div>}
         </div>
       </div>
-      <div style={{ fontFamily: `'${font.display}', sans-serif`, fontWeight: 800, fontSize: H <= 80 ? 22 : 52, color: pal.primary, lineHeight: 1, marginBottom: 4 }}>847</div>
-      {H > 80 && <div style={{ fontFamily: `'${font.display}', sans-serif`, fontWeight: 800, fontSize: 16, color: 'rgba(255,255,255,0.15)', marginBottom: 20 }}>puntos</div>}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+      {!hidePoints && <div style={{ fontFamily: `'${font.display}', sans-serif`, fontWeight: 800, fontSize: H <= 80 ? 22 : 52, color: pal.primary, lineHeight: 1, marginBottom: 4 }}>847</div>}
+      {!hidePoints && H > 80 && <div style={{ fontFamily: `'${font.display}', sans-serif`, fontWeight: 800, fontSize: 16, color: 'rgba(255,255,255,0.15)', marginBottom: 20 }}>puntos</div>}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: hidePoints ? 'flex-end' : 'flex-end', marginTop: hidePoints ? 'auto' : undefined, position: hidePoints ? 'absolute' : undefined, bottom: hidePoints ? 22 : undefined, left: hidePoints ? 24 : undefined, right: hidePoints ? 24 : undefined }}>
         <div>
           <div style={{ fontFamily: `'${font.display}', sans-serif`, fontWeight: 800, fontSize: H <= 80 ? 7 : 14, color: '#fff' }}>{s.businessName || 'Tu Negocio'}</div>
           {H > 80 && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontFamily: `'${font.body}', sans-serif` }}>Ana García</div>}
@@ -374,16 +380,16 @@ export function BoldCard({ s, pal, font, W = 380, H = 230, noShadow }: CardProps
   );
 }
 
-export function SplitCard({ s, pal, font, W = 380, H = 230, noShadow }: CardProps) {
+export function SplitCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints }: CardProps) {
   const isSmall = H <= 80;
   return (
     <div style={{ width: W, height: H, borderRadius: 20, overflow: 'hidden', boxShadow: noShadow ? 'none' : '0 32px 80px rgba(0,0,0,0.6)', display: 'flex', flexShrink: 0, fontFamily: `'${font.display}', sans-serif` }}>
-      <div style={{ flex: '0 0 44%', background: pal.primary, padding: isSmall ? '10px 8px' : '22px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+      <div style={{ flex: hidePoints ? '0 0 28%' : '0 0 44%', background: pal.primary, padding: isSmall ? '10px 8px' : '22px 20px', display: 'flex', flexDirection: 'column', justifyContent: hidePoints ? 'center' : 'space-between', alignItems: 'center', transition: 'flex 0.3s' }}>
         <div style={{ width: isSmall ? 14 : 32, height: isSmall ? 14 : 32, borderRadius: 8, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: isSmall ? 7 : 13, color: '#fff' }}>S</div>
-        <div>
+        {!hidePoints && <div>
           <div style={{ fontFamily: `'${font.display}', sans-serif`, fontWeight: 800, fontSize: isSmall ? 16 : 36, color: '#fff', lineHeight: 1 }}>847</div>
           <div style={{ fontSize: isSmall ? 5 : 8, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: 3 }}>puntos</div>
-        </div>
+        </div>}
       </div>
       <div style={{ flex: 1, background: '#0D0B09', padding: isSmall ? '10px 8px' : '22px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         <div>
@@ -402,7 +408,7 @@ export function SplitCard({ s, pal, font, W = 380, H = 230, noShadow }: CardProp
   );
 }
 
-export function LuxuryCard({ s, pal, font, W = 380, H = 230, noShadow }: CardProps) {
+export function LuxuryCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints }: CardProps) {
   const isSmall = H <= 80;
   return (
     <div style={{ width: W, height: H, background: 'linear-gradient(135deg,#0C0A08,#1A1510)', borderRadius: 20, padding: isSmall ? '10px 12px' : '22px 24px', position: 'relative', overflow: 'hidden', boxShadow: noShadow ? `inset 0 0 0 1px ${pal.primary}30` : `0 32px 80px rgba(0,0,0,0.7), inset 0 0 0 1px ${pal.primary}30`, flexShrink: 0, fontFamily: `'${font.display}', sans-serif` }}>
@@ -414,9 +420,9 @@ export function LuxuryCard({ s, pal, font, W = 380, H = 230, noShadow }: CardPro
         </div>
         {s.showBadge && !isSmall && (<div style={{ background: `linear-gradient(135deg,${pal.primary},${pal.primary}AA)`, borderRadius: 100, padding: '3px 10px', fontSize: 8, color: '#fff', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{s.badgeText}</div>)}
       </div>
-      <div style={{ fontFamily: `'${font.display}', sans-serif`, fontWeight: 800, fontSize: isSmall ? 24 : 48, color: '#fff', lineHeight: 1, marginBottom: 4, position: 'relative' }}>847</div>
-      {!isSmall && <div style={{ fontSize: 8, color: `${pal.primary}99`, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 24, position: 'relative' }}>puntos de lealtad</div>}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', position: 'relative' }}>
+      {!hidePoints && <div style={{ fontFamily: `'${font.display}', sans-serif`, fontWeight: 800, fontSize: isSmall ? 24 : 48, color: '#fff', lineHeight: 1, marginBottom: 4, position: 'relative' }}>847</div>}
+      {!hidePoints && !isSmall && <div style={{ fontSize: 8, color: `${pal.primary}99`, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 24, position: 'relative' }}>puntos de lealtad</div>}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', position: hidePoints ? 'absolute' : 'relative', bottom: hidePoints ? (isSmall ? 10 : 22) : undefined, left: hidePoints ? (isSmall ? 12 : 24) : undefined, right: hidePoints ? (isSmall ? 12 : 24) : undefined }}>
         <div>
           {!isSmall && <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.1em' }}>TITULAR</div>}
           <div style={{ fontSize: isSmall ? 7 : 12, color: '#fff', fontFamily: `'${font.body}', sans-serif`, marginTop: isSmall ? 0 : 2 }}>Ana García</div>
@@ -465,7 +471,7 @@ export function StampCard({ s, pal, font, W = 380, H = 230, noShadow }: CardProp
   );
 }
 
-export function MinimalCard({ s, pal, font, W = 380, H = 230, noShadow }: CardProps) {
+export function MinimalCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints }: CardProps) {
   const isSmall = H <= 80;
   return (
     <div style={{ width: W, height: H, background: '#F5F0EB', borderRadius: 20, padding: isSmall ? '10px 12px' : '22px 24px', position: 'relative', overflow: 'hidden', boxShadow: noShadow ? 'none' : '0 32px 80px rgba(0,0,0,0.4)', flexShrink: 0, fontFamily: `'${font.display}', sans-serif` }}>
@@ -476,9 +482,9 @@ export function MinimalCard({ s, pal, font, W = 380, H = 230, noShadow }: CardPr
         </div>
         <div style={{ width: isSmall ? 16 : 32, height: isSmall ? 16 : 32, borderRadius: 8, background: pal.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: isSmall ? 7 : 13, color: '#fff' }}>S</div>
       </div>
-      <div style={{ fontFamily: `'${font.display}', sans-serif`, fontWeight: 800, fontSize: isSmall ? 22 : 48, color: '#0A0A0A', lineHeight: 1, marginBottom: 4 }}>847</div>
-      {!isSmall && <div style={{ fontSize: 9, color: '#9A9490', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 24 }}>puntos</div>}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+      {!hidePoints && <div style={{ fontFamily: `'${font.display}', sans-serif`, fontWeight: 800, fontSize: isSmall ? 22 : 48, color: '#0A0A0A', lineHeight: 1, marginBottom: 4 }}>847</div>}
+      {!hidePoints && !isSmall && <div style={{ fontSize: 9, color: '#9A9490', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 24 }}>puntos</div>}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', position: hidePoints ? 'absolute' : undefined, bottom: hidePoints ? (isSmall ? 10 : 22) : undefined, left: hidePoints ? (isSmall ? 12 : 24) : undefined, right: hidePoints ? (isSmall ? 12 : 24) : undefined }}>
         <div>
           <div style={{ fontSize: isSmall ? 5 : 8, color: '#C0BCB8' }}>Miembro · Ana García</div>
           {s.showBadge && !isSmall && <div style={{ fontSize: 8, color: pal.primary, fontWeight: 700, marginTop: 2 }}>{s.badgeText}</div>}
@@ -491,13 +497,13 @@ export function MinimalCard({ s, pal, font, W = 380, H = 230, noShadow }: CardPr
 
 // ── Custom ─────────────────────────────────────────────────────
 
-export function CustomCard({ s, pal, font, pattern, W = 380, H = 230, noShadow }: CardProps) {
+export function CustomCard({ s, pal, font, pattern, W = 380, H = 230, noShadow, hidePoints }: CardProps) {
   const isSmall = H <= 80;
   const layout = s.customLayout ?? 'stack';
   const show = {
     biz:      s.customElemBiz,
     cardName: s.customElemCardName,
-    points:   s.customElemPoints,
+    points:   hidePoints ? false : s.customElemPoints,
     member:   s.customElemMember,
     qr:       s.customElemQr,
     logo:     s.customElemLogo,
@@ -631,6 +637,7 @@ export function CardFromDesign({ design, primaryColor = '#E8341A', W = 380, H = 
     customGradient ?? resolvedPalettes.find((p) => p.id === paletteId) ?? resolvedPalettes[0]!;
 
   const s: BuilderState = {
+    cardType: (design.cardType as CardType) ?? 'stamps',
     template,
     palette: paletteId,
     customGradient,

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useTransition } from 'react';
-import { ArrowRight, Plus } from 'lucide-react';
+import { ArrowRight, Plus, Users } from 'lucide-react';
 import type { Customer } from '@sellio/domain';
 import type { OrgPlan } from '@sellio/db';
 
@@ -125,7 +125,7 @@ export function CustomerTable({ customers, maxCustomers, plan = 'free', pointsPe
     return (
       <div className="rounded-[24px] border border-dashed border-border/60 bg-surface p-12 text-center flex flex-col items-center justify-center shadow-sm">
         <div className="w-16 h-16 bg-surface-2 rounded-2xl flex items-center justify-center mb-5 border border-border/40 shadow-inner">
-          <span className="text-3xl drop-shadow-sm">👥</span>
+          <Users size={28} className="text-muted/60" />
         </div>
         <h3 className="font-display text-2xl font-extrabold text-fg mb-3 tracking-tight">
           No hay clientes aún

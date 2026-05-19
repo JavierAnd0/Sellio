@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Check } from 'lucide-react';
+import { Check, Hand, CreditCard, Sparkle, MailOpen } from 'lucide-react';
 
 import { createClient } from '@sellio/db/server';
 import {
@@ -54,7 +54,7 @@ export default async function DashboardPage() {
       <div>
         <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.15em] text-muted mb-1.5">Bienvenido a Selio</p>
         <h1 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-fg flex items-center gap-2">
-          Hola, <span className="text-[#E8341A]">{org.name}</span> <span className="inline-block origin-bottom-right hover:animate-floatB cursor-default transition-transform transform hover:scale-110">👋</span>
+          Hola, <span className="text-[#E8341A]">{org.name}</span> <Hand size={30} className="inline-block origin-bottom-right hover:animate-floatB cursor-default transition-transform transform hover:scale-110" />
         </h1>
       </div>
 
@@ -150,7 +150,7 @@ export default async function DashboardPage() {
           ) : (
             <div className="w-[360px] h-[218px] rounded-[20px] border-2 border-dashed border-[#E8341A]/30 bg-[#FEF5F4] flex flex-col items-center justify-center gap-3">
               <div className="w-12 h-12 rounded-2xl bg-[#E8341A]/10 flex items-center justify-center">
-                <span className="text-2xl">💳</span>
+                <CreditCard size={24} className="text-[#E8341A]/70" />
               </div>
               <p className="text-[13px] font-bold text-[#E8341A]/70">Tu tarjeta aparecerá aquí</p>
             </div>
@@ -169,7 +169,7 @@ export default async function DashboardPage() {
          </div>
          {/* Stat 2 */}
          <div className="rounded-[20px] border border-border/60 bg-surface p-7 sm:p-8 relative hover:border-border transition-colors group">
-           <div className="absolute top-7 right-7 text-border/60 text-lg group-hover:text-coral/50 transition-colors rotate-45">✦</div>
+           <Sparkle size={14} className="absolute top-7 right-7 text-border/60 group-hover:text-coral/50 transition-colors" />
            <p className="text-[13px] font-bold text-muted mb-3 tracking-wide">Puntos otorgados</p>
            <p className="font-display text-[44px] sm:text-5xl font-extrabold tracking-tighter text-fg mb-1 leading-none">{totalPoints.toLocaleString('es-CO')}</p>
            <p className="text-[13px] text-muted font-medium">esta semana</p>
@@ -226,7 +226,9 @@ export default async function DashboardPage() {
         <div className="rounded-[24px] border border-border/60 bg-surface p-8 sm:p-10 flex flex-col shadow-sm hover:shadow-md transition-shadow">
           <h3 className="font-display text-2xl sm:text-[28px] font-extrabold tracking-tight text-fg mb-10 leading-none">Actividad reciente</h3>
           <div className="flex-1 flex flex-col items-center justify-center text-center pb-2">
-            <div className="text-[56px] mb-6 drop-shadow-xl animate-floatB">📬</div>
+            <div className="mb-6 drop-shadow-xl animate-floatB flex items-center justify-center">
+              <MailOpen size={56} className="text-muted/40" />
+            </div>
             <h4 className="font-display text-xl font-bold text-fg mb-3">Sin actividad aún</h4>
             <p className="text-[15px] text-muted max-w-[280px] mb-10 leading-relaxed font-medium">
               Cuando tus clientes empiecen a escanear, verás su actividad aquí.
