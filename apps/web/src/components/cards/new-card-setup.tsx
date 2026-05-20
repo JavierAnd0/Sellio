@@ -340,19 +340,32 @@ export function NewCardSetup({ orgName, primaryColor }: NewCardSetupProps) {
                 }
                 {/* Confirm dialog */}
                 {showStampWarning && (
-                  <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-                    <div style={{ background: '#1A1712', border: '1px solid rgba(245,240,235,0.12)', borderRadius: 16, padding: 28, maxWidth: 360, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.7)' }}>
-                      <div style={{ fontSize: 15, fontWeight: 800, color: '#F5F0EB', marginBottom: 12, fontFamily: 'Syne,sans-serif' }}>Confirmar número de sellos</div>
-                      <div style={{ fontSize: 13, color: '#8A8480', lineHeight: 1.7, marginBottom: 22 }}>
-                        ¿Confirmas <strong style={{ color: '#F5F0EB' }}>{stampCount} sellos</strong> para esta tarjeta?<br />
-                        Una vez que tengas usuarios activos, <strong style={{ color: '#F87171' }}>este número no podrá cambiarse</strong>.
+                  <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+                    <div style={{ background: '#1A1712', border: '1px solid rgba(245,240,235,0.1)', borderRadius: 20, padding: 28, maxWidth: 320, width: '100%', boxShadow: '0 32px 80px rgba(0,0,0,0.8)' }}>
+                      {/* Icon */}
+                      <div style={{ width: 48, height: 48, borderRadius: 14, background: 'rgba(232,52,26,0.1)', border: '1px solid rgba(232,52,26,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
+                        <Lock size={20} color="#E8341A" />
                       </div>
-                      <div style={{ display: 'flex', gap: 10 }}>
-                        <button type="button" onClick={() => setShowStampWarning(false)} style={{ flex: 1, background: 'rgba(245,240,235,0.06)', border: '1px solid rgba(245,240,235,0.12)', borderRadius: 10, padding: '11px 0', fontSize: 13, fontWeight: 600, color: '#8A8480', cursor: 'pointer', fontFamily: 'Space Grotesk,sans-serif' }}>
-                          Cancelar
+                      {/* Title */}
+                      <div style={{ fontSize: 16, fontWeight: 800, color: '#F5F0EB', marginBottom: 8, fontFamily: 'Syne,sans-serif', letterSpacing: '-0.02em' }}>¿Confirmar {stampCount} sellos?</div>
+                      {/* Body */}
+                      <div style={{ fontSize: 13, color: '#8A8480', lineHeight: 1.6, marginBottom: 8 }}>
+                        Esta acción fija el número de sellos para la tarjeta.
+                      </div>
+                      {/* Warning pill */}
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: 'rgba(248,113,113,0.06)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: 10, padding: '10px 12px', marginBottom: 24 }}>
+                        <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0, marginTop: 1 }}>⚠️</span>
+                        <span style={{ fontSize: 12, color: '#F87171', lineHeight: 1.55 }}>
+                          Una vez que la tarjeta tenga usuarios activos, no podrás modificar este número.
+                        </span>
+                      </div>
+                      {/* Buttons */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <button type="button" onClick={() => { setStampConfirmed(true); setShowStampWarning(false); }} style={{ width: '100%', background: '#E8341A', border: 'none', borderRadius: 11, padding: '13px 0', fontSize: 14, fontWeight: 700, color: '#fff', cursor: 'pointer', fontFamily: 'Syne,sans-serif', letterSpacing: '0.01em' }}>
+                          Confirmar {stampCount} sellos
                         </button>
-                        <button type="button" onClick={() => { setStampConfirmed(true); setShowStampWarning(false); }} style={{ flex: 1, background: '#E8341A', border: 'none', borderRadius: 10, padding: '11px 0', fontSize: 13, fontWeight: 700, color: '#fff', cursor: 'pointer', fontFamily: 'Space Grotesk,sans-serif' }}>
-                          Sí, confirmar
+                        <button type="button" onClick={() => setShowStampWarning(false)} style={{ width: '100%', background: 'transparent', border: '1px solid rgba(245,240,235,0.1)', borderRadius: 11, padding: '12px 0', fontSize: 13, fontWeight: 600, color: '#6B6560', cursor: 'pointer', fontFamily: 'Space Grotesk,sans-serif' }}>
+                          Cancelar
                         </button>
                       </div>
                     </div>

@@ -9,6 +9,10 @@ import {
   ShoppingBag, Tag, Shirt, Glasses, Watch, Gem, Footprints, Crown,
   Dumbbell, Bike, Trophy, Zap, Music, Headphones, Gamepad2, Camera,
   Car, Plane, Home, Leaf, Globe, Rocket, Shield, Flame,
+  GraduationCap, BookOpen, Pencil, Laptop, Smartphone, HeartPulse, Pill, Stethoscope,
+  Banknote, CreditCard, Coins, PawPrint, Bird, Popcorn, Film, MapPin, Bus, Train,
+  Palette, Brush, Waves, Mountain, Baby, Hammer, Wrench, Trees, Apple, Wine, Beer,
+  Candy, Lollipop, Wheat, Rabbit, Dices,
   Image as ImageIcon
 } from 'lucide-react';
 
@@ -53,18 +57,35 @@ export function defaultFreeElems(pal: { primary: string }): FreeLayoutElem[] {
   ];
 }
 export type CustomLayoutId = 'stack' | 'centered' | 'split';
+export type GradientStyleId = 'diagonal' | 'flat' | 'radial' | 'sweep' | 'bottom';
+export const GRADIENT_STYLES: Array<{ id: GradientStyleId; label: string }> = [
+  { id: 'diagonal', label: 'Diagonal' },
+  { id: 'flat',     label: 'Plano'    },
+  { id: 'radial',   label: 'Radial'   },
+  { id: 'sweep',    label: 'Barrido'  },
+  { id: 'bottom',   label: 'Inferior' },
+];
 export type PointsStyleId = 'number' | 'bar' | 'stamps' | 'stars';
+export type StampShapeId = 'square' | 'circle' | 'pill' | 'diamond' | 'hexagon';
 export type TabId = 'templates' | 'colors' | 'typography' | 'elements';
 export type StampIconId =
-  | 'check' | 'star' | 'heart' | 'gift'
-  | 'coffee' | 'croissant' | 'cup-soda' | 'ice-cream'
-  | 'utensils' | 'pizza' | 'chef-hat' | 'sandwich'
-  | 'scissors' | 'sparkles' | 'flower' | 'droplets'
-  | 'shopping-bag' | 'tag' | 'shirt' | 'glasses'
-  | 'dumbbell'
+  | 'check' | 'star' | 'heart' | 'gift' | 'crown' | 'gem' | 'shield' | 'flame' | 'zap'
+  | 'coffee' | 'croissant' | 'cup-soda' | 'ice-cream' | 'cake' | 'bean' | 'milk' | 'cookie'
+  | 'utensils' | 'pizza' | 'chef-hat' | 'sandwich' | 'beef' | 'fish' | 'salad' | 'soup'
+  | 'scissors' | 'sparkles' | 'flower' | 'droplets' | 'wind' | 'smile' | 'moon' | 'sun'
+  | 'shopping-bag' | 'tag' | 'shirt' | 'glasses' | 'watch' | 'footprints'
+  | 'dumbbell' | 'bike' | 'trophy' | 'music' | 'headphones' | 'gamepad2' | 'camera'
+  | 'car' | 'plane' | 'home' | 'leaf' | 'globe' | 'rocket'
+  | 'graduation-cap' | 'book-open' | 'pencil' | 'laptop' | 'smartphone'
+  | 'heart-pulse' | 'pill' | 'stethoscope'
+  | 'banknote' | 'credit-card' | 'coins'
+  | 'paw-print' | 'bird' | 'rabbit'
+  | 'popcorn' | 'film' | 'map-pin' | 'bus' | 'train'
+  | 'palette' | 'brush' | 'waves' | 'mountain' | 'baby' | 'hammer' | 'wrench'
+  | 'trees' | 'apple' | 'wine' | 'beer' | 'candy' | 'lollipop' | 'wheat' | 'dices'
   | 'custom';
 
-export interface Palette { id: string; primary: string; bg: string; name: string }
+export interface Palette { id: string; primary: string; dark: string; bg: string; name: string }
 export interface CustomGradient { id: string; primary: string; bg: string; name: string }
 export interface FontOption { id: string; display: string; body: string; name: string; tier: Tier }
 export type CardType = 'points' | 'stamps';
@@ -88,8 +109,11 @@ export interface BuilderState {
   qrStyle: 'simple' | 'colored' | 'logo';
   stampIcon: StampIconId;
   customStampUrl?: string;
-  // ── Back face controls ────────────────────────────────────────
-  backBg: 'warm' | 'dark' | 'deep' | 'accent';
+  stampShape: StampShapeId;
+  // ── Custom gradient combo ─────────────────────────────────────
+  customGradDark?: string;
+  // ── Gradient style ────────────────────────────────────────────
+  gradientStyle: GradientStyleId;
   // ── Free layout overlay ───────────────────────────────────────
   freeLayout: boolean;
   freeElems: FreeLayoutElem[];
@@ -101,6 +125,7 @@ export interface BuilderState {
   customElemMember: boolean;
   customElemQr: boolean;
   customElemLogo: boolean;
+  specialEffect: 'none' | 'foil' | 'emboss' | 'glow';
 }
 
 // ── Data ──────────────────────────────────────────────────────
@@ -110,14 +135,70 @@ export const canUse = (tier: Tier, required: string) =>
   TIER_ORDER[tier] >= TIER_ORDER[required as Tier];
 
 export const BASE_PALETTES: Palette[] = [
-  { id: 'coral',   primary: '#E8341A', bg: 'linear-gradient(135deg,#1A0806 0%,#3A1006 55%,#E8341A 100%)', name: 'Coral' },
-  { id: 'indigo',  primary: '#5B3FE8', bg: 'linear-gradient(135deg,#09061A 0%,#1A0D4A 55%,#5B3FE8 100%)', name: 'Índigo' },
-  { id: 'emerald', primary: '#1A8C5B', bg: 'linear-gradient(135deg,#021208 0%,#083220 55%,#1A8C5B 100%)', name: 'Esmeralda' },
-  { id: 'amber',   primary: '#C17D3C', bg: 'linear-gradient(135deg,#100B04 0%,#2E1E08 55%,#C17D3C 100%)', name: 'Ámbar' },
-  { id: 'violet',  primary: '#9B3FE8', bg: 'linear-gradient(135deg,#0A0618 0%,#22084A 55%,#9B3FE8 100%)', name: 'Violeta' },
-  { id: 'teal',    primary: '#00A8A0', bg: 'linear-gradient(135deg,#021010 0%,#083030 55%,#00A8A0 100%)', name: 'Teal' },
+  { id: 'coral',   primary: '#E8341A', dark: '#0E0604', bg: 'linear-gradient(135deg,#1A0806 0%,#3A1006 55%,#E8341A 100%)', name: 'Coral' },
+  { id: 'indigo',  primary: '#5B3FE8', dark: '#060412', bg: 'linear-gradient(135deg,#09061A 0%,#1A0D4A 55%,#5B3FE8 100%)', name: 'Índigo' },
+  { id: 'emerald', primary: '#1A8C5B', dark: '#020C06', bg: 'linear-gradient(135deg,#021208 0%,#083220 55%,#1A8C5B 100%)', name: 'Esmeralda' },
+  { id: 'amber',   primary: '#C17D3C', dark: '#080602', bg: 'linear-gradient(135deg,#100B04 0%,#2E1E08 55%,#C17D3C 100%)', name: 'Ámbar' },
+  { id: 'violet',  primary: '#9B3FE8', dark: '#060310', bg: 'linear-gradient(135deg,#0A0618 0%,#22084A 55%,#9B3FE8 100%)', name: 'Violeta' },
+  { id: 'teal',    primary: '#00A8A0', dark: '#020C0C', bg: 'linear-gradient(135deg,#021010 0%,#083030 55%,#00A8A0 100%)', name: 'Teal' },
 ];
 
+export function buildGradientBg(primary: string, dark: string, baseBg: string, style: GradientStyleId): string {
+  switch (style) {
+    case 'flat':    return dark;
+    case 'radial':  return `radial-gradient(ellipse at 85% 15%, ${primary}55 0%, ${dark} 60%)`;
+    case 'sweep':   return `linear-gradient(150deg, ${primary}55 0%, ${dark} 44%)`;
+    case 'bottom':  return `radial-gradient(ellipse at 50% 120%, ${primary}55 0%, ${dark} 52%)`;
+    case 'diagonal':
+    default:        return baseBg;
+  }
+}
+
+export const SPECIAL_EFFECTS: Array<{ id: BuilderState['specialEffect']; label: string }> = [
+  { id: 'none',   label: 'Ninguno' },
+  { id: 'foil',   label: 'Foil'    },
+  { id: 'emboss', label: 'Emboss'  },
+  { id: 'glow',   label: 'Glow'    },
+];
+
+export function effectWrapperStyle(effect: BuilderState['specialEffect'], primary: string): React.CSSProperties {
+  if (effect === 'glow') {
+    return { filter: `drop-shadow(0 0 18px ${primary}CC) drop-shadow(0 0 40px ${primary}66) drop-shadow(0 0 70px ${primary}33)` };
+  }
+  return {};
+}
+
+export function SpecialEffectOverlay({ effect, primary, borderRadius = 20 }: {
+  effect: BuilderState['specialEffect'];
+  primary: string;
+  borderRadius?: number;
+}) {
+  if (effect === 'foil') {
+    return (
+      <div style={{
+        position: 'absolute', inset: 0, borderRadius,
+        background: 'linear-gradient(115deg, transparent 15%, rgba(255,0,120,0.38) 28%, rgba(255,210,0,0.38) 38%, rgba(0,255,140,0.38) 48%, rgba(0,170,255,0.38) 58%, rgba(170,0,255,0.38) 68%, transparent 82%)',
+        backgroundSize: '300% 300%',
+        animation: 'foilShift 4s ease-in-out infinite',
+        mixBlendMode: 'overlay',
+        pointerEvents: 'none',
+        zIndex: 50,
+      }} />
+    );
+  }
+  if (effect === 'emboss') {
+    return (
+      <div style={{
+        position: 'absolute', inset: 0, borderRadius,
+        background: 'linear-gradient(135deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.04) 40%, rgba(0,0,0,0.0) 55%, rgba(0,0,0,0.12) 80%, rgba(0,0,0,0.2) 100%)',
+        boxShadow: `inset 2px 2px 0 rgba(255,255,255,0.22), inset -2px -2px 0 rgba(0,0,0,0.3), inset 0 0 0 1px ${primary}30`,
+        pointerEvents: 'none',
+        zIndex: 50,
+      }} />
+    );
+  }
+  return null;
+}
 
 export const PATTERNS = [
   { id: 'none',     name: 'Sin patrón', css: '',                                                                                                                                            size: '' },
@@ -130,11 +211,16 @@ export const PATTERNS = [
 export const FONTS: FontOption[] = [
   { id: 'syne',       display: 'Syne',              body: 'Space Grotesk',    name: 'Syne + Space Grotesk',       tier: 'free'  },
   { id: 'outfit',     display: 'Outfit',             body: 'Nunito',           name: 'Outfit + Nunito',             tier: 'free'  },
+  { id: 'raleway',    display: 'Raleway',            body: 'Lato',             name: 'Raleway + Lato',             tier: 'free'  },
+  { id: 'montserrat', display: 'Montserrat',         body: 'Inter',            name: 'Montserrat + Inter',         tier: 'basic' },
+  { id: 'poppins',    display: 'Poppins',            body: 'Nunito',           name: 'Poppins + Nunito',           tier: 'basic' },
   { id: 'playfair',   display: 'Playfair Display',  body: 'DM Sans',          name: 'Playfair + DM Sans',         tier: 'basic' },
   { id: 'cormorant',  display: 'Cormorant Garamond', body: 'Lato',            name: 'Cormorant + Lato',           tier: 'basic' },
   { id: 'cabinet',    display: 'Plus Jakarta Sans',   body: 'Space Grotesk',   name: 'Jakarta + Grotesk',          tier: 'basic' },
   { id: 'bebas',      display: 'Bebas Neue',         body: 'Inter',           name: 'Bebas Neue + Inter',         tier: 'basic' },
+  { id: 'fraunces',   display: 'Fraunces',           body: 'DM Sans',          name: 'Fraunces + DM Sans',         tier: 'elite' },
   { id: 'josefin',    display: 'Josefin Sans',       body: 'Source Serif 4',  name: 'Josefin + Source Serif',     tier: 'elite' },
+  { id: 'cinzel',     display: 'Cinzel',             body: 'Lato',             name: 'Cinzel + Lato',              tier: 'elite' },
   { id: 'mono',       display: 'Space Grotesk',      body: 'Space Grotesk',   name: 'Monoespaciado',              tier: 'elite' },
 ];
 
@@ -162,6 +248,33 @@ export const POINTS_STYLES: Array<{ id: PointsStyleId; label: string; tier: Tier
   { id: 'stamps', label: 'Sellos',    tier: 'basic' },
   { id: 'stars',  label: 'Estrellas', tier: 'elite' },
 ];
+
+export const STAMP_SHAPES: Array<{ id: StampShapeId; label: string; tier: Tier }> = [
+  { id: 'square',  label: 'Cuadrado', tier: 'basic' },
+  { id: 'circle',  label: 'Círculo',  tier: 'basic' },
+  { id: 'pill',    label: 'Píldora',  tier: 'basic' },
+  { id: 'diamond', label: 'Diamante', tier: 'elite' },
+  { id: 'hexagon', label: 'Hexágono', tier: 'elite' },
+];
+
+/** Returns the CSS needed to render a stamp cell in the given shape */
+export function stampShapeStyle(shape: StampShapeId, filled: boolean, primary: string, size: number): React.CSSProperties {
+  const base: React.CSSProperties = {
+    width: size, height: size,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: filled ? primary : 'rgba(255,255,255,0.07)',
+    border: filled ? 'none' : '1.5px solid rgba(255,255,255,0.14)',
+    flexShrink: 0,
+    transition: 'background 0.2s',
+  };
+  switch (shape) {
+    case 'circle':  return { ...base, borderRadius: '50%' };
+    case 'pill':    return { ...base, borderRadius: 999, width: size * 1.5, height: size };
+    case 'diamond': return { ...base, borderRadius: 5, transform: 'rotate(45deg)' };
+    case 'hexagon': return { ...base, borderRadius: 4, clipPath: 'polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)' };
+    default:        return { ...base, borderRadius: Math.round(size * 0.22) }; // square
+  }
+}
 
 export const STAMP_CATEGORIES = [
   {
@@ -226,67 +339,111 @@ export const STAMP_CATEGORIES = [
 export const FLAT_STAMP_ICONS = STAMP_CATEGORIES.flatMap(c => c.icons);
 
 // Extended icon library for full picker search
-export const STAMP_ICONS_EXTENDED: Array<{ id: StampIconId | string; label: string; icon: LucideIcon; tier: Tier; category: string }> = [
+export const STAMP_ICONS_EXTENDED: Array<{ id: StampIconId | string; label: string; en: string; icon: LucideIcon; tier: Tier; category: string }> = [
   // Generic
-  { id: 'check', label: 'Check', icon: Check, tier: 'free', category: 'Genéricos' },
-  { id: 'star', label: 'Estrella', icon: Star, tier: 'basic', category: 'Genéricos' },
-  { id: 'heart', label: 'Corazón', icon: Heart, tier: 'basic', category: 'Genéricos' },
-  { id: 'gift', label: 'Regalo', icon: Gift, tier: 'basic', category: 'Genéricos' },
-  { id: 'crown', label: 'Corona', icon: Crown, tier: 'basic', category: 'Genéricos' },
-  { id: 'gem', label: 'Gema', icon: Gem, tier: 'basic', category: 'Genéricos' },
-  { id: 'shield', label: 'Escudo', icon: Shield, tier: 'basic', category: 'Genéricos' },
-  { id: 'flame', label: 'Fuego', icon: Flame, tier: 'basic', category: 'Genéricos' },
-  { id: 'zap', label: 'Rayo', icon: Zap, tier: 'basic', category: 'Genéricos' },
+  { id: 'check',         label: 'Check',        en: 'check mark tick done',                    icon: Check,        tier: 'free',  category: 'Genéricos' },
+  { id: 'star',          label: 'Estrella',      en: 'star favorite rating',                    icon: Star,         tier: 'basic', category: 'Genéricos' },
+  { id: 'heart',         label: 'Corazón',       en: 'heart love like',                         icon: Heart,        tier: 'basic', category: 'Genéricos' },
+  { id: 'gift',          label: 'Regalo',        en: 'gift present reward prize',               icon: Gift,         tier: 'basic', category: 'Genéricos' },
+  { id: 'crown',         label: 'Corona',        en: 'crown king queen royal vip',              icon: Crown,        tier: 'basic', category: 'Genéricos' },
+  { id: 'gem',           label: 'Gema',          en: 'gem diamond jewel luxury elite',          icon: Gem,          tier: 'basic', category: 'Genéricos' },
+  { id: 'shield',        label: 'Escudo',        en: 'shield protect security badge',           icon: Shield,       tier: 'basic', category: 'Genéricos' },
+  { id: 'flame',         label: 'Fuego',         en: 'flame fire hot streak',                   icon: Flame,        tier: 'basic', category: 'Genéricos' },
+  { id: 'zap',           label: 'Rayo',          en: 'zap lightning bolt energy power',         icon: Zap,          tier: 'basic', category: 'Genéricos' },
   // Café
-  { id: 'coffee', label: 'Café', icon: Coffee, tier: 'basic', category: 'Cafetería & Snacks' },
-  { id: 'croissant', label: 'Croissant', icon: Croissant, tier: 'basic', category: 'Cafetería & Snacks' },
-  { id: 'cup-soda', label: 'Bebida', icon: CupSoda, tier: 'basic', category: 'Cafetería & Snacks' },
-  { id: 'ice-cream', label: 'Helado', icon: IceCream, tier: 'basic', category: 'Cafetería & Snacks' },
-  { id: 'cake', label: 'Pastel', icon: Cake, tier: 'basic', category: 'Cafetería & Snacks' },
-  { id: 'bean', label: 'Grano', icon: Bean, tier: 'basic', category: 'Cafetería & Snacks' },
-  { id: 'milk', label: 'Leche', icon: Milk, tier: 'basic', category: 'Cafetería & Snacks' },
-  { id: 'cookie', label: 'Galleta', icon: Cookie, tier: 'basic', category: 'Cafetería & Snacks' },
+  { id: 'coffee',        label: 'Café',          en: 'coffee cup espresso latte',               icon: Coffee,       tier: 'basic', category: 'Cafetería & Snacks' },
+  { id: 'croissant',     label: 'Croissant',     en: 'croissant pastry bakery bread',           icon: Croissant,    tier: 'basic', category: 'Cafetería & Snacks' },
+  { id: 'cup-soda',      label: 'Bebida',        en: 'cup soda drink beverage juice',           icon: CupSoda,      tier: 'basic', category: 'Cafetería & Snacks' },
+  { id: 'ice-cream',     label: 'Helado',        en: 'ice cream dessert sweet gelato',          icon: IceCream,     tier: 'basic', category: 'Cafetería & Snacks' },
+  { id: 'cake',          label: 'Pastel',        en: 'cake birthday dessert sweet bake',        icon: Cake,         tier: 'basic', category: 'Cafetería & Snacks' },
+  { id: 'bean',          label: 'Grano',         en: 'bean coffee grain seed',                  icon: Bean,         tier: 'basic', category: 'Cafetería & Snacks' },
+  { id: 'milk',          label: 'Leche',         en: 'milk dairy drink bottle',                 icon: Milk,         tier: 'basic', category: 'Cafetería & Snacks' },
+  { id: 'cookie',        label: 'Galleta',       en: 'cookie biscuit snack sweet',              icon: Cookie,       tier: 'basic', category: 'Cafetería & Snacks' },
   // Restaurante
-  { id: 'utensils', label: 'Cubiertos', icon: Utensils, tier: 'basic', category: 'Restaurante' },
-  { id: 'pizza', label: 'Pizza', icon: Pizza, tier: 'basic', category: 'Restaurante' },
-  { id: 'chef-hat', label: 'Chef', icon: ChefHat, tier: 'basic', category: 'Restaurante' },
-  { id: 'sandwich', label: 'Sándwich', icon: Sandwich, tier: 'basic', category: 'Restaurante' },
-  { id: 'beef', label: 'Carne', icon: Beef, tier: 'basic', category: 'Restaurante' },
-  { id: 'fish', label: 'Pescado', icon: Fish, tier: 'basic', category: 'Restaurante' },
-  { id: 'salad', label: 'Ensalada', icon: Salad, tier: 'basic', category: 'Restaurante' },
-  { id: 'soup', label: 'Sopa', icon: Soup, tier: 'basic', category: 'Restaurante' },
+  { id: 'utensils',      label: 'Cubiertos',     en: 'utensils fork knife restaurant food',     icon: Utensils,     tier: 'basic', category: 'Restaurante' },
+  { id: 'pizza',         label: 'Pizza',         en: 'pizza slice italian food',                icon: Pizza,        tier: 'basic', category: 'Restaurante' },
+  { id: 'chef-hat',      label: 'Chef',          en: 'chef hat cook kitchen restaurant',        icon: ChefHat,      tier: 'basic', category: 'Restaurante' },
+  { id: 'sandwich',      label: 'Sándwich',      en: 'sandwich burger food lunch',              icon: Sandwich,     tier: 'basic', category: 'Restaurante' },
+  { id: 'beef',          label: 'Carne',         en: 'beef meat steak grill bbq',               icon: Beef,         tier: 'basic', category: 'Restaurante' },
+  { id: 'fish',          label: 'Pescado',       en: 'fish seafood sushi ocean',                icon: Fish,         tier: 'basic', category: 'Restaurante' },
+  { id: 'salad',         label: 'Ensalada',      en: 'salad healthy vegetable green',           icon: Salad,        tier: 'basic', category: 'Restaurante' },
+  { id: 'soup',          label: 'Sopa',          en: 'soup bowl warm broth',                    icon: Soup,         tier: 'basic', category: 'Restaurante' },
   // Belleza
-  { id: 'scissors', label: 'Tijeras', icon: Scissors, tier: 'basic', category: 'Belleza & Salud' },
-  { id: 'sparkles', label: 'Brillos', icon: Sparkles, tier: 'basic', category: 'Belleza & Salud' },
-  { id: 'flower', label: 'Flor', icon: Flower, tier: 'basic', category: 'Belleza & Salud' },
-  { id: 'droplets', label: 'Gotas', icon: Droplets, tier: 'basic', category: 'Belleza & Salud' },
-  { id: 'wind', label: 'Viento', icon: Wind, tier: 'basic', category: 'Belleza & Salud' },
-  { id: 'smile', label: 'Sonrisa', icon: Smile, tier: 'basic', category: 'Belleza & Salud' },
-  { id: 'moon', label: 'Luna', icon: Moon, tier: 'basic', category: 'Belleza & Salud' },
-  { id: 'sun', label: 'Sol', icon: Sun, tier: 'basic', category: 'Belleza & Salud' },
+  { id: 'scissors',      label: 'Tijeras',       en: 'scissors cut hair salon barber',          icon: Scissors,     tier: 'basic', category: 'Belleza & Salud' },
+  { id: 'sparkles',      label: 'Brillos',       en: 'sparkles glitter shine beauty glow',      icon: Sparkles,     tier: 'basic', category: 'Belleza & Salud' },
+  { id: 'flower',        label: 'Flor',          en: 'flower nature bloom spa wellness',        icon: Flower,       tier: 'basic', category: 'Belleza & Salud' },
+  { id: 'droplets',      label: 'Gotas',         en: 'droplets water hydration spa',            icon: Droplets,     tier: 'basic', category: 'Belleza & Salud' },
+  { id: 'wind',          label: 'Viento',        en: 'wind air breeze spa relax',               icon: Wind,         tier: 'basic', category: 'Belleza & Salud' },
+  { id: 'smile',         label: 'Sonrisa',       en: 'smile happy face emoji',                  icon: Smile,        tier: 'basic', category: 'Belleza & Salud' },
+  { id: 'moon',          label: 'Luna',          en: 'moon night sleep relax rest',             icon: Moon,         tier: 'basic', category: 'Belleza & Salud' },
+  { id: 'sun',           label: 'Sol',           en: 'sun light day bright energy',             icon: Sun,          tier: 'basic', category: 'Belleza & Salud' },
   // Retail
-  { id: 'shopping-bag', label: 'Bolsa', icon: ShoppingBag, tier: 'basic', category: 'Retail & Moda' },
-  { id: 'tag', label: 'Etiqueta', icon: Tag, tier: 'basic', category: 'Retail & Moda' },
-  { id: 'shirt', label: 'Ropa', icon: Shirt, tier: 'basic', category: 'Retail & Moda' },
-  { id: 'glasses', label: 'Lentes', icon: Glasses, tier: 'basic', category: 'Retail & Moda' },
-  { id: 'watch', label: 'Reloj', icon: Watch, tier: 'basic', category: 'Retail & Moda' },
-  { id: 'footprints', label: 'Zapatillas', icon: Footprints, tier: 'basic', category: 'Retail & Moda' },
+  { id: 'shopping-bag',  label: 'Bolsa',         en: 'shopping bag cart purchase store',        icon: ShoppingBag,  tier: 'basic', category: 'Retail & Moda' },
+  { id: 'tag',           label: 'Etiqueta',      en: 'tag label price discount sale',           icon: Tag,          tier: 'basic', category: 'Retail & Moda' },
+  { id: 'shirt',         label: 'Ropa',          en: 'shirt clothes fashion apparel tshirt',    icon: Shirt,        tier: 'basic', category: 'Retail & Moda' },
+  { id: 'glasses',       label: 'Lentes',        en: 'glasses sunglasses eyewear optical',      icon: Glasses,      tier: 'basic', category: 'Retail & Moda' },
+  { id: 'watch',         label: 'Reloj',         en: 'watch clock time accessories',            icon: Watch,        tier: 'basic', category: 'Retail & Moda' },
+  { id: 'footprints',    label: 'Zapatillas',    en: 'footprints shoes sneakers steps walk',    icon: Footprints,   tier: 'basic', category: 'Retail & Moda' },
   // Otros
-  { id: 'dumbbell', label: 'Pesas', icon: Dumbbell, tier: 'basic', category: 'Otros' },
-  { id: 'bike', label: 'Bicicleta', icon: Bike, tier: 'basic', category: 'Otros' },
-  { id: 'trophy', label: 'Trofeo', icon: Trophy, tier: 'basic', category: 'Otros' },
-  { id: 'music', label: 'Música', icon: Music, tier: 'basic', category: 'Otros' },
-  { id: 'headphones', label: 'Auriculares', icon: Headphones, tier: 'basic', category: 'Otros' },
-  { id: 'gamepad2', label: 'Videojuegos', icon: Gamepad2, tier: 'basic', category: 'Otros' },
-  { id: 'camera', label: 'Cámara', icon: Camera, tier: 'basic', category: 'Otros' },
-  { id: 'car', label: 'Auto', icon: Car, tier: 'basic', category: 'Otros' },
-  { id: 'plane', label: 'Avión', icon: Plane, tier: 'basic', category: 'Otros' },
-  { id: 'home', label: 'Casa', icon: Home, tier: 'basic', category: 'Otros' },
-  { id: 'leaf', label: 'Hoja', icon: Leaf, tier: 'basic', category: 'Otros' },
-  { id: 'globe', label: 'Globo', icon: Globe, tier: 'basic', category: 'Otros' },
-  { id: 'rocket', label: 'Cohete', icon: Rocket, tier: 'basic', category: 'Otros' },
+  { id: 'dumbbell',      label: 'Pesas',         en: 'dumbbell gym fitness workout weights',    icon: Dumbbell,     tier: 'basic', category: 'Otros' },
+  { id: 'bike',          label: 'Bicicleta',     en: 'bike bicycle cycling sport',              icon: Bike,         tier: 'basic', category: 'Otros' },
+  { id: 'trophy',        label: 'Trofeo',        en: 'trophy award winner prize achievement',   icon: Trophy,       tier: 'basic', category: 'Otros' },
+  { id: 'music',         label: 'Música',        en: 'music note song sound audio',             icon: Music,        tier: 'basic', category: 'Otros' },
+  { id: 'headphones',    label: 'Auriculares',   en: 'headphones audio music earphones',        icon: Headphones,   tier: 'basic', category: 'Otros' },
+  { id: 'gamepad2',      label: 'Videojuegos',   en: 'gamepad gaming controller video game',    icon: Gamepad2,     tier: 'basic', category: 'Otros' },
+  { id: 'camera',        label: 'Cámara',        en: 'camera photo picture photography',        icon: Camera,       tier: 'basic', category: 'Otros' },
+  { id: 'car',           label: 'Auto',          en: 'car vehicle automobile transport drive',  icon: Car,          tier: 'basic', category: 'Otros' },
+  { id: 'plane',         label: 'Avión',         en: 'plane airplane travel flight trip',       icon: Plane,        tier: 'basic', category: 'Otros' },
+  { id: 'home',          label: 'Casa',          en: 'home house building real estate',         icon: Home,         tier: 'basic', category: 'Otros' },
+  { id: 'leaf',          label: 'Hoja',          en: 'leaf nature eco green organic plant',     icon: Leaf,         tier: 'basic', category: 'Otros' },
+  { id: 'globe',         label: 'Globo',         en: 'globe world earth travel international',  icon: Globe,        tier: 'basic', category: 'Otros' },
+  { id: 'rocket',        label: 'Cohete',        en: 'rocket launch space startup boost',       icon: Rocket,       tier: 'basic', category: 'Otros' },
+  // Educación & Tecnología
+  { id: 'graduation-cap', label: 'Graduación',  en: 'graduation cap diploma school university', icon: GraduationCap, tier: 'basic', category: 'Educación & Tech' },
+  { id: 'book-open',      label: 'Libro',       en: 'book open read library education study',  icon: BookOpen,      tier: 'basic', category: 'Educación & Tech' },
+  { id: 'pencil',         label: 'Lápiz',       en: 'pencil write draw school art',            icon: Pencil,        tier: 'basic', category: 'Educación & Tech' },
+  { id: 'laptop',         label: 'Laptop',      en: 'laptop computer tech digital work',       icon: Laptop,        tier: 'basic', category: 'Educación & Tech' },
+  { id: 'smartphone',     label: 'Teléfono',    en: 'smartphone phone mobile cell',            icon: Smartphone,    tier: 'basic', category: 'Educación & Tech' },
+  // Salud & Bienestar
+  { id: 'heart-pulse',    label: 'Pulso',       en: 'heart pulse health medical cardio',       icon: HeartPulse,    tier: 'basic', category: 'Salud' },
+  { id: 'pill',           label: 'Pastilla',    en: 'pill medicine pharmacy drug health',      icon: Pill,          tier: 'basic', category: 'Salud' },
+  { id: 'stethoscope',    label: 'Estetoscopio',en: 'stethoscope doctor medical clinic',       icon: Stethoscope,   tier: 'basic', category: 'Salud' },
+  { id: 'waves',          label: 'Ondas',       en: 'waves water spa wellness relax ocean',    icon: Waves,         tier: 'basic', category: 'Salud' },
+  // Finanzas
+  { id: 'banknote',       label: 'Billete',     en: 'banknote money cash bill finance',        icon: Banknote,      tier: 'basic', category: 'Finanzas' },
+  { id: 'credit-card',    label: 'Tarjeta',     en: 'credit card payment bank finance',        icon: CreditCard,    tier: 'basic', category: 'Finanzas' },
+  { id: 'coins',          label: 'Monedas',     en: 'coins money savings gold currency',       icon: Coins,         tier: 'basic', category: 'Finanzas' },
+  // Mascotas
+  { id: 'paw-print',      label: 'Huella',      en: 'paw print pet dog cat animal',            icon: PawPrint,      tier: 'basic', category: 'Mascotas' },
+  { id: 'bird',           label: 'Pájaro',      en: 'bird parrot pet animal nature',           icon: Bird,          tier: 'basic', category: 'Mascotas' },
+  { id: 'rabbit',         label: 'Conejo',      en: 'rabbit bunny pet animal cute',            icon: Rabbit,        tier: 'basic', category: 'Mascotas' },
+  // Entretenimiento
+  { id: 'popcorn',        label: 'Palomitas',   en: 'popcorn cinema movie film entertainment', icon: Popcorn,       tier: 'basic', category: 'Entretenimiento' },
+  { id: 'film',           label: 'Película',    en: 'film movie cinema reel video',            icon: Film,          tier: 'basic', category: 'Entretenimiento' },
+  { id: 'dices',          label: 'Dados',       en: 'dice game board play luck fun',           icon: Dices,         tier: 'basic', category: 'Entretenimiento' },
+  // Transporte
+  { id: 'map-pin',        label: 'Ubicación',   en: 'map pin location place destination gps',  icon: MapPin,        tier: 'basic', category: 'Transporte' },
+  { id: 'bus',            label: 'Bus',         en: 'bus transport public commute',            icon: Bus,           tier: 'basic', category: 'Transporte' },
+  { id: 'train',          label: 'Tren',        en: 'train rail metro transport commute',      icon: Train,         tier: 'basic', category: 'Transporte' },
+  // Arte
+  { id: 'palette',        label: 'Paleta',      en: 'palette paint art color artist',          icon: Palette,       tier: 'basic', category: 'Arte' },
+  { id: 'brush',          label: 'Pincel',      en: 'brush paint art artist design',           icon: Brush,         tier: 'basic', category: 'Arte' },
+  // Naturaleza extra
+  { id: 'mountain',       label: 'Montaña',     en: 'mountain hike outdoor nature adventure',  icon: Mountain,      tier: 'basic', category: 'Naturaleza' },
+  { id: 'trees',          label: 'Árboles',     en: 'trees forest park nature eco green',      icon: Trees,         tier: 'basic', category: 'Naturaleza' },
+  { id: 'wheat',          label: 'Trigo',       en: 'wheat grain bread bakery organic farm',   icon: Wheat,         tier: 'basic', category: 'Naturaleza' },
+  // Comida extra
+  { id: 'apple',          label: 'Manzana',     en: 'apple fruit healthy food natural',        icon: Apple,         tier: 'basic', category: 'Comida & Bebida' },
+  { id: 'wine',           label: 'Vino',        en: 'wine glass drink alcohol bar beverage',   icon: Wine,          tier: 'basic', category: 'Comida & Bebida' },
+  { id: 'beer',           label: 'Cerveza',     en: 'beer drink bar pub alcohol hop',          icon: Beer,          tier: 'basic', category: 'Comida & Bebida' },
+  { id: 'candy',          label: 'Caramelo',    en: 'candy sweets dessert sugar treat',        icon: Candy,         tier: 'basic', category: 'Comida & Bebida' },
+  { id: 'lollipop',       label: 'Paleta',      en: 'lollipop candy sweet treat kids',         icon: Lollipop,      tier: 'basic', category: 'Comida & Bebida' },
+  // Servicios
+  { id: 'hammer',         label: 'Martillo',    en: 'hammer tool build repair construction',   icon: Hammer,        tier: 'basic', category: 'Servicios' },
+  { id: 'wrench',         label: 'Llave',       en: 'wrench tool repair fix mechanic',         icon: Wrench,        tier: 'basic', category: 'Servicios' },
+  { id: 'baby',           label: 'Bebé',        en: 'baby child family kids infant',           icon: Baby,          tier: 'basic', category: 'Servicios' },
   // Personalizado
-  { id: 'custom', label: 'Subir Imagen', icon: ImageIcon, tier: 'elite', category: 'Personalizado' },
+  { id: 'custom',        label: 'Imagen propia', en: 'custom image upload logo photo png svg', icon: ImageIcon,    tier: 'elite', category: 'Personalizado' },
 ];
 
 // Hoisted constant — avoids allocating a new array on every card render
@@ -309,7 +466,9 @@ export const DEFAULT_BUILDER: BuilderState = {
   showMemberNum: false,
   qrStyle: 'simple',
   stampIcon: 'check',
-  backBg: 'warm',
+  stampShape: 'square',
+  gradientStyle: 'diagonal',
+  customGradDark: undefined,
   freeLayout: false,
   freeElems: [],
   customLayout: 'stack',
@@ -319,6 +478,7 @@ export const DEFAULT_BUILDER: BuilderState = {
   customElemMember: true,
   customElemQr: true,
   customElemLogo: true,
+  specialEffect: 'none',
 };
 
 // ── QR placeholder SVG ────────────────────────────────────────
@@ -369,7 +529,7 @@ function formatMemberNumber(n: number | undefined): string {
 
 export function ClassicCard({ s, pal, font, pattern, W = 380, H = 230, noShadow, hidePoints, bgOnly, memberNumber }: CardProps) {
   return (
-    <div style={{ width: W, height: H, background: s.customGradient?.bg ?? pal.bg, borderRadius: 20, padding: '22px 24px', position: 'relative', overflow: 'hidden', boxShadow: noShadow ? 'none' : '0 32px 80px rgba(0,0,0,0.6)', transition: 'all 0.3s', flexShrink: 0, fontFamily: `'${font.display}', sans-serif` }}>
+    <div style={{ width: W, height: H, background: pal.bg, borderRadius: 20, padding: '22px 24px', position: 'relative', overflow: 'hidden', boxShadow: noShadow ? 'none' : '0 32px 80px rgba(0,0,0,0.6)', transition: 'all 0.3s', flexShrink: 0, fontFamily: `'${font.display}', sans-serif` }}>
       {pattern.id !== 'none' && (
         <div style={{ position: 'absolute', inset: 0, backgroundImage: pattern.css, backgroundSize: pattern.size || undefined, pointerEvents: 'none', borderRadius: 20 }} />
       )}
@@ -390,7 +550,7 @@ export function ClassicCard({ s, pal, font, pattern, W = 380, H = 230, noShadow,
           {s.pointsStyle === 'number' && (<><div style={{ fontFamily: `'${font.display}', sans-serif`, fontWeight: 800, fontSize: 44, color: '#fff', lineHeight: 1 }}>847</div><div style={{ fontSize: 9, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: 4 }}>puntos acumulados</div></>)}
           {s.pointsStyle === 'bar' && (<><div style={{ fontFamily: `'${font.display}', sans-serif`, fontWeight: 800, fontSize: 32, color: '#fff', lineHeight: 1 }}>847 pts</div><div style={{ marginTop: 8, height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2 }}><div style={{ height: '100%', width: '68%', background: pal.primary, borderRadius: 2 }} /></div></>)}
           {s.pointsStyle === 'stamps' && (()=>{
-            const IconComp = FLAT_STAMP_ICONS.find(x => x.id === s.stampIcon)?.icon || Check;
+            const IconComp = STAMP_ICONS_EXTENDED.find(x => x.id === s.stampIcon)?.icon || Check;
             return (<><div style={{ fontSize: 9, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 8 }}>Sellos acumulados</div><div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{STAMP_SLOTS.map(i => {
             const isStamped = i < 7;
             return (
@@ -417,9 +577,9 @@ export function ClassicCard({ s, pal, font, pattern, W = 380, H = 230, noShadow,
   );
 }
 
-export function BoldCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints, bgOnly }: CardProps) {
+export function BoldCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints, bgOnly, memberNumber }: CardProps) {
   return (
-    <div style={{ width: W, height: H, background: '#0A0A0A', borderRadius: 20, padding: '22px 24px', position: 'relative', overflow: 'hidden', boxShadow: noShadow ? 'none' : '0 32px 80px rgba(0,0,0,0.6)', border: `1px solid ${pal.primary}30`, flexShrink: 0, fontFamily: `'${font.display}', sans-serif` }}>
+    <div style={{ width: W, height: H, background: pal.bg, borderRadius: 20, padding: '22px 24px', position: 'relative', overflow: 'hidden', boxShadow: noShadow ? 'none' : '0 32px 80px rgba(0,0,0,0.6)', border: `1px solid ${pal.primary}30`, flexShrink: 0, fontFamily: `'${font.display}', sans-serif` }}>
       <div style={{ position: 'absolute', left: -20, top: -20, width: 200, height: 200, borderRadius: '50%', background: `radial-gradient(circle, ${pal.primary}15 0%, transparent 70%)` }} />
       {!bgOnly && <>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: H <= 80 ? 6 : 16, position: 'relative' }}>
@@ -434,7 +594,7 @@ export function BoldCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints,
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: hidePoints ? 'flex-end' : 'flex-end', marginTop: hidePoints ? 'auto' : undefined, position: hidePoints ? 'absolute' : undefined, bottom: hidePoints ? 22 : undefined, left: hidePoints ? 24 : undefined, right: hidePoints ? 24 : undefined }}>
         <div>
           <div style={{ fontFamily: `'${font.display}', sans-serif`, fontWeight: 800, fontSize: H <= 80 ? 7 : 14, color: '#fff' }}>{s.businessName || 'Tu Negocio'}</div>
-          {H > 80 && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontFamily: `'${font.body}', sans-serif` }}>Ana García</div>}
+          {H > 80 && <>{s.showMemberNum && <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em', marginBottom: 1 }}>№ {formatMemberNumber(memberNumber)}</div>}<div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontFamily: `'${font.body}', sans-serif` }}>Ana García</div></>}
         </div>
         <QR size={H <= 80 ? 22 : 42} color={pal.primary} />
       </div>
@@ -443,7 +603,7 @@ export function BoldCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints,
   );
 }
 
-export function SplitCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints, bgOnly }: CardProps) {
+export function SplitCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints, bgOnly, memberNumber }: CardProps) {
   const isSmall = H <= 80;
   return (
     <div style={{ width: W, height: H, borderRadius: 20, overflow: 'hidden', boxShadow: noShadow ? 'none' : '0 32px 80px rgba(0,0,0,0.6)', display: 'flex', flexShrink: 0, fontFamily: `'${font.display}', sans-serif` }}>
@@ -462,6 +622,7 @@ export function SplitCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
+            {s.showMemberNum && !isSmall && <div style={{ fontSize: 7, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em', marginBottom: 2 }}>№ {formatMemberNumber(memberNumber)}</div>}
             <div style={{ fontSize: isSmall ? 5 : 8, color: 'rgba(255,255,255,0.3)' }}>Miembro</div>
             <div style={{ fontSize: isSmall ? 7 : 12, color: '#fff', fontFamily: `'${font.body}', sans-serif` }}>Ana García</div>
           </div>
@@ -473,10 +634,10 @@ export function SplitCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints
   );
 }
 
-export function LuxuryCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints, bgOnly }: CardProps) {
+export function LuxuryCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints, bgOnly, memberNumber }: CardProps) {
   const isSmall = H <= 80;
   return (
-    <div style={{ width: W, height: H, background: 'linear-gradient(135deg,#0C0A08,#1A1510)', borderRadius: 20, padding: isSmall ? '10px 12px' : '22px 24px', position: 'relative', overflow: 'hidden', boxShadow: noShadow ? `inset 0 0 0 1px ${pal.primary}30` : `0 32px 80px rgba(0,0,0,0.7), inset 0 0 0 1px ${pal.primary}30`, flexShrink: 0, fontFamily: `'${font.display}', sans-serif` }}>
+    <div style={{ width: W, height: H, background: pal.bg, borderRadius: 20, padding: isSmall ? '10px 12px' : '22px 24px', position: 'relative', overflow: 'hidden', boxShadow: noShadow ? `inset 0 0 0 1px ${pal.primary}30` : `0 32px 80px rgba(0,0,0,0.7), inset 0 0 0 1px ${pal.primary}30`, flexShrink: 0, fontFamily: `'${font.display}', sans-serif` }}>
       <div style={{ position: 'absolute', inset: 0, backgroundImage: `repeating-linear-gradient(45deg, ${pal.primary}06 0px, ${pal.primary}06 1px, transparent 1px, transparent 12px)` }} />
       {!bgOnly && <>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: isSmall ? 6 : 18, position: 'relative' }}>
@@ -491,6 +652,7 @@ export function LuxuryCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoint
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', position: hidePoints ? 'absolute' : 'relative', bottom: hidePoints ? (isSmall ? 10 : 22) : undefined, left: hidePoints ? (isSmall ? 12 : 24) : undefined, right: hidePoints ? (isSmall ? 12 : 24) : undefined }}>
         <div>
           {!isSmall && <div style={{ fontSize: 8, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.1em' }}>TITULAR</div>}
+          {s.showMemberNum && !isSmall && <div style={{ fontSize: 7, color: 'rgba(255,255,255,0.2)', letterSpacing: '0.1em', marginBottom: 2 }}>№ {formatMemberNumber(memberNumber)}</div>}
           <div style={{ fontSize: isSmall ? 7 : 12, color: '#fff', fontFamily: `'${font.body}', sans-serif`, marginTop: isSmall ? 0 : 2 }}>Ana García</div>
         </div>
         <QR size={isSmall ? 20 : 44} color={pal.primary} />
@@ -500,7 +662,7 @@ export function LuxuryCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoint
   );
 }
 
-export function StampCard({ s, pal, font, W = 380, H = 230, noShadow }: CardProps) {
+export function StampCard({ s, pal, font, W = 380, H = 230, noShadow, memberNumber }: CardProps) {
   const isSmall = H <= 80;
   const stamps = 7;
   return (
@@ -514,7 +676,7 @@ export function StampCard({ s, pal, font, W = 380, H = 230, noShadow }: CardProp
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: isSmall ? 3 : 6, marginBottom: isSmall ? 6 : 12 }}>
         {(() => {
-          const IconComp = FLAT_STAMP_ICONS.find(x => x.id === s.stampIcon)?.icon || Check;
+          const IconComp = STAMP_ICONS_EXTENDED.find(x => x.id === s.stampIcon)?.icon || Check;
           return STAMP_SLOTS.map(i => {
             const isStamped = i < stamps;
             return (
@@ -529,6 +691,7 @@ export function StampCard({ s, pal, font, W = 380, H = 230, noShadow }: CardProp
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
+          {s.showMemberNum && !isSmall && <div style={{ fontSize: 7, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.08em', marginBottom: 2 }}>№ {formatMemberNumber(memberNumber)}</div>}
           <div style={{ fontSize: isSmall ? 5 : 9, color: 'rgba(255,255,255,0.3)' }}>Miembro</div>
           <div style={{ fontSize: isSmall ? 7 : 11, color: '#fff', fontFamily: `'${font.body}', sans-serif` }}>Ana García</div>
         </div>
@@ -538,7 +701,7 @@ export function StampCard({ s, pal, font, W = 380, H = 230, noShadow }: CardProp
   );
 }
 
-export function MinimalCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints, bgOnly }: CardProps) {
+export function MinimalCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints, bgOnly, memberNumber }: CardProps) {
   const isSmall = H <= 80;
   return (
     <div style={{ width: W, height: H, background: '#F5F0EB', borderRadius: 20, padding: isSmall ? '10px 12px' : '22px 24px', position: 'relative', overflow: 'hidden', boxShadow: noShadow ? 'none' : '0 32px 80px rgba(0,0,0,0.4)', flexShrink: 0, fontFamily: `'${font.display}', sans-serif` }}>
@@ -554,6 +717,7 @@ export function MinimalCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoin
       {!hidePoints && !isSmall && <div style={{ fontSize: 9, color: '#9A9490', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 24 }}>puntos</div>}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', position: hidePoints ? 'absolute' : undefined, bottom: hidePoints ? (isSmall ? 10 : 22) : undefined, left: hidePoints ? (isSmall ? 12 : 24) : undefined, right: hidePoints ? (isSmall ? 12 : 24) : undefined }}>
         <div>
+          {s.showMemberNum && !isSmall && <div style={{ fontSize: 7, color: '#B0ACA8', letterSpacing: '0.08em', marginBottom: 2 }}>№ {formatMemberNumber(memberNumber)}</div>}
           <div style={{ fontSize: isSmall ? 5 : 8, color: '#C0BCB8' }}>Miembro · Ana García</div>
           {s.showBadge && !isSmall && <div style={{ fontSize: 8, color: pal.primary, fontWeight: 700, marginTop: 2 }}>{s.badgeText}</div>}
         </div>
@@ -577,9 +741,7 @@ export function CustomCard({ s, pal, font, pattern, W = 380, H = 230, noShadow, 
     qr:       s.customElemQr,
     logo:     s.customElemLogo,
   };
-  const bg = s.customGradient?.bg ?? (s.customPrimary
-    ? `linear-gradient(135deg,#1A0806 0%,#3A1006 55%,${s.customPrimary} 100%)`
-    : pal.bg);
+  const bg = pal.bg;
   const qrColor = s.qrStyle === 'colored' ? pal.primary : 'rgba(255,255,255,0.55)';
   const patternOverlay = pattern.id !== 'none'
     ? <div style={{ position: 'absolute', inset: 0, backgroundImage: pattern.css, backgroundSize: pattern.size || undefined, pointerEvents: 'none', borderRadius: 20 }} />
@@ -668,7 +830,7 @@ export function CustomCard({ s, pal, font, pattern, W = 380, H = 230, noShadow, 
 export function NightCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints, bgOnly, memberNumber }: CardProps) {
   const isSmall = H <= 80;
   return (
-    <div style={{ width: W, height: H, background: '#050505', borderRadius: 20, position: 'relative', overflow: 'hidden', boxShadow: noShadow ? 'none' : `0 32px 80px rgba(0,0,0,0.9), inset 0 0 0 1px rgba(255,255,255,0.04)`, flexShrink: 0, fontFamily: `'${font.display}', sans-serif` }}>
+    <div style={{ width: W, height: H, background: pal.bg, borderRadius: 20, position: 'relative', overflow: 'hidden', boxShadow: noShadow ? 'none' : `0 32px 80px rgba(0,0,0,0.9), inset 0 0 0 1px rgba(255,255,255,0.04)`, flexShrink: 0, fontFamily: `'${font.display}', sans-serif` }}>
       {/* Dot matrix */}
       <div style={{ position: 'absolute', inset: 0, backgroundImage: `radial-gradient(circle, ${pal.primary}18 1px, transparent 1px)`, backgroundSize: '18px 18px', pointerEvents: 'none' }} />
       {/* Left accent bar */}
@@ -705,11 +867,11 @@ export function NightCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints
 
 // ── Gold ───────────────────────────────────────────────────────
 
-export function GoldCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints, bgOnly }: CardProps) {
+export function GoldCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints, bgOnly, memberNumber }: CardProps) {
   const isSmall = H <= 80;
   const gold = '#C9A84C';
   return (
-    <div style={{ width: W, height: H, background: 'linear-gradient(160deg,#0E0C08 0%,#1C1608 55%,#0A0A06 100%)', borderRadius: 20, position: 'relative', overflow: 'hidden', boxShadow: noShadow ? 'none' : `0 32px 80px rgba(0,0,0,0.8), inset 0 0 0 1px ${gold}25`, flexShrink: 0, fontFamily: `'${font.display}', sans-serif` }}>
+    <div style={{ width: W, height: H, background: pal.bg, borderRadius: 20, position: 'relative', overflow: 'hidden', boxShadow: noShadow ? 'none' : `0 32px 80px rgba(0,0,0,0.8), inset 0 0 0 1px ${gold}25`, flexShrink: 0, fontFamily: `'${font.display}', sans-serif` }}>
       {/* Diamond bg pattern */}
       <div style={{ position: 'absolute', inset: 0, backgroundImage: `repeating-linear-gradient(45deg, ${gold}07 0px, ${gold}07 1px, transparent 1px, transparent 18px), repeating-linear-gradient(-45deg, ${gold}07 0px, ${gold}07 1px, transparent 1px, transparent 18px)`, pointerEvents: 'none' }} />
       {/* Top gold line */}
@@ -737,6 +899,7 @@ export function GoldCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints,
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
             <div style={{ fontSize: isSmall ? 5 : 7, color: `${gold}70`, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Titular</div>
+            {s.showMemberNum && !isSmall && <div style={{ fontSize: 7, color: `${gold}60`, letterSpacing: '0.1em', marginBottom: 2 }}>№ {formatMemberNumber(memberNumber)}</div>}
             <div style={{ fontSize: isSmall ? 7 : 12, color: '#fff', fontFamily: `'${font.body}', sans-serif`, marginTop: 2 }}>Ana García</div>
           </div>
           <QR size={isSmall ? 20 : 42} color={s.qrStyle === 'colored' ? pal.primary : `${gold}80`} />
@@ -748,10 +911,10 @@ export function GoldCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints,
 
 // ── Glass ──────────────────────────────────────────────────────
 
-export function GlassCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints, bgOnly }: CardProps) {
+export function GlassCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints, bgOnly, memberNumber }: CardProps) {
   const isSmall = H <= 80;
   return (
-    <div style={{ width: W, height: H, background: s.customGradient?.bg ?? pal.bg, borderRadius: 20, position: 'relative', overflow: 'hidden', boxShadow: noShadow ? 'none' : '0 32px 80px rgba(0,0,0,0.7)', flexShrink: 0, fontFamily: `'${font.display}', sans-serif` }}>
+    <div style={{ width: W, height: H, background: pal.bg, borderRadius: 20, position: 'relative', overflow: 'hidden', boxShadow: noShadow ? 'none' : '0 32px 80px rgba(0,0,0,0.7)', flexShrink: 0, fontFamily: `'${font.display}', sans-serif` }}>
       {/* Ambient glow orbs */}
       <div style={{ position: 'absolute', top: -40, right: -40, width: 200, height: 200, borderRadius: '50%', background: `radial-gradient(circle, ${pal.primary}30 0%, transparent 65%)`, pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', bottom: -30, left: -30, width: 160, height: 160, borderRadius: '50%', background: `radial-gradient(circle, ${pal.primary}18 0%, transparent 65%)`, pointerEvents: 'none' }} />
@@ -776,6 +939,7 @@ export function GlassCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints
         {/* Bottom row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
+            {s.showMemberNum && !isSmall && <div style={{ fontSize: 7, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.1em', marginBottom: 2 }}>№ {formatMemberNumber(memberNumber)}</div>}
             <div style={{ fontSize: isSmall ? 5 : 8, color: 'rgba(255,255,255,0.35)' }}>Miembro</div>
             <div style={{ fontSize: isSmall ? 7 : 12, fontWeight: 600, color: '#fff', marginTop: 1, fontFamily: `'${font.body}', sans-serif` }}>Ana García</div>
           </div>
@@ -789,12 +953,12 @@ export function GlassCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints
 
 // ── Marble ─────────────────────────────────────────────────────
 
-export function MarbleCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints, bgOnly }: CardProps) {
+export function MarbleCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints, bgOnly, memberNumber }: CardProps) {
   const isSmall = H <= 80;
   return (
     <div style={{ width: W, height: H, borderRadius: 20, position: 'relative', overflow: 'hidden', boxShadow: noShadow ? 'none' : `0 32px 80px rgba(0,0,0,0.75), inset 0 0 0 1px rgba(255,255,255,0.06)`, flexShrink: 0, fontFamily: `'${font.display}', sans-serif` }}>
       {/* Marble base */}
-      <div style={{ position: 'absolute', inset: 0, background: '#1E1C18' }} />
+      <div style={{ position: 'absolute', inset: 0, background: pal.bg }} />
       {/* Marble veins — layered radial gradients */}
       <div style={{ position: 'absolute', inset: 0, backgroundImage: `radial-gradient(ellipse 200% 80% at 20% 30%, rgba(255,255,255,0.04) 0%, transparent 60%), radial-gradient(ellipse 160% 100% at 80% 70%, rgba(255,255,255,0.03) 0%, transparent 55%), radial-gradient(ellipse 80% 160% at 50% 10%, ${pal.primary}12 0%, transparent 50%), radial-gradient(ellipse 120% 60% at 10% 80%, ${pal.primary}08 0%, transparent 40%)`, pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', inset: 0, backgroundImage: `repeating-linear-gradient(128deg, transparent 0px, transparent 28px, rgba(255,255,255,0.012) 28px, rgba(255,255,255,0.012) 29px, transparent 29px, transparent 58px)`, pointerEvents: 'none' }} />
@@ -822,6 +986,7 @@ export function MarbleCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoint
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
             <div style={{ fontSize: isSmall ? 5 : 7, color: 'rgba(255,255,255,0.2)', letterSpacing: '0.18em', textTransform: 'uppercase' }}>Titular</div>
+            {s.showMemberNum && !isSmall && <div style={{ fontSize: 7, color: 'rgba(255,255,255,0.18)', letterSpacing: '0.1em', marginBottom: 2 }}>№ {formatMemberNumber(memberNumber)}</div>}
             <div style={{ fontSize: isSmall ? 7 : 12, fontWeight: 500, color: 'rgba(255,255,255,0.85)', marginTop: 2, fontFamily: `'${font.body}', sans-serif` }}>Ana García</div>
           </div>
           <QR size={isSmall ? 20 : 40} color={s.qrStyle === 'colored' ? pal.primary : 'rgba(255,255,255,0.45)'} />
@@ -833,11 +998,11 @@ export function MarbleCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoint
 
 // ── Neon ───────────────────────────────────────────────────────
 
-export function NeonCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints, bgOnly }: CardProps) {
+export function NeonCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints, bgOnly, memberNumber }: CardProps) {
   const isSmall = H <= 80;
   const glow = pal.primary;
   return (
-    <div style={{ width: W, height: H, background: '#020308', borderRadius: 20, position: 'relative', overflow: 'hidden', boxShadow: noShadow ? 'none' : `0 32px 80px rgba(0,0,0,0.9), 0 0 0 1px ${glow}40, 0 0 30px ${glow}15`, flexShrink: 0, fontFamily: `'${font.display}', sans-serif` }}>
+    <div style={{ width: W, height: H, background: pal.bg, borderRadius: 20, position: 'relative', overflow: 'hidden', boxShadow: noShadow ? 'none' : `0 32px 80px rgba(0,0,0,0.9), 0 0 0 1px ${glow}40, 0 0 30px ${glow}15`, flexShrink: 0, fontFamily: `'${font.display}', sans-serif` }}>
       {/* Scan lines */}
       <div style={{ position: 'absolute', inset: 0, backgroundImage: `repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0,0,0,0.25) 3px, rgba(0,0,0,0.25) 4px)`, pointerEvents: 'none', zIndex: 1 }} />
       {/* Neon border glow */}
@@ -862,6 +1027,7 @@ export function NeonCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints,
         )}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
+            {s.showMemberNum && !isSmall && <div style={{ fontSize: 7, color: `${glow}50`, letterSpacing: '0.12em', marginBottom: 2, textShadow: `0 0 4px ${glow}40` }}>№ {formatMemberNumber(memberNumber)}</div>}
             <div style={{ fontSize: isSmall ? 5 : 7, color: `${glow}50`, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Miembro</div>
             <div style={{ fontSize: isSmall ? 7 : 11, fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginTop: 2, fontFamily: `'${font.body}', sans-serif` }}>Ana García</div>
           </div>
@@ -922,7 +1088,7 @@ export function PaperCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints
 export function CarbonCard({ s, pal, font, W = 380, H = 230, noShadow, hidePoints, bgOnly, memberNumber }: CardProps) {
   const isSmall = H <= 80;
   return (
-    <div style={{ width: W, height: H, background: '#111111', borderRadius: 20, position: 'relative', overflow: 'hidden', boxShadow: noShadow ? 'none' : `0 32px 80px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.06)`, flexShrink: 0, fontFamily: `'${font.display}', sans-serif` }}>
+    <div style={{ width: W, height: H, background: pal.bg, borderRadius: 20, position: 'relative', overflow: 'hidden', boxShadow: noShadow ? 'none' : `0 32px 80px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.06)`, flexShrink: 0, fontFamily: `'${font.display}', sans-serif` }}>
       {/* Carbon fiber pattern */}
       <div style={{ position: 'absolute', inset: 0, backgroundImage: `repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 2px, transparent 2px, transparent 4px), repeating-linear-gradient(-45deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 2px, transparent 2px, transparent 4px)`, backgroundSize: '8px 8px', pointerEvents: 'none' }} />
       {/* Left gradient accent bar */}
@@ -988,7 +1154,7 @@ export function defaultCanvasElems(s: BuilderState, pal: { primary: string }): C
 
 export function CanvasCard({ s, pal, font, pattern, W = 380, H = 230, noShadow, hidePoints }: CardProps & { canvasElems?: CanvasElem[] }) {
   const isSmall = H <= 80;
-  const bg = s.customGradient?.bg ?? pal.bg;
+  const bg = pal.bg;
   const elems = defaultCanvasElems(s, pal);
   const scale = W / 380;
 
@@ -1074,8 +1240,57 @@ export function FreeLayoutOverlay({
           return <div key={el.id} style={base}><QR size={el.fontSize * scale} color={el.color} /></div>;
         }
         if (el.id === 'points') {
+          if (s.cardType === 'stamps') {
+            // Mini stamp grid
+            const filled = 5;
+            const cellSz = Math.round(el.fontSize * scale * 0.38);
+            const IconComp = STAMP_ICONS_EXTENDED.find(x => x.id === s.stampIcon)?.icon ?? Check;
+            return (
+              <div key={el.id} style={{ ...base, display: 'flex', flexDirection: 'column', gap: cellSz * 0.3 }}>
+                {[0, 1].map(row => (
+                  <div key={row} style={{ display: 'flex', gap: cellSz * 0.3 }}>
+                    {Array.from({ length: 4 }, (_, col) => {
+                      const idx = row * 4 + col;
+                      const isFilled = idx < filled;
+                      const shapeStyle = stampShapeStyle(s.stampShape, isFilled, el.color, cellSz);
+                      return (
+                        <div key={col} style={shapeStyle}>
+                          <IconComp size={Math.round(cellSz * 0.55)} color={isFilled ? '#fff' : 'rgba(255,255,255,0.25)'} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            );
+          }
+          if (s.pointsStyle === 'bar') {
+            const barW = el.fontSize * scale * 2.4;
+            const barH = el.fontSize * scale * 0.28;
+            return (
+              <div key={el.id} style={{ ...base, width: barW }}>
+                <div style={{ fontSize: el.fontSize * scale * 0.38, fontFamily: `'${font.display}',sans-serif`, color: el.color, fontWeight: 700, marginBottom: barH * 0.5, lineHeight: 1 }}>847 pts</div>
+                <div style={{ width: barW, height: barH, borderRadius: barH, background: 'rgba(255,255,255,0.12)' }}>
+                  <div style={{ width: '62%', height: '100%', borderRadius: barH, background: el.color }} />
+                </div>
+              </div>
+            );
+          }
+          if (s.pointsStyle === 'stars') {
+            return (
+              <div key={el.id} style={{ ...base, display: 'flex', gap: el.fontSize * scale * 0.12 }}>
+                {Array.from({ length: 5 }, (_, i) => (
+                  <span key={i} style={{ fontSize: el.fontSize * scale * 0.55, color: i < 4 ? el.color : 'rgba(255,255,255,0.2)', lineHeight: 1 }}>★</span>
+                ))}
+              </div>
+            );
+          }
+          // default: number
           return (
-            <div key={el.id} style={{ ...base, fontFamily: `'${font.display}',sans-serif`, fontWeight: el.fontWeight, fontSize: el.fontSize * scale, color: el.color, lineHeight: 1, letterSpacing: '-0.04em', whiteSpace: 'nowrap' }}>847</div>
+            <div key={el.id} style={{ ...base }}>
+              <div style={{ fontFamily: `'${font.display}',sans-serif`, fontWeight: el.fontWeight, fontSize: el.fontSize * scale, color: el.color, lineHeight: 1, letterSpacing: '-0.04em', whiteSpace: 'nowrap' }}>847</div>
+              <div style={{ fontSize: el.fontSize * scale * 0.22, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: 2 }}>puntos</div>
+            </div>
           );
         }
         const text = el.id === 'biz' ? (s.businessName || 'Tu Negocio')
@@ -1120,8 +1335,20 @@ export function CardFromDesign({ design, primaryColor = '#E8341A', W = 380, H = 
       ? { ...p, primary: primaryColor, bg: `linear-gradient(135deg,#1A0806 0%,#3A1006 55%,${primaryColor} 100%)` }
       : p,
   );
-  const pal: { primary: string; bg: string } =
-    customGradient ?? resolvedPalettes.find((p) => p.id === paletteId) ?? resolvedPalettes[0]!;
+  const gradientStyleId = (design.gradientStyle as GradientStyleId) ?? 'diagonal';
+  const customGradDarkColor = (design.customGradDark as string) ?? undefined;
+  const customPrimaryColor = (design.customPrimary as string) ?? undefined;
+  let pal: { primary: string; bg: string };
+  if (customGradient) {
+    const dark = customGradDarkColor ?? '#080808';
+    pal = { primary: customGradient.primary, bg: buildGradientBg(customGradient.primary, dark, customGradient.bg, gradientStyleId) };
+  } else if (customPrimaryColor) {
+    const baseBg = `linear-gradient(135deg,#1A0806 0%,#3A1006 55%,${customPrimaryColor} 100%)`;
+    pal = { primary: customPrimaryColor, bg: buildGradientBg(customPrimaryColor, '#0E0604', baseBg, gradientStyleId) };
+  } else {
+    const palette = resolvedPalettes.find((p) => p.id === paletteId) ?? resolvedPalettes[0]!;
+    pal = { primary: palette.primary, bg: buildGradientBg(palette.primary, palette.dark, palette.bg, gradientStyleId) };
+  }
 
   const s: BuilderState = {
     cardType: (design.cardType as CardType) ?? 'stamps',
@@ -1142,7 +1369,9 @@ export function CardFromDesign({ design, primaryColor = '#E8341A', W = 380, H = 
     qrStyle: (design.qrStyle as BuilderState['qrStyle']) ?? 'simple',
     stampIcon: (design.stampIcon as StampIconId) ?? 'check',
     customStampUrl: (design.customStampUrl as string) ?? undefined,
-    backBg: (design.backBg as BuilderState['backBg']) ?? 'warm',
+    stampShape: (design.stampShape as StampShapeId) ?? 'square',
+    gradientStyle: (design.gradientStyle as GradientStyleId) ?? 'diagonal',
+    customGradDark: (design.customGradDark as string) ?? undefined,
     freeLayout: (design.freeLayout as boolean) ?? false,
     freeElems: Array.isArray(design.freeElems) ? (design.freeElems as FreeLayoutElem[]) : [],
     customLayout: (design.customLayout as CustomLayoutId) ?? 'stack',
@@ -1152,6 +1381,7 @@ export function CardFromDesign({ design, primaryColor = '#E8341A', W = 380, H = 
     customElemMember:   (design.customElemMember   as boolean) ?? true,
     customElemQr:       (design.customElemQr       as boolean) ?? true,
     customElemLogo:     (design.customElemLogo     as boolean) ?? true,
+    specialEffect: (design.specialEffect as BuilderState['specialEffect']) ?? 'none',
   };
 
   const CardComp = CARD_RENDERERS[template] ?? ClassicCard;
@@ -1159,14 +1389,19 @@ export function CardFromDesign({ design, primaryColor = '#E8341A', W = 380, H = 
   return (
     <>
       {customFontUrl && <link rel="stylesheet" href={customFontUrl} />}
-      {isFree ? (
-        <div style={{ position: 'relative', width: W, height: H, flexShrink: 0 }}>
-          <CardComp s={s} pal={pal} font={font} pattern={pattern} W={W} H={H} noShadow={noShadow} bgOnly memberNumber={memberNumber} />
-          <FreeLayoutOverlay s={s} pal={pal} font={font} pattern={pattern} W={W} H={H} />
-        </div>
-      ) : (
-        <CardComp s={s} pal={pal} font={font} pattern={pattern} W={W} H={H} noShadow={noShadow} memberNumber={memberNumber} />
-      )}
+      <div style={{ position: 'relative', display: 'inline-block', flexShrink: 0, ...effectWrapperStyle(s.specialEffect, pal.primary) }}>
+        {isFree ? (
+          <div style={{ position: 'relative', width: W, height: H }}>
+            <CardComp s={s} pal={pal} font={font} pattern={pattern} W={W} H={H} noShadow={noShadow} bgOnly memberNumber={memberNumber} />
+            <FreeLayoutOverlay s={s} pal={pal} font={font} pattern={pattern} W={W} H={H} />
+          </div>
+        ) : (
+          <div style={{ position: 'relative' }}>
+            <CardComp s={s} pal={pal} font={font} pattern={pattern} W={W} H={H} noShadow={noShadow} memberNumber={memberNumber} />
+            <SpecialEffectOverlay effect={s.specialEffect} primary={pal.primary} />
+          </div>
+        )}
+      </div>
     </>
   );
 }

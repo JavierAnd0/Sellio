@@ -12,10 +12,11 @@ import type { Card } from '@sellio/domain';
 import { createCardAction, updateCardAction } from '@/actions/cards/card.actions';
 import type { CreateCardResult } from '@/actions/cards/card.actions';
 import {
-  type Tier, type TabId, type TemplateId, type PointsStyleId, type CardType,
-  type CustomGradient, type BuilderState, type StampIconId, type FontOption,
+  type Tier, type TabId, type TemplateId, type PointsStyleId, type CardType, type StampShapeId,
+  type CustomGradient, type BuilderState, type StampIconId, type FontOption, type GradientStyleId,
   canUse, BASE_PALETTES, PATTERNS, FONTS, TEMPLATES,
-  BADGE_OPTIONS, POINTS_STYLES, STAMP_CATEGORIES, STAMP_ICONS_EXTENDED, DEFAULT_BUILDER, QR, ClassicCard, CARD_RENDERERS,
+  BADGE_OPTIONS, POINTS_STYLES, STAMP_SHAPES, STAMP_CATEGORIES, STAMP_ICONS_EXTENDED, DEFAULT_BUILDER, QR, ClassicCard, CARD_RENDERERS,
+  stampShapeStyle, buildGradientBg, GRADIENT_STYLES, SPECIAL_EFFECTS, SpecialEffectOverlay, effectWrapperStyle,
   type FreeLayoutElem, defaultFreeElems, FreeLayoutOverlay, SNAP_POINTS,
 } from './card-renderer';
 
@@ -120,19 +121,32 @@ function StampCountField({ value, onChange, activeUserCount, error }: {
       )}
       {/* Confirm dialog */}
       {showWarning && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <div style={{ background: 'var(--cb-panel)', border: '1px solid rgba(var(--cb-fg-rgb),0.12)', borderRadius: 14, padding: 24, maxWidth: 340, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--cb-fg)', marginBottom: 10, fontFamily: 'Syne,sans-serif' }}>Confirmar número de sellos</div>
-            <div style={{ fontSize: 12, color: 'var(--cb-muted)', lineHeight: 1.6, marginBottom: 18 }}>
-              ¿Confirmas <strong style={{ color: 'var(--cb-fg)' }}>{value} sellos</strong> para esta tarjeta?<br />
-              Una vez que la tarjeta tenga usuarios activos, <strong style={{ color: '#F87171' }}>este número no podrá cambiarse</strong>.
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <div style={{ background: 'var(--cb-panel)', border: '1px solid rgba(var(--cb-fg-rgb),0.1)', borderRadius: 18, padding: 28, maxWidth: 320, width: '100%', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
+            {/* Icon */}
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(232,52,26,0.1)', border: '1px solid rgba(232,52,26,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+              <Lock size={18} color="#E8341A" />
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button type="button" onClick={() => setShowWarning(false)} style={{ flex: 1, background: 'rgba(var(--cb-fg-rgb),0.06)', border: '1px solid rgba(var(--cb-fg-rgb),0.12)', borderRadius: 8, padding: '9px 0', fontSize: 12, fontWeight: 600, color: 'var(--cb-muted)', cursor: 'pointer', fontFamily: 'Space Grotesk,sans-serif' }}>
-                Cancelar
+            {/* Title */}
+            <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--cb-fg)', marginBottom: 8, fontFamily: 'Syne,sans-serif', letterSpacing: '-0.02em' }}>¿Confirmar {value} sellos?</div>
+            {/* Body */}
+            <div style={{ fontSize: 12, color: 'var(--cb-muted)', lineHeight: 1.65, marginBottom: 6 }}>
+              Esta acción fija el número de sellos de la tarjeta.
+            </div>
+            {/* Warning pill */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: 'rgba(248,113,113,0.06)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: 10, padding: '10px 12px', marginBottom: 22 }}>
+              <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0, marginTop: 1 }}>⚠️</span>
+              <span style={{ fontSize: 11, color: '#F87171', lineHeight: 1.55 }}>
+                Una vez que la tarjeta tenga usuarios activos, no podrás modificar este número.
+              </span>
+            </div>
+            {/* Buttons */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <button type="button" onClick={() => { setConfirmed(true); setShowWarning(false); }} style={{ width: '100%', background: '#E8341A', border: 'none', borderRadius: 10, padding: '12px 0', fontSize: 13, fontWeight: 700, color: '#fff', cursor: 'pointer', fontFamily: 'Syne,sans-serif', letterSpacing: '0.01em' }}>
+                Confirmar {value} sellos
               </button>
-              <button type="button" onClick={() => { setConfirmed(true); setShowWarning(false); }} style={{ flex: 1, background: '#E8341A', border: 'none', borderRadius: 8, padding: '9px 0', fontSize: 12, fontWeight: 700, color: '#fff', cursor: 'pointer', fontFamily: 'Space Grotesk,sans-serif' }}>
-                Sí, confirmar
+              <button type="button" onClick={() => setShowWarning(false)} style={{ width: '100%', background: 'transparent', border: '1px solid rgba(var(--cb-fg-rgb),0.1)', borderRadius: 10, padding: '11px 0', fontSize: 12, fontWeight: 600, color: 'var(--cb-muted)', cursor: 'pointer', fontFamily: 'Space Grotesk,sans-serif' }}>
+                Cancelar
               </button>
             </div>
           </div>
@@ -191,7 +205,9 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
       qrStyle: (savedDesign?.qrStyle as BuilderState['qrStyle']) ?? 'simple',
       stampIcon: (savedDesign?.stampIcon as StampIconId) ?? DEFAULT_BUILDER.stampIcon,
       customStampUrl: (savedDesign?.customStampUrl as string) ?? undefined,
-      backBg: (savedDesign?.backBg as BuilderState['backBg']) ?? 'warm',
+      stampShape: (savedDesign?.stampShape as StampShapeId) ?? 'square',
+      gradientStyle: (savedDesign?.gradientStyle as GradientStyleId) ?? 'diagonal',
+      customGradDark: (savedDesign?.customGradDark as string) ?? undefined,
       freeLayout: (savedDesign?.freeLayout as boolean) ?? false,
       freeElems: Array.isArray(savedDesign?.freeElems) ? (savedDesign.freeElems as FreeLayoutElem[]) : [],
       customLayout: (savedDesign?.customLayout as BuilderState['customLayout']) ?? 'stack',
@@ -202,6 +218,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
       customElemQr:       (savedDesign?.customElemQr       as boolean) ?? true,
       customElemLogo:     (savedDesign?.customElemLogo     as boolean) ?? true,
       cardType:           (savedDesign?.cardType as CardType) ?? DEFAULT_BUILDER.cardType,
+      specialEffect:      (savedDesign?.specialEffect as BuilderState['specialEffect']) ?? 'none',
     };
   }
 
@@ -232,11 +249,14 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
   const cardRef = useRef<HTMLDivElement>(null);
 
   // Face switcher — which face is currently being edited
-  const [activeView, setActiveView] = useState<'front' | 'back'>('front');
+  const [activeView, setActiveView] = useState<'front' | 'back' | 'wallet'>('front');
 
   // Free layout drag state
-  const freeDragRef = useRef<{ elemId: string; startPtrX: number; startPtrY: number; startElemX: number; startElemY: number } | null>(null);
+  const freeDragRef = useRef<{ elemId: string; startPtrX: number; startPtrY: number; startElemX: number; startElemY: number; hasMoved: boolean } | null>(null);
   const [freeLivePos, setFreeLivePos] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [freeEditingId, setFreeEditingId] = useState<string | null>(null);
+  const [freeEditingValue, setFreeEditingValue] = useState('');
+  const FREE_SCALE = 1.16;
 
   // 3D tilt on hover
   const handleCardMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -304,12 +324,21 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
   );
 
   const pal = useMemo((): { primary: string; bg: string } => {
-    if (s.customGradient) return s.customGradient;
-    if (s.customPrimary) {
-      return { primary: s.customPrimary, bg: `linear-gradient(135deg,#1A0806 0%,#3A1006 55%,${s.customPrimary} 100%)` };
+    if (s.customGradient) {
+      const dark = s.customGradDark ?? '#080808';
+      return { primary: s.customGradient.primary, bg: buildGradientBg(s.customGradient.primary, dark, s.customGradient.bg, s.gradientStyle) };
     }
-    return palettes.find((p) => p.id === s.palette) ?? palettes[0]!;
-  }, [s.customGradient, s.customPrimary, s.palette, palettes]);
+    if (s.customPrimary) {
+      const baseBg = `linear-gradient(135deg,#1A0806 0%,#3A1006 55%,${s.customPrimary} 100%)`;
+      return { primary: s.customPrimary, bg: buildGradientBg(s.customPrimary, '#0E0604', baseBg, s.gradientStyle) };
+    }
+    const palette = palettes.find((p) => p.id === s.palette) ?? palettes[0]!;
+    return { primary: palette.primary, bg: buildGradientBg(palette.primary, palette.dark, palette.bg, s.gradientStyle) };
+  }, [s.customGradient, s.customGradDark, s.customPrimary, s.palette, s.gradientStyle, palettes]);
+
+  const backFaceBg = useMemo(() => {
+    return buildGradientBg(pal.primary, '#080604', pal.bg, s.gradientStyle);
+  }, [pal.primary, pal.bg, s.gradientStyle]);
 
   const font = useMemo((): FontOption => {
     if (s.customFontFamily) {
@@ -334,6 +363,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
   const toggleFreeLayout = useCallback(() => {
     setS(prev => {
       const on = !prev.freeLayout;
+      if (!on) setActiveView(v => v === 'wallet' ? 'front' : v);
       return { ...prev, freeLayout: on, freeElems: on && prev.freeElems.length === 0 ? defaultFreeElems(pal) : prev.freeElems };
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -351,13 +381,16 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
     showBadge: s.showBadge, badgeText: s.badgeText,
     showMemberNum: s.showMemberNum, qrStyle: s.qrStyle,
     stampIcon: s.stampIcon, customStampUrl: s.customStampUrl,
+    stampShape: s.stampShape,
+    customGradDark: s.customGradDark,
     cardName: s.cardName, businessName: s.businessName,
     customLayout: s.customLayout,
     customElemBiz: s.customElemBiz, customElemCardName: s.customElemCardName,
     customElemPoints: s.customElemPoints, customElemMember: s.customElemMember,
     customElemQr: s.customElemQr, customElemLogo: s.customElemLogo,
     cardType: s.cardType,
-    backBg: s.backBg,
+    gradientStyle: s.gradientStyle,
+    specialEffect: s.specialEffect,
   }), [s]);
 
   const designPayloadJSON = useMemo(() => JSON.stringify(designPayload), [designPayload]);
@@ -543,9 +576,10 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
 
           {/* ── Face switcher ── */}
           <div style={{ display: 'flex', gap: 6, padding: '10px 12px', borderBottom: '1px solid rgba(var(--cb-fg-rgb),0.07)', minWidth: 260, flexShrink: 0 }}>
-            {(['front', 'back'] as const).map(view => {
+            {(s.freeLayout ? (['front', 'back', 'wallet'] as const) : (['front', 'back'] as const)).map(view => {
               const isActive = activeView === view;
-              const label = view === 'front' ? 'Frente' : 'Reverso';
+              const label = view === 'front' ? 'Frente' : view === 'back' ? 'Reverso' : 'Wallet';
+              const icon = view === 'front' ? '◻' : view === 'back' ? '◼' : '⬡';
               return (
                 <button
                   key={view}
@@ -553,7 +587,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                   disabled={!typeConfirmed}
                   onClick={() => {
                     setActiveView(view);
-                    setIsFlipped(view === 'back');
+                    if (view !== 'wallet') setIsFlipped(view === 'back');
                   }}
                   style={{
                     flex: 1, padding: '7px 0', borderRadius: 8,
@@ -565,7 +599,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                     opacity: typeConfirmed ? 1 : 0.35,
                   }}
                 >
-                  {view === 'front' ? '◻ ' : '◼ '}{label}
+                  {icon} {label}
                 </button>
               );
             })}
@@ -627,12 +661,6 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
 
             {/* ══ REVERSO panel ══════════════════════════════════════ */}
             {activeView === 'back' && typeConfirmed && (() => {
-              const BG_OPTIONS: Array<{ id: BuilderState['backBg']; label: string; style: string }> = [
-                { id: 'warm',   label: 'Cálido',    style: 'linear-gradient(135deg,#1A1712 0%,var(--cb-panel) 100%)' },
-                { id: 'dark',   label: 'Oscuro',    style: 'linear-gradient(135deg,#0C0A07 0%,#080604 100%)' },
-                { id: 'deep',   label: 'Profundo',  style: 'linear-gradient(160deg,#060810 0%,#0B0D18 100%)' },
-                { id: 'accent', label: 'Acento',    style: `linear-gradient(160deg,var(--cb-panel) 0%,${pal.primary}35 100%)` },
-              ];
               const currentIconComp = STAMP_ICONS_EXTENDED.find(x => x.id === s.stampIcon)?.icon;
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -645,24 +673,71 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                     </span>
                   </div>
 
+                  {/* Display de sellos / puntos */}
+                  <Section label={s.cardType === 'stamps' ? 'Display de sellos' : 'Display de puntos'}>
+                    {POINTS_STYLES.filter(ps => s.cardType === 'stamps' ? (ps.id === 'stamps' || ps.id === 'stars') : (ps.id === 'number' || ps.id === 'bar' || ps.id === 'stars')).map((ps) => {
+                      const locked = !canUse(tier, ps.tier);
+                      return (
+                        <div key={ps.id}
+                          onClick={() => locked ? upgrade(ps.tier) : set('pointsStyle', ps.id)}
+                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', borderRadius: 7, marginBottom: 5, cursor: locked ? 'not-allowed' : 'pointer', background: s.pointsStyle === ps.id ? 'var(--cb-input)' : 'transparent', border: `1px solid ${s.pointsStyle === ps.id ? 'rgba(var(--cb-fg-rgb),0.12)' : 'transparent'}`, opacity: locked ? 0.45 : 1 }}
+                        >
+                          <span style={{ fontSize: 12 }}>{ps.label}</span>
+                          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                            {locked && <LockPill tier={ps.tier} onUpgrade={() => {}} />}
+                            {s.pointsStyle === ps.id && <span style={{ color: '#E8341A', fontSize: 12 }}>✓</span>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </Section>
+
                   {/* Fondo del reverso */}
                   <Section label="Fondo del reverso">
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6 }}>
-                      {BG_OPTIONS.map(opt => (
-                        <button key={opt.id} type="button" onClick={() => set('backBg', opt.id)}
-                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                          <div style={{ width: '100%', aspectRatio: '1.65', borderRadius: 7, background: opt.style, border: `2px solid ${s.backBg === opt.id ? '#E8341A' : 'rgba(var(--cb-fg-rgb),0.08)'}`, boxShadow: s.backBg === opt.id ? '0 0 0 2px rgba(232,52,26,0.2)' : 'none', transition: 'all 0.15s', position: 'relative', overflow: 'hidden' }}>
-                            {s.backBg === opt.id && <div style={{ position: 'absolute', top: 3, right: 3, width: 8, height: 8, borderRadius: '50%', background: '#E8341A' }} />}
-                          </div>
-                          <span style={{ fontSize: 9, fontWeight: 600, color: s.backBg === opt.id ? '#E8341A' : 'var(--cb-subtle)' }}>{opt.label}</span>
-                        </button>
-                      ))}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 5 }}>
+                      {GRADIENT_STYLES.map(gs => {
+                        const isActive = s.gradientStyle === gs.id;
+                        const previewBg = buildGradientBg(pal.primary, '#080604', pal.bg, gs.id);
+                        return (
+                          <button key={gs.id} type="button" onClick={() => set('gradientStyle', gs.id)}
+                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                            <div style={{ width: '100%', aspectRatio: '1.5', borderRadius: 6, background: previewBg, border: `2px solid ${isActive ? '#E8341A' : 'rgba(var(--cb-fg-rgb),0.08)'}`, boxShadow: isActive ? '0 0 0 2px rgba(232,52,26,0.18)' : 'none', transition: 'all 0.15s', position: 'relative' }}>
+                              {isActive && <div style={{ position: 'absolute', top: 2, right: 2, width: 6, height: 6, borderRadius: '50%', background: '#E8341A' }} />}
+                            </div>
+                            <span style={{ fontSize: 8, fontWeight: 600, color: isActive ? '#E8341A' : 'var(--cb-subtle)', textAlign: 'center' }}>{gs.label}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </Section>
 
                   {/* Stamps controls */}
                   {s.cardType === 'stamps' && (
                     <>
+
+                      {/* Forma de sellos */}
+                      <Section label="Forma de sellos">
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 6 }}>
+                          {STAMP_SHAPES.map((sh) => {
+                            const locked = !canUse(tier, sh.tier);
+                            const isActive = s.stampShape === sh.id;
+                            const cellStyle = stampShapeStyle(sh.id, true, pal.primary, 22);
+                            return (
+                              <button key={sh.id} type="button"
+                                onClick={() => locked ? upgrade(sh.tier) : set('stampShape', sh.id as StampShapeId)}
+                                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: locked ? 'not-allowed' : 'pointer', padding: 0, opacity: locked ? 0.45 : 1, position: 'relative' }}
+                              >
+                                <div style={{ width: 40, height: 40, borderRadius: 8, background: isActive ? 'rgba(232,52,26,0.1)' : 'rgba(var(--cb-fg-rgb),0.04)', border: `1.5px solid ${isActive ? '#E8341A' : 'rgba(var(--cb-fg-rgb),0.08)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}>
+                                  <div style={cellStyle} />
+                                </div>
+                                <span style={{ fontSize: 8, fontWeight: 600, color: isActive ? '#E8341A' : 'var(--cb-subtle)', textAlign: 'center', lineHeight: 1.2 }}>{sh.label}</span>
+                                {locked && <div style={{ position: 'absolute', top: 2, right: 2 }}><Lock size={7} color="#FFB347" /></div>}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </Section>
+
                       <Section label="Diseño de sellos">
                         {(() => {
                           const currentScenario = STAMP_CATEGORIES.find(c => c.icons.some(i => i.id === s.stampIcon))?.id || 'generic';
@@ -726,7 +801,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                               {showIconPicker && currentScenario !== 'custom' && (() => {
                                 const filtered = STAMP_ICONS_EXTENDED.filter(ic =>
                                   ic.id !== 'custom' &&
-                                  (!iconSearch || ic.label.toLowerCase().includes(iconSearch.toLowerCase()) || ic.category.toLowerCase().includes(iconSearch.toLowerCase()))
+                                  (!iconSearch || ic.label.toLowerCase().includes(iconSearch.toLowerCase()) || ic.en.toLowerCase().includes(iconSearch.toLowerCase()) || ic.category.toLowerCase().includes(iconSearch.toLowerCase()))
                                 );
                                 return (
                                   <div style={{ marginTop: 8, background: '#0A0A0A', border: '1px solid rgba(var(--cb-fg-rgb),0.08)', borderRadius: 10, padding: 10 }}>
@@ -766,16 +841,41 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                               })()}
 
                               {currentScenario === 'custom' && canUse(tier, 'elite') && (
-                                <div style={{ marginTop: 10, padding: '10px', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 8 }}>
-                                  <CtrlInput
-                                    label="URL del Sello (Imagen)"
-                                    value={s.customStampUrl ?? ''}
-                                    onChange={(v) => set('customStampUrl', v)}
-                                    placeholder="https://ejemplo.com/sello.png"
-                                  />
-                                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginTop: 4 }}>
-                                    Pega la URL de una imagen PNG con fondo transparente.
-                                  </div>
+                                <div style={{ marginTop: 10 }}>
+                                  <label style={{ display: 'block', cursor: 'pointer' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', border: '1.5px dashed rgba(var(--cb-fg-rgb),0.18)', borderRadius: 10, background: 'var(--cb-input)', transition: 'border-color 0.15s' }}>
+                                      {s.customStampUrl
+                                        ? <img src={s.customStampUrl} alt="icono" style={{ width: 36, height: 36, objectFit: 'contain', borderRadius: 8, background: 'rgba(255,255,255,0.06)', padding: 4 }} />
+                                        : <div style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(var(--cb-fg-rgb),0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <DownloadIcon size={16} color="var(--cb-subtle)" />
+                                          </div>
+                                      }
+                                      <div>
+                                        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--cb-fg)', marginBottom: 2 }}>
+                                          {s.customStampUrl ? 'Cambiar imagen' : 'Subir icono personalizado'}
+                                        </div>
+                                        <div style={{ fontSize: 9, color: 'var(--cb-muted)' }}>PNG, SVG o WebP · fondo transparente</div>
+                                      </div>
+                                    </div>
+                                    <input type="file" accept="image/png,image/svg+xml,image/webp,image/jpeg" style={{ display: 'none' }}
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+                                        const reader = new FileReader();
+                                        reader.onload = (ev) => {
+                                          const result = ev.target?.result;
+                                          if (typeof result === 'string') set('customStampUrl', result);
+                                        };
+                                        reader.readAsDataURL(file);
+                                      }}
+                                    />
+                                  </label>
+                                  {s.customStampUrl && (
+                                    <button type="button" onClick={() => set('customStampUrl', undefined)}
+                                      style={{ marginTop: 6, fontSize: 10, color: '#F87171', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                                      Eliminar imagen
+                                    </button>
+                                  )}
                                 </div>
                               )}
                             </>
@@ -947,6 +1047,29 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                           })()}
                         </div>
 
+                        {/* Estilo de gradiente */}
+                        {!s.freeLayout && (
+                          <div style={{ marginBottom: 16 }}>
+                            <div style={{ fontSize: 9, color: 'var(--cb-subtle)', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Estilo de fondo</div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 5 }}>
+                              {GRADIENT_STYLES.map(gs => {
+                                const isActive = s.gradientStyle === gs.id;
+                                const palette = palettes.find(p => p.id === s.palette) ?? palettes[0]!;
+                                const previewBg = buildGradientBg(palette.primary, palette.dark, palette.bg, gs.id);
+                                return (
+                                  <button key={gs.id} type="button" onClick={() => set('gradientStyle', gs.id)}
+                                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                                    <div style={{ width: '100%', aspectRatio: '1.5', borderRadius: 6, background: previewBg, border: `2px solid ${isActive ? '#E8341A' : 'rgba(var(--cb-fg-rgb),0.08)'}`, boxShadow: isActive ? '0 0 0 2px rgba(232,52,26,0.18)' : 'none', transition: 'all 0.15s', position: 'relative' }}>
+                                      {isActive && <div style={{ position: 'absolute', top: 2, right: 2, width: 6, height: 6, borderRadius: '50%', background: '#E8341A' }} />}
+                                    </div>
+                                    <span style={{ fontSize: 8, fontWeight: 600, color: isActive ? '#E8341A' : 'var(--cb-subtle)', textAlign: 'center' }}>{gs.label}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
                         {/* Free layout element controls — visible when Modo Libre is active */}
                         {s.freeLayout && activeView === 'front' && (
                           <div style={{ marginBottom: 16, padding: '10px 0 0' }}>
@@ -960,30 +1083,51 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                               {freeElems.map(el => {
-                                const labelMap: Record<string, string> = { biz: 'Nombre del negocio', cardname: 'Nombre de tarjeta', logo: 'Logo', points: 'Puntos', member: 'Miembro', qr: 'Código QR' };
-                                const iconMap: Record<string, string> = { biz: 'B', cardname: 'T', logo: '◈', points: '#', member: 'M', qr: '⊞' };
+                                const isStamps = s.cardType === 'stamps';
+                                const labelMap: Record<string, string> = { biz: 'Nombre del negocio', cardname: 'Nombre de tarjeta', logo: 'Logo', points: isStamps ? 'Sellos' : 'Puntos', member: 'Miembro', qr: 'Código QR' };
+                                const iconMap: Record<string, string> = { biz: 'B', cardname: 'T', logo: '◈', points: isStamps ? '⬡' : '#', member: 'M', qr: '⊞' };
+                                const updateElems = (updater: (fe: FreeLayoutElem) => FreeLayoutElem) =>
+                                  setS(prev => ({ ...prev, freeElems: (prev.freeElems.length > 0 ? prev.freeElems : defaultFreeElems(pal)).map(fe => fe.id === el.id ? updater(fe) : fe) }));
                                 return (
-                                  <div key={el.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 8, background: 'rgba(var(--cb-fg-rgb),0.02)', border: '1px solid rgba(var(--cb-fg-rgb),0.05)' }}>
-                                    <div style={{ width: 20, height: 20, borderRadius: 4, background: el.visible ? 'rgba(167,139,250,0.1)' : 'rgba(var(--cb-fg-rgb),0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                      <span style={{ fontSize: 9, color: el.visible ? '#A78BFA' : 'var(--cb-deep)', fontWeight: 700 }}>{iconMap[el.id] ?? 'T'}</span>
+                                  <div key={el.id} style={{ borderRadius: 8, background: 'rgba(var(--cb-fg-rgb),0.02)', border: '1px solid rgba(var(--cb-fg-rgb),0.05)', overflow: 'hidden' }}>
+                                    {/* Row: icon + label + size + visibility + color */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px' }}>
+                                      <div style={{ width: 20, height: 20, borderRadius: 4, background: el.visible ? 'rgba(167,139,250,0.1)' : 'rgba(var(--cb-fg-rgb),0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                        <span style={{ fontSize: 9, color: el.visible ? '#A78BFA' : 'var(--cb-deep)', fontWeight: 700 }}>{iconMap[el.id] ?? 'T'}</span>
+                                      </div>
+                                      <span style={{ fontSize: 10, fontWeight: 500, color: el.visible ? '#A39D98' : 'var(--cb-deep)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{labelMap[el.id] ?? el.id}</span>
+                                      {/* Font size badge */}
+                                      <span style={{ fontSize: 8, color: 'var(--cb-deep)', fontWeight: 600, minWidth: 22, textAlign: 'right' }}>{Math.round(el.fontSize)}px</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => updateElems(fe => ({ ...fe, visible: !fe.visible }))}
+                                        style={{ fontSize: 10, color: el.visible ? 'var(--cb-muted)' : 'var(--cb-deep)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 3px', flexShrink: 0, lineHeight: 1 }}
+                                        title={el.visible ? 'Ocultar' : 'Mostrar'}
+                                      >{el.visible ? '●' : '○'}</button>
+                                      {el.id !== 'logo' && el.id !== 'qr' && (
+                                        <input
+                                          type="color"
+                                          value={el.color.startsWith('rgba') ? '#ffffff' : el.color}
+                                          onChange={ev => updateElems(fe => ({ ...fe, color: ev.target.value }))}
+                                          style={{ width: 22, height: 18, borderRadius: 4, border: '1px solid rgba(var(--cb-fg-rgb),0.12)', background: 'none', cursor: 'pointer', padding: 1, flexShrink: 0 }}
+                                          title="Color"
+                                        />
+                                      )}
                                     </div>
-                                    <span style={{ fontSize: 10, fontWeight: 500, color: el.visible ? '#A39D98' : 'var(--cb-deep)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{labelMap[el.id] ?? el.id}</span>
-                                    <button
-                                      type="button"
-                                      onClick={() => setS(prev => ({ ...prev, freeElems: (prev.freeElems.length > 0 ? prev.freeElems : defaultFreeElems(pal)).map(fe => fe.id === el.id ? { ...fe, visible: !fe.visible } : fe) }))}
-                                      style={{ fontSize: 10, color: el.visible ? 'var(--cb-muted)' : 'var(--cb-deep)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 3px', flexShrink: 0, lineHeight: 1 }}
-                                      title={el.visible ? 'Ocultar' : 'Mostrar'}
-                                    >
-                                      {el.visible ? '●' : '○'}
-                                    </button>
-                                    {el.id !== 'logo' && el.id !== 'qr' && (
-                                      <input
-                                        type="color"
-                                        value={el.color.startsWith('rgba') ? '#ffffff' : el.color}
-                                        onChange={(ev) => setS(prev => ({ ...prev, freeElems: (prev.freeElems.length > 0 ? prev.freeElems : defaultFreeElems(pal)).map(fe => fe.id === el.id ? { ...fe, color: ev.target.value } : fe) }))}
-                                        style={{ width: 22, height: 18, borderRadius: 4, border: '1px solid rgba(var(--cb-fg-rgb),0.12)', background: 'none', cursor: 'pointer', padding: 1, flexShrink: 0 }}
-                                        title="Color"
-                                      />
+                                    {/* Size slider */}
+                                    {el.visible && (
+                                      <div style={{ padding: '0 10px 7px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        <span style={{ fontSize: 8, color: 'var(--cb-deep)', width: 22 }}>Tam.</span>
+                                        <input
+                                          type="range"
+                                          min={el.id === 'points' ? 20 : el.id === 'logo' ? 18 : 6}
+                                          max={el.id === 'points' ? 80 : el.id === 'logo' ? 60 : 28}
+                                          step={1}
+                                          value={Math.round(el.fontSize)}
+                                          onChange={ev => updateElems(fe => ({ ...fe, fontSize: Number(ev.target.value) }))}
+                                          style={{ flex: 1, accentColor: '#A78BFA', height: 3 }}
+                                        />
+                                      </div>
                                     )}
                                   </div>
                                 );
@@ -1134,31 +1278,97 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
             {/* Colors — gradientes + color libre + patrón + QR */}
             {activeTab === 'colors' && (
               <>
-                <Section label="Gradiente base">
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 5 }}>
-                    {palettes.map((p) => (
-                      <div key={p.id}
-                        onClick={() => { set('palette', p.id); set('customGradient', null); set('customPrimary', undefined); }}
-                        style={{ aspectRatio: '1', borderRadius: 5, cursor: 'pointer', background: p.bg, border: `2px solid ${s.palette === p.id && !s.customGradient && !s.customPrimary ? '#fff' : 'transparent'}`, transform: s.palette === p.id && !s.customGradient && !s.customPrimary ? 'scale(1.15)' : 'scale(1)', transition: 'all 0.15s' }}
-                        title={p.name}
-                      />
-                    ))}
-                  </div>
-                </Section>
+                <Section label="Combinación de colores">
+                  {(() => {
+                    const GRADIENT_PRESETS = [
+                      { name: 'Fuego',     a: '#1A0806', b: '#E8341A' },
+                      { name: 'Aurora',    a: '#0A1628', b: '#3B82F6' },
+                      { name: 'Esmeralda',a: '#021208', b: '#1A8C5B' },
+                      { name: 'Rosa',      a: '#1A0612', b: '#E84B8A' },
+                      { name: 'Violeta',   a: '#09061A', b: '#9B3FE8' },
+                      { name: 'Sunset',    a: '#6B0F1A', b: '#F5A623' },
+                      { name: 'Teal',      a: '#021010', b: '#00A8A0' },
+                      { name: 'Ámbar',     a: '#100B04', b: '#C17D3C' },
+                    ];
 
-                <Section label="Color de acento libre">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <input
-                      type="color"
-                      value={s.customPrimary ?? primaryColor}
-                      onChange={(e) => { set('customPrimary', e.target.value); set('customGradient', null); }}
-                      style={{ width: 40, height: 40, borderRadius: 8, border: '1px solid rgba(var(--cb-fg-rgb),0.12)', background: 'none', cursor: 'pointer', padding: 2, flexShrink: 0 }}
-                    />
-                    <div style={{ flex: 1, height: 40, borderRadius: 8, background: `linear-gradient(135deg,#1A0806 0%,#3A1006 55%,${s.customPrimary ?? primaryColor} 100%)`, border: '1px solid rgba(var(--cb-fg-rgb),0.08)' }} />
-                    {s.customPrimary && (
-                      <button type="button" onClick={() => { set('customPrimary', undefined); set('customGradient', null); }} style={{ fontSize: 10, color: 'var(--cb-muted)', background: 'none', border: '1px solid rgba(var(--cb-fg-rgb),0.1)', borderRadius: 5, padding: '4px 8px', cursor: 'pointer', whiteSpace: 'nowrap' }}>Reset</button>
-                    )}
-                  </div>
+                    const currentA = s.customGradDark ?? '#0D0B09';
+                    const currentB = s.customPrimary ?? (s.customGradient?.primary ?? primaryColor);
+                    const hasCombo = !!(s.customGradDark || s.customPrimary || s.customGradient);
+                    const previewGrad = `linear-gradient(135deg,${currentA} 0%,${currentA}CC 50%,${currentB} 100%)`;
+
+                    const applyCombo = (a: string, b: string) => {
+                      const A = a.toUpperCase();
+                      const B = b.toUpperCase();
+                      const grad = `linear-gradient(135deg,${A} 0%,${A}CC 50%,${B} 100%)`;
+                      setS(prev => ({
+                        ...prev,
+                        customPrimary: B,
+                        customGradDark: A,
+                        customGradient: { id: 'custom', primary: B, bg: grad, name: 'Custom' },
+                      }));
+                    };
+
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+                        {/* Live preview bar */}
+                        <div style={{ position: 'relative', height: 56, borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(var(--cb-fg-rgb),0.1)', background: previewGrad }}>
+                          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 12px' }}>
+                            <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.55)', fontFamily: 'monospace', background: 'rgba(0,0,0,0.25)', borderRadius: 4, padding: '2px 6px' }}>{currentA.toUpperCase()}</span>
+                            {hasCombo
+                              ? <button type="button" onClick={() => { set('customPrimary', undefined); set('customGradient', null); set('customGradDark', undefined); }} style={{ fontSize: 9, color: 'rgba(255,255,255,0.7)', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '3px 10px', cursor: 'pointer', fontWeight: 600 }}>Resetear</button>
+                              : <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>Vista previa</span>
+                            }
+                            <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.55)', fontFamily: 'monospace', background: 'rgba(0,0,0,0.25)', borderRadius: 4, padding: '2px 6px' }}>{currentB.toUpperCase()}</span>
+                          </div>
+                        </div>
+
+                        {/* Preset combos */}
+                        <div>
+                          <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--cb-subtle)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Combos sugeridos</div>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6 }}>
+                            {GRADIENT_PRESETS.map((p) => {
+                              const g = `linear-gradient(135deg,${p.a} 0%,${p.a}CC 50%,${p.b} 100%)`;
+                              const isActive = currentA === p.a && currentB === p.b;
+                              return (
+                                <button key={p.name} type="button" onClick={() => applyCombo(p.a, p.b)} title={p.name}
+                                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, border: `2px solid ${isActive ? '#fff' : 'transparent'}`, borderRadius: 10, padding: '2px', background: 'transparent', cursor: 'pointer', transition: 'all 0.15s' }}>
+                                  <div style={{ width: '100%', height: 32, borderRadius: 7, background: g, boxShadow: isActive ? '0 0 0 2px rgba(255,255,255,0.15)' : 'none' }} />
+                                  <span style={{ fontSize: 8, color: isActive ? 'var(--cb-fg)' : 'var(--cb-muted)', fontWeight: isActive ? 700 : 400 }}>{p.name}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Manual pickers */}
+                        <div>
+                          <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--cb-subtle)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Personalizar</div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                            {/* Color A */}
+                            <label style={{ cursor: 'pointer' }}>
+                              <div style={{ fontSize: 10, color: 'var(--cb-muted)', marginBottom: 5, fontWeight: 500 }}>Inicio</div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--cb-input)', border: '1px solid rgba(var(--cb-fg-rgb),0.12)', borderRadius: 8, padding: '7px 10px' }}>
+                                <input type="color" value={currentA} onChange={e => applyCombo(e.target.value, currentB)}
+                                  style={{ width: 22, height: 22, borderRadius: 5, border: 'none', background: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }} />
+                                <span style={{ fontSize: 10, color: 'var(--cb-fg)', fontFamily: 'monospace' }}>{currentA.toUpperCase()}</span>
+                              </div>
+                            </label>
+                            {/* Color B */}
+                            <label style={{ cursor: 'pointer' }}>
+                              <div style={{ fontSize: 10, color: 'var(--cb-muted)', marginBottom: 5, fontWeight: 500 }}>Final</div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--cb-input)', border: '1px solid rgba(var(--cb-fg-rgb),0.12)', borderRadius: 8, padding: '7px 10px' }}>
+                                <input type="color" value={currentB} onChange={e => applyCombo(currentA, e.target.value)}
+                                  style={{ width: 22, height: 22, borderRadius: 5, border: 'none', background: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }} />
+                                <span style={{ fontSize: 10, color: 'var(--cb-fg)', fontFamily: 'monospace' }}>{currentB.toUpperCase()}</span>
+                              </div>
+                            </label>
+                          </div>
+                        </div>
+
+                      </div>
+                    );
+                  })()}
                 </Section>
 
                 <Section label="Patrón overlay" action={!canUse(tier, 'elite') ? <LockPill tier="elite" onUpgrade={() => upgrade('elite')} /> : undefined}>
@@ -1211,20 +1421,30 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                   const isActive = s.font === f.id;
                   // Per-font display customization for visual distinction
                   const displayStyle: React.CSSProperties = f.id === 'syne'
-                    ? { fontFamily: `'Syne', sans-serif`, fontWeight: 800, fontSize: 26, color: 'var(--cb-fg)', letterSpacing: '-0.02em', lineHeight: 1 }
+                    ? { fontFamily: `'Syne', sans-serif`,              fontWeight: 800, fontSize: 26, color: 'var(--cb-fg)', letterSpacing: '-0.02em', lineHeight: 1 }
                     : f.id === 'outfit'
-                    ? { fontFamily: `'Outfit', sans-serif`, fontWeight: 800, fontSize: 24, color: 'var(--cb-fg)', lineHeight: 1 }
+                    ? { fontFamily: `'Outfit', sans-serif`,             fontWeight: 800, fontSize: 24, color: 'var(--cb-fg)', lineHeight: 1 }
+                    : f.id === 'raleway'
+                    ? { fontFamily: `'Raleway', sans-serif`,            fontWeight: 800, fontSize: 24, color: 'var(--cb-fg)', letterSpacing: '0.04em', lineHeight: 1 }
+                    : f.id === 'montserrat'
+                    ? { fontFamily: `'Montserrat', sans-serif`,         fontWeight: 800, fontSize: 22, color: 'var(--cb-fg)', letterSpacing: '-0.01em', lineHeight: 1 }
+                    : f.id === 'poppins'
+                    ? { fontFamily: `'Poppins', sans-serif`,            fontWeight: 700, fontSize: 23, color: 'var(--cb-fg)', lineHeight: 1 }
                     : f.id === 'playfair'
-                    ? { fontFamily: `'Playfair Display', serif`, fontWeight: 700, fontSize: 22, color: 'var(--cb-fg)', lineHeight: 1.1 }
+                    ? { fontFamily: `'Playfair Display', serif`,        fontWeight: 700, fontSize: 22, color: 'var(--cb-fg)', lineHeight: 1.1 }
                     : f.id === 'cormorant'
-                    ? { fontFamily: `'Cormorant Garamond', serif`, fontWeight: 600, fontSize: 26, color: 'var(--cb-fg)', fontStyle: 'italic', lineHeight: 1.1 }
+                    ? { fontFamily: `'Cormorant Garamond', serif`,      fontWeight: 600, fontSize: 26, color: 'var(--cb-fg)', fontStyle: 'italic', lineHeight: 1.1 }
                     : f.id === 'cabinet'
-                    ? { fontFamily: `'Plus Jakarta Sans', sans-serif`, fontWeight: 800, fontSize: 22, color: 'var(--cb-fg)', lineHeight: 1 }
+                    ? { fontFamily: `'Plus Jakarta Sans', sans-serif`,  fontWeight: 800, fontSize: 22, color: 'var(--cb-fg)', lineHeight: 1 }
                     : f.id === 'bebas'
-                    ? { fontFamily: `'Bebas Neue', sans-serif`, fontWeight: 400, fontSize: 32, color: 'var(--cb-fg)', letterSpacing: '0.08em', lineHeight: 1 }
+                    ? { fontFamily: `'Bebas Neue', sans-serif`,         fontWeight: 400, fontSize: 32, color: 'var(--cb-fg)', letterSpacing: '0.08em', lineHeight: 1 }
+                    : f.id === 'fraunces'
+                    ? { fontFamily: `'Fraunces', serif`,                fontWeight: 900, fontSize: 26, color: 'var(--cb-fg)', fontStyle: 'italic', lineHeight: 1 }
                     : f.id === 'josefin'
-                    ? { fontFamily: `'Josefin Sans', sans-serif`, fontWeight: 700, fontSize: 20, color: 'var(--cb-fg)', letterSpacing: '0.12em', textTransform: 'uppercase' }
-                    : { fontFamily: `'Space Grotesk', monospace`, fontWeight: 500, fontSize: 18, color: 'var(--cb-fg)', letterSpacing: '0.04em' };
+                    ? { fontFamily: `'Josefin Sans', sans-serif`,       fontWeight: 700, fontSize: 20, color: 'var(--cb-fg)', letterSpacing: '0.12em', textTransform: 'uppercase' }
+                    : f.id === 'cinzel'
+                    ? { fontFamily: `'Cinzel', serif`,                  fontWeight: 700, fontSize: 20, color: 'var(--cb-fg)', letterSpacing: '0.1em' }
+                    : { fontFamily: `'Space Grotesk', monospace`,       fontWeight: 500, fontSize: 18, color: 'var(--cb-fg)', letterSpacing: '0.04em' };
 
                   const bodyStyle: React.CSSProperties = {
                     fontFamily: `'${f.body}', sans-serif`,
@@ -1308,24 +1528,6 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
             {/* Elements */}
             {activeTab === 'elements' && (
               <>
-                <Section label={s.cardType === 'stamps' ? 'Display de sellos' : 'Display de puntos'}>
-                  {POINTS_STYLES.filter(ps => s.cardType === 'stamps' ? (ps.id === 'stamps' || ps.id === 'stars') : (ps.id === 'number' || ps.id === 'bar' || ps.id === 'stars')).map((ps) => {
-                    const locked = !canUse(tier, ps.tier);
-                    return (
-                      <div key={ps.id}
-                        onClick={() => locked ? upgrade(ps.tier) : set('pointsStyle', ps.id)}
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', borderRadius: 7, marginBottom: 5, cursor: locked ? 'not-allowed' : 'pointer', background: s.pointsStyle === ps.id ? 'var(--cb-input)' : 'transparent', border: `1px solid ${s.pointsStyle === ps.id ? 'rgba(var(--cb-fg-rgb),0.12)' : 'transparent'}`, opacity: locked ? 0.45 : 1 }}
-                      >
-                        <span style={{ fontSize: 12 }}>{ps.label}</span>
-                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                          {locked && <LockPill tier={ps.tier} onUpgrade={() => {}} />}
-                          {s.pointsStyle === ps.id && <span style={{ color: '#E8341A', fontSize: 12 }}>✓</span>}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </Section>
-
                 <Section label="Elementos adicionales">
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                     <span style={{ fontSize: 12 }}>Badge de nivel</span>
@@ -1346,12 +1548,35 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                   </div>
                 </Section>
 
-                <Section label="Efectos especiales" action={!canUse(tier, 'elite') ? <LockPill tier="elite" onUpgrade={() => upgrade('elite')} /> : undefined}>
-                  {!canUse(tier, 'elite') ? (
-                    <UpgradeBanner tier="elite" label="Efectos foil, sombras custom y animaciones de tarjeta." onUpgrade={() => upgrade('elite')} />
-                  ) : (
-                    <div style={{ fontSize: 12, color: 'var(--cb-muted)' }}>Próximamente: foil, emboss, glow</div>
-                  )}
+                <Section label="Efectos especiales">
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6 }}>
+                    {SPECIAL_EFFECTS.map(ef => {
+                      const isActive = s.specialEffect === ef.id;
+                      return (
+                        <button key={ef.id} type="button" onClick={() => set('specialEffect', ef.id)}
+                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                          <div style={{
+                            width: '100%', aspectRatio: '1.65', borderRadius: 8, overflow: 'hidden', position: 'relative',
+                            background: pal.bg,
+                            border: `2px solid ${isActive ? '#E8341A' : 'rgba(var(--cb-fg-rgb),0.08)'}`,
+                            boxShadow: ef.id === 'glow' ? `0 0 10px ${pal.primary}99, 0 0 20px ${pal.primary}55` : isActive ? '0 0 0 2px rgba(232,52,26,0.2)' : 'none',
+                            transition: 'all 0.15s',
+                          }}>
+                            {ef.id === 'foil' && (
+                              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(115deg, transparent 15%, rgba(255,0,120,0.45) 28%, rgba(255,210,0,0.45) 38%, rgba(0,255,140,0.45) 48%, rgba(0,170,255,0.45) 58%, rgba(170,0,255,0.45) 68%, transparent 82%)', backgroundSize: '300% 300%', animation: 'foilShift 4s ease-in-out infinite', mixBlendMode: 'overlay' }} />
+                            )}
+                            {ef.id === 'emboss' && (
+                              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(255,255,255,0.18) 0%, transparent 45%, rgba(0,0,0,0.14) 100%)', boxShadow: 'inset 2px 2px 0 rgba(255,255,255,0.2), inset -2px -2px 0 rgba(0,0,0,0.3)' }} />
+                            )}
+                            {isActive && (
+                              <div style={{ position: 'absolute', top: 3, right: 3, width: 7, height: 7, borderRadius: '50%', background: '#E8341A' }} />
+                            )}
+                          </div>
+                          <span style={{ fontSize: 9, fontWeight: 600, color: isActive ? '#E8341A' : 'var(--cb-subtle)' }}>{ef.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </Section>
 
                 {/* Dev-only tier switcher */}
@@ -1424,11 +1649,11 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
 
           {/* ── Main canvas row: card left, wallet right ── */}
           <div
-            style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 52, padding: '48px 40px 32px', width: '100%', overflowY: 'auto' }}
+            style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 52, padding: '48px 40px 100px', width: '100%', overflowY: 'auto' }}
           >
 
-            {/* Left: two-view card with from-above transition */}
-            {(() => {
+            {/* Left: two-view card — hidden when showing wallet view in free layout */}
+            {!(s.freeLayout && activeView === 'wallet') && (() => {
               const faceStyle = (active: boolean): React.CSSProperties => ({
                 position: 'absolute', inset: 0, borderRadius: 18, overflow: 'hidden',
                 transformOrigin: '50% 50%',
@@ -1456,9 +1681,11 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                         style={{
                           width: 380, height: 230,
                           position: 'relative',
-                          transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
-                          transition: 'transform 0.65s cubic-bezier(0.23, 1, 0.32, 1)',
-                          animation: cardAnimating ? 'none' : 'cardFloat 5s ease-in-out infinite',
+                          transform: s.freeLayout
+                            ? `scale(${FREE_SCALE})`
+                            : `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
+                          transition: s.freeLayout ? 'transform 0.3s ease' : 'transform 0.65s cubic-bezier(0.23, 1, 0.32, 1)',
+                          animation: (cardAnimating || s.freeLayout) ? 'none' : 'cardFloat 5s ease-in-out infinite',
                           filter: `drop-shadow(0 28px 52px ${pal.primary}38)`,
                           willChange: 'transform',
                           cursor: s.freeLayout ? 'default' : 'pointer',
@@ -1478,28 +1705,41 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                               {/* Draggable elements */}
                               {freeElems.filter(el => el.visible).map(el => {
                                 const isLive = freeLivePos?.id === el.id;
+                                const isEditing = freeEditingId === el.id;
                                 const ex = isLive ? freeLivePos!.x : el.x;
                                 const ey = isLive ? freeLivePos!.y : el.y;
+                                const isText = el.id === 'biz' || el.id === 'cardname';
                                 const labelMap: Record<string, string> = { biz: 'Negocio', cardname: 'Tarjeta', logo: 'Logo', points: 'Pts', member: 'Miembro', qr: 'QR' };
                                 return (
                                   <div
                                     key={el.id}
                                     onPointerDown={(e) => {
+                                      if (isEditing) return;
                                       e.stopPropagation();
                                       e.currentTarget.setPointerCapture(e.pointerId);
-                                      freeDragRef.current = { elemId: el.id, startPtrX: e.clientX, startPtrY: e.clientY, startElemX: el.x, startElemY: el.y };
+                                      freeDragRef.current = { elemId: el.id, startPtrX: e.clientX, startPtrY: e.clientY, startElemX: el.x, startElemY: el.y, hasMoved: false };
                                       setFreeLivePos({ id: el.id, x: el.x, y: el.y });
                                     }}
                                     onPointerMove={(e) => {
                                       if (!freeDragRef.current || freeDragRef.current.elemId !== el.id) return;
-                                      const nx = Math.max(0, Math.min(370, freeDragRef.current.startElemX + (e.clientX - freeDragRef.current.startPtrX)));
-                                      const ny = Math.max(0, Math.min(220, freeDragRef.current.startElemY + (e.clientY - freeDragRef.current.startPtrY)));
+                                      const dx = Math.abs(e.clientX - freeDragRef.current.startPtrX);
+                                      const dy = Math.abs(e.clientY - freeDragRef.current.startPtrY);
+                                      if (dx > 4 || dy > 4) freeDragRef.current.hasMoved = true;
+                                      const nx = Math.max(0, Math.min(370, freeDragRef.current.startElemX + (e.clientX - freeDragRef.current.startPtrX) / FREE_SCALE));
+                                      const ny = Math.max(0, Math.min(220, freeDragRef.current.startElemY + (e.clientY - freeDragRef.current.startPtrY) / FREE_SCALE));
                                       setFreeLivePos({ id: el.id, x: nx, y: ny });
                                     }}
                                     onPointerUp={(e) => {
                                       if (!freeDragRef.current || freeDragRef.current.elemId !== el.id) return;
-                                      const nx = Math.max(0, Math.min(370, freeDragRef.current.startElemX + (e.clientX - freeDragRef.current.startPtrX)));
-                                      const ny = Math.max(0, Math.min(220, freeDragRef.current.startElemY + (e.clientY - freeDragRef.current.startPtrY)));
+                                      if (!freeDragRef.current.hasMoved && isText) {
+                                        freeDragRef.current = null;
+                                        setFreeLivePos(null);
+                                        setFreeEditingValue(el.id === 'biz' ? (s.businessName || '') : (s.cardName || ''));
+                                        setFreeEditingId(el.id);
+                                        return;
+                                      }
+                                      const nx = Math.max(0, Math.min(370, freeDragRef.current.startElemX + (e.clientX - freeDragRef.current.startPtrX) / FREE_SCALE));
+                                      const ny = Math.max(0, Math.min(220, freeDragRef.current.startElemY + (e.clientY - freeDragRef.current.startPtrY) / FREE_SCALE));
                                       const snapped = nearestSnap(nx, ny);
                                       freeDragRef.current = null;
                                       setFreeLivePos(null);
@@ -1507,20 +1747,50 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                                     }}
                                     style={{
                                       position: 'absolute', left: ex, top: ey,
-                                      padding: '3px 5px',
-                                      border: isLive ? '1.5px solid #A78BFA' : '1.5px dashed rgba(167,139,250,0.3)',
+                                      padding: isEditing ? 0 : '3px 5px',
+                                      border: isEditing ? 'none' : isLive ? '1.5px solid #A78BFA' : isText ? '1.5px dashed rgba(167,139,250,0.25)' : '1.5px dashed rgba(167,139,250,0.15)',
                                       borderRadius: 5,
-                                      cursor: 'grab',
-                                      background: isLive ? 'rgba(167,139,250,0.12)' : 'transparent',
-                                      zIndex: isLive ? 30 : 20,
+                                      cursor: isEditing ? 'text' : isText ? 'pointer' : 'grab',
+                                      background: isEditing ? 'transparent' : isLive ? 'rgba(167,139,250,0.12)' : 'transparent',
+                                      zIndex: isEditing ? 40 : isLive ? 30 : 20,
                                       transition: isLive ? 'none' : 'border-color 0.15s, background 0.15s',
                                       userSelect: 'none',
                                       transform: 'translate(-2px, -2px)',
                                     }}
                                   >
-                                    <span style={{ fontSize: 7, fontWeight: 700, color: isLive ? '#A78BFA' : 'rgba(167,139,250,0.5)', letterSpacing: '0.05em', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
-                                      {labelMap[el.id] ?? el.id}
-                                    </span>
+                                    {isEditing ? (
+                                      <input
+                                        autoFocus
+                                        value={freeEditingValue}
+                                        onChange={e => setFreeEditingValue(e.target.value)}
+                                        onBlur={() => {
+                                          set(el.id === 'biz' ? 'businessName' : 'cardName', freeEditingValue);
+                                          setFreeEditingId(null);
+                                        }}
+                                        onKeyDown={e => {
+                                          if (e.key === 'Enter' || e.key === 'Escape') (e.target as HTMLInputElement).blur();
+                                        }}
+                                        onClick={e => e.stopPropagation()}
+                                        style={{
+                                          background: 'rgba(0,0,0,0.7)',
+                                          border: '1.5px solid #A78BFA',
+                                          borderRadius: 5,
+                                          color: '#fff',
+                                          fontSize: Math.max(8, el.fontSize * 0.6),
+                                          fontWeight: el.fontWeight,
+                                          fontFamily: `'${font.display}',sans-serif`,
+                                          outline: 'none',
+                                          padding: '3px 6px',
+                                          minWidth: 80,
+                                          maxWidth: 200,
+                                          backdropFilter: 'blur(8px)',
+                                        }}
+                                      />
+                                    ) : (
+                                      <span style={{ fontSize: 7, fontWeight: 700, color: isLive ? '#A78BFA' : isText ? 'rgba(167,139,250,0.6)' : 'rgba(167,139,250,0.4)', letterSpacing: '0.05em', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
+                                        {isText ? '✎ ' : ''}{labelMap[el.id] ?? el.id}
+                                      </span>
+                                    )}
                                   </div>
                                 );
                               })}
@@ -1531,28 +1801,34 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                               />
                             </div>
                           ) : (
-                            (() => { const FrontCard = CARD_RENDERERS[s.template] ?? ClassicCard; return <FrontCard s={s} pal={pal} font={font} pattern={pattern} W={380} H={230} noShadow hidePoints={s.cardType === 'stamps'} />; })()
+                            (() => {
+                              const FrontCard = CARD_RENDERERS[s.template] ?? ClassicCard;
+                              return (
+                                <div style={{ position: 'relative', ...effectWrapperStyle(s.specialEffect, pal.primary) }}>
+                                  <FrontCard s={s} pal={pal} font={font} pattern={pattern} W={380} H={230} noShadow hidePoints={s.cardType === 'stamps'} />
+                                  <SpecialEffectOverlay effect={s.specialEffect} primary={pal.primary} />
+                                </div>
+                              );
+                            })()
                           )}
                         </div>
 
                         {/* ── BACK: points → template renderer | stamps → stamp grid over template bg ── */}
                         <div style={faceStyle(isFlipped)}>
                           {(() => {
-                            const BACK_BG_MAP: Record<BuilderState['backBg'], string> = {
-                              warm:   'linear-gradient(135deg,#1A1712 0%,#111009 100%)',
-                              dark:   'linear-gradient(135deg,#0C0A07 0%,#080604 100%)',
-                              deep:   'linear-gradient(160deg,#060810 0%,#0B0D18 100%)',
-                              accent: `linear-gradient(160deg,#111009 0%,${pal.primary}35 100%)`,
-                            };
-                            const backPal = { ...pal, bg: BACK_BG_MAP[s.backBg] };
+                            const backPal = { ...pal, bg: backFaceBg };
                             return s.cardType === 'points' ? (
                             (() => {
                               const BackCard = CARD_RENDERERS[s.template] ?? ClassicCard;
-                              return <BackCard s={s} pal={backPal} font={font} pattern={pattern} W={380} H={230} noShadow hidePoints={false} />;
+                              return (
+                                <div style={{ position: 'relative', ...effectWrapperStyle(s.specialEffect, pal.primary) }}>
+                                  <BackCard s={s} pal={backPal} font={font} pattern={pattern} W={380} H={230} noShadow hidePoints={false} />
+                                  <SpecialEffectOverlay effect={s.specialEffect} primary={pal.primary} />
+                                </div>
+                              );
                             })()
                           ) : (
                             (() => {
-                              const BackCard = CARD_RENDERERS[s.template] ?? ClassicCard;
                               const IconComp = STAMP_ICONS_EXTENDED.find(x => x.id === s.stampIcon)?.icon ?? STAMP_ICONS_EXTENDED[0]!.icon;
                               const totalStamps = Math.min(pointsForReward, 20);
                               const filled = Math.round(totalStamps * 0.7);
@@ -1566,10 +1842,9 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                               const rows = Math.ceil(totalStamps / cols);
                               const iconSize = cols <= 3 ? 20 : cols <= 4 ? 17 : cols <= 5 ? 14 : cols <= 6 ? 12 : 10;
                               return (
-                                <div style={{ position: 'relative', width: 380, height: 230 }}>
-                                  {/* Template bg layer */}
-                                  <div style={{ position: 'absolute', inset: 0 }}>
-                                    <BackCard s={s} pal={backPal} font={font} pattern={pattern} W={380} H={230} noShadow bgOnly />
+                                <div style={{ position: 'relative', width: 380, height: 230, ...effectWrapperStyle(s.specialEffect, pal.primary) }}>
+                                  <div style={{ position: 'absolute', inset: 0, borderRadius: 20, background: backFaceBg }}>
+                                    {pattern.id !== 'none' && <div style={{ position: 'absolute', inset: 0, backgroundImage: pattern.css, backgroundSize: pattern.size || undefined, borderRadius: 20 }} />}
                                   </div>
                                   {/* Stamp grid overlay */}
                                   <div style={{ position: 'absolute', inset: 0, padding: '14px 18px 12px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -1579,13 +1854,24 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                                     </div>
                                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, justifyContent: 'center' }}>
                                       {Array.from({ length: rows }, (_, r) => (
-                                        <div key={r} style={{ display: 'flex', gap: 6 }}>
+                                        <div key={r} style={{ display: 'flex', gap: s.stampShape === 'pill' ? 4 : 6, justifyContent: 'center' }}>
                                           {Array.from({ length: cols }, (_, c) => {
                                             const i = r * cols + c;
                                             if (i >= totalStamps) return <div key={c} style={{ flex: 1 }} />;
+                                            const isFilled = i < filled;
+                                            // compute a representative pixel size for this grid cell
+                                            const cellPx = cols <= 3 ? 64 : cols <= 4 ? 54 : cols <= 5 ? 46 : cols <= 6 ? 38 : 32;
+                                            const shapeStyle = stampShapeStyle(s.stampShape, isFilled, pal.primary, cellPx);
+                                            // For pill, width is wider — but inside a flex-1 context we override width to 'auto' and let flex handle it
+                                            const cellStyle: React.CSSProperties = s.stampShape === 'pill'
+                                              ? { ...shapeStyle, flex: 1.5, width: undefined, height: cellPx * 0.62, minWidth: 0 }
+                                              : { ...shapeStyle, flex: 1, width: undefined, height: undefined, aspectRatio: '1', minWidth: 0 };
                                             return (
-                                              <div key={c} style={{ flex: 1, aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 9, background: i < filled ? pal.primary : 'rgba(var(--cb-fg-rgb),0.08)', border: i < filled ? 'none' : '1.5px solid rgba(var(--cb-fg-rgb),0.14)', backdropFilter: 'blur(4px)' }}>
-                                                <IconComp size={iconSize} color={i < filled ? '#fff' : 'rgba(var(--cb-fg-rgb),0.22)'} />
+                                              <div key={c} style={cellStyle}>
+                                                {s.pointsStyle === 'stars'
+                                                  ? <span style={{ fontSize: iconSize, color: isFilled ? '#fff' : 'rgba(var(--cb-fg-rgb),0.2)', transform: s.stampShape === 'diamond' ? 'rotate(-45deg)' : undefined, display: 'inline-block', lineHeight: 1 }}>★</span>
+                                                  : <IconComp size={iconSize} color={isFilled ? '#fff' : 'rgba(var(--cb-fg-rgb),0.22)'} style={s.stampShape === 'diamond' ? { transform: 'rotate(-45deg)' } as React.CSSProperties : undefined} />
+                                                }
                                               </div>
                                             );
                                           })}
@@ -1599,6 +1885,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                                       <div style={{ fontSize: 7, fontWeight: 800, color: 'rgba(var(--cb-fg-rgb),0.1)', letterSpacing: '0.12em' }}>SELLIO</div>
                                     </div>
                                   </div>
+                                  <SpecialEffectOverlay effect={s.specialEffect} primary={pal.primary} />
                                 </div>
                               );
                             })()
@@ -1627,8 +1914,8 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
               );
             })()}
 
-            {/* Right: iPhone wallet with animated flip card */}
-            {(() => {
+            {/* Right: iPhone wallet with animated flip card — hidden in free layout (moved to its own view) */}
+            {!s.freeLayout && (() => {
               const W_CARD = 192;
               const H_CARD = Math.round(W_CARD * 230 / 380);
               const wScale = W_CARD / 380;
@@ -1645,10 +1932,11 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
               const wRows = Math.ceil(wTotal / wCols);
               const wIconSize = wCols <= 3 ? 11 : wCols <= 5 ? 9 : 7;
               return (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                   <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--cb-subtle)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Vista en Wallet</div>
-                  {/* iPhone shell */}
-                  <div style={{ width: 230, height: 460, borderRadius: 42, background: '#000', border: '7px solid #1C1C1E', boxShadow: '0 0 0 1px rgba(255,255,255,0.08), inset 0 0 0 1px rgba(255,255,255,0.04), 0 40px 80px rgba(0,0,0,0.8)', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                  {/* iPhone shell — shadow wrapper gives room so overflow:hidden on canvas doesn't clip it */}
+                  <div style={{ padding: '4px 20px 56px', margin: '-4px -20px -56px' }}>
+                  <div style={{ width: 230, height: 460, borderRadius: 42, background: '#000', border: '7px solid #1C1C1E', boxShadow: '0 0 0 1px rgba(255,255,255,0.08), inset 0 0 0 1px rgba(255,255,255,0.04), 0 20px 40px rgba(0,0,0,0.6), 0 48px 80px rgba(0,0,0,0.45)', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                     {/* Status bar */}
                     <div style={{ height: 28, background: '#000', display: 'flex', alignItems: 'center', padding: '0 16px', flexShrink: 0 }}>
                       <span style={{ fontSize: 9, fontWeight: 700, color: '#fff', fontFamily: 'Syne,sans-serif' }}>9:41</span>
@@ -1698,7 +1986,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                         {/* Back face */}
                         <div style={{
                           position: 'absolute', inset: 0, borderRadius: 12, overflow: 'hidden',
-                          background: `linear-gradient(135deg, #1A1712 0%, var(--cb-panel) 100%)`,
+                          background: backFaceBg,
                           transformOrigin: '50% 0%',
                           transform: walletFlipped ? 'rotateX(0deg) scale(1)' : 'rotateX(-72deg) scale(0.96)',
                           opacity: walletFlipped ? 1 : 0,
@@ -1716,13 +2004,19 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                             {s.cardType === 'stamps' ? (
                               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: wRows > 3 ? 2 : 3, justifyContent: 'center', overflow: 'hidden' }}>
                                 {Array.from({ length: wRows }, (_, r) => (
-                                  <div key={r} style={{ display: 'flex', gap: wRows > 3 ? 2 : 3 }}>
+                                  <div key={r} style={{ display: 'flex', gap: wRows > 3 ? 2 : 3, justifyContent: 'center' }}>
                                     {Array.from({ length: wCols }, (_, c) => {
                                       const i = r * wCols + c;
                                       if (i >= wTotal) return <div key={c} style={{ flex: 1 }} />;
+                                      const wCellSize = wCols <= 3 ? 22 : wCols <= 5 ? 17 : 13;
+                                      const filled = i < wFilled;
+                                      const cellSt = stampShapeStyle(s.stampShape, filled, pal.primary, wCellSize);
                                       return (
-                                        <div key={c} style={{ flex: 1, aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 5, background: i < wFilled ? pal.primary : 'rgba(var(--cb-fg-rgb),0.07)', border: i < wFilled ? 'none' : '1px solid rgba(var(--cb-fg-rgb),0.12)' }}>
-                                          <WIconComp size={wIconSize} color={i < wFilled ? '#fff' : 'rgba(var(--cb-fg-rgb),0.2)'} />
+                                        <div key={c} style={cellSt}>
+                                          {s.pointsStyle === 'stars'
+                                            ? <span style={{ fontSize: wIconSize - 1, color: filled ? '#fff' : 'rgba(var(--cb-fg-rgb),0.2)', transform: s.stampShape === 'diamond' ? 'rotate(-45deg)' : undefined, display: 'inline-block' }}>★</span>
+                                            : <WIconComp size={wIconSize} color={filled ? '#fff' : 'rgba(var(--cb-fg-rgb),0.2)'} style={s.stampShape === 'diamond' ? { transform: 'rotate(-45deg)' } : undefined} />
+                                          }
                                         </div>
                                       );
                                     })}
@@ -1765,6 +2059,123 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                     <div style={{ height: 20, background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <div style={{ width: 60, height: 3, background: 'rgba(255,255,255,0.15)', borderRadius: 2 }} />
                     </div>
+                  </div>
+                  </div>{/* closes shadow wrapper */}
+                </div>
+              );
+            })()}
+
+            {/* Wallet panel — free layout mode only, shown when activeView === 'wallet' */}
+            {s.freeLayout && activeView === 'wallet' && (() => {
+              const W_CARD = 192;
+              const H_CARD = Math.round(W_CARD * 230 / 380);
+              const wScale = W_CARD / 380;
+              const WIconComp = STAMP_ICONS_EXTENDED.find(x => x.id === s.stampIcon)?.icon ?? STAMP_ICONS_EXTENDED[0]!.icon;
+              const wTotal = Math.min(s.cardType === 'stamps' ? pointsForReward : 10, 20);
+              const wFilled = Math.round(wTotal * 0.7);
+              let wCols = Math.min(wTotal, 5);
+              let wMinWaste = wCols * Math.ceil(wTotal / wCols) - wTotal;
+              for (let c = Math.min(wTotal, 7); c >= 2; c--) {
+                const w = c * Math.ceil(wTotal / c) - wTotal;
+                if (w < wMinWaste) { wMinWaste = w; wCols = c; }
+                if (w === 0) break;
+              }
+              const wRows = Math.ceil(wTotal / wCols);
+              const wIconSize = wCols <= 3 ? 11 : wCols <= 5 ? 9 : 7;
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                  <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--cb-subtle)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Vista en Wallet</div>
+                  <div style={{ padding: '4px 20px 56px', margin: '-4px -20px -56px' }}>
+                  <div style={{ width: 230, height: 460, borderRadius: 42, background: '#000', border: '7px solid #1C1C1E', boxShadow: '0 0 0 1px rgba(255,255,255,0.08), inset 0 0 0 1px rgba(255,255,255,0.04), 0 20px 40px rgba(0,0,0,0.6), 0 48px 80px rgba(0,0,0,0.45)', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ height: 28, background: '#000', display: 'flex', alignItems: 'center', padding: '0 16px', flexShrink: 0 }}>
+                      <span style={{ fontSize: 9, fontWeight: 700, color: '#fff', fontFamily: 'Syne,sans-serif' }}>9:41</span>
+                      <div style={{ marginLeft: 'auto', display: 'flex', gap: 4, alignItems: 'center' }}>
+                        <span style={{ fontSize: 7, color: '#fff' }}>▪▪▪</span>
+                        <span style={{ fontSize: 7, color: '#fff', background: '#4ADE80', borderRadius: 3, padding: '1px 3px' }}>85</span>
+                      </div>
+                    </div>
+                    <div style={{ flex: 1, background: '#111', display: 'flex', flexDirection: 'column', padding: '10px 10px 8px', gap: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: '#fff', fontFamily: 'Syne,sans-serif' }}>Wallet</span>
+                        <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <span style={{ fontSize: 11, color: '#fff' }}>+</span>
+                        </div>
+                      </div>
+                      <div style={{ width: W_CARD, height: H_CARD, alignSelf: 'center', cursor: 'pointer', flexShrink: 0, position: 'relative', perspective: '600px', perspectiveOrigin: '50% 50%' }}
+                        onClick={() => {
+                          if (walletTimerRef.current) clearTimeout(walletTimerRef.current);
+                          setWalletFlipped(f => {
+                            const next = !f;
+                            walletTimerRef.current = setTimeout(() => setWalletFlipped(false), next ? 2400 : 0);
+                            return next;
+                          });
+                        }}>
+                        <div style={{ position: 'absolute', inset: 0, borderRadius: 12, overflow: 'hidden', transformOrigin: '50% 0%', transform: !walletFlipped ? 'rotateX(0deg) scale(1)' : 'rotateX(-72deg) scale(0.96)', opacity: !walletFlipped ? 1 : 0, transition: !walletFlipped ? 'transform 0.46s cubic-bezier(0.16,1,0.3,1), opacity 0.38s ease' : 'transform 0.26s ease-in, opacity 0.2s ease-in', pointerEvents: !walletFlipped ? 'auto' : 'none' }}>
+                          <div style={{ width: 380, height: 230, transformOrigin: 'top left', transform: `scale(${wScale})`, pointerEvents: 'none' }}>
+                            <CardFrontPreview s={s} pal={pal} font={font} pattern={pattern} />
+                          </div>
+                        </div>
+                        <div style={{ position: 'absolute', inset: 0, borderRadius: 12, overflow: 'hidden', background: backFaceBg, transformOrigin: '50% 0%', transform: walletFlipped ? 'rotateX(0deg) scale(1)' : 'rotateX(-72deg) scale(0.96)', opacity: walletFlipped ? 1 : 0, transition: walletFlipped ? 'transform 0.46s cubic-bezier(0.16,1,0.3,1), opacity 0.38s ease' : 'transform 0.26s ease-in, opacity 0.2s ease-in', pointerEvents: walletFlipped ? 'auto' : 'none' }}>
+                          <div style={{ position: 'absolute', right: -10, top: -10, width: 60, height: 60, borderRadius: '50%', background: `${pal.primary}18` }} />
+                          <div style={{ position: 'relative', zIndex: 1, width: '100%', height: '100%', padding: '10px 12px 8px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            <div>
+                              <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 10, color: pal.primary }}>{s.businessName || 'Tu Negocio'}</div>
+                              <div style={{ fontSize: 6, color: 'rgba(var(--cb-fg-rgb),0.3)', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 1 }}>{s.cardType === 'stamps' ? 'Stamp Card' : 'Loyalty Points'}</div>
+                            </div>
+                            {s.cardType === 'stamps' ? (
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: wRows > 3 ? 2 : 3, justifyContent: 'center', overflow: 'hidden' }}>
+                                {Array.from({ length: wRows }, (_, r) => (
+                                  <div key={r} style={{ display: 'flex', gap: wRows > 3 ? 2 : 3, justifyContent: 'center' }}>
+                                    {Array.from({ length: wCols }, (_, c) => {
+                                      const i = r * wCols + c;
+                                      if (i >= wTotal) return <div key={c} style={{ flex: 1 }} />;
+                                      const wCellSize = wCols <= 3 ? 22 : wCols <= 5 ? 17 : 13;
+                                      const filled = i < wFilled;
+                                      const cellSt = stampShapeStyle(s.stampShape, filled, pal.primary, wCellSize);
+                                      return (
+                                        <div key={c} style={cellSt}>
+                                          {s.pointsStyle === 'stars'
+                                            ? <span style={{ fontSize: wIconSize - 1, color: filled ? '#fff' : 'rgba(var(--cb-fg-rgb),0.2)', transform: s.stampShape === 'diamond' ? 'rotate(-45deg)' : undefined, display: 'inline-block' }}>★</span>
+                                            : <WIconComp size={wIconSize} color={filled ? '#fff' : 'rgba(var(--cb-fg-rgb),0.2)'} style={s.stampShape === 'diamond' ? { transform: 'rotate(-45deg)' } : undefined} />
+                                          }
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                                <div style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 28, color: pal.primary, letterSpacing: '-0.03em', lineHeight: 1 }}>70</div>
+                                <div style={{ fontSize: 6, color: 'rgba(var(--cb-fg-rgb),0.3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>puntos</div>
+                                <div style={{ width: '80%', height: 3, background: 'rgba(var(--cb-fg-rgb),0.08)', borderRadius: 2, overflow: 'hidden' }}>
+                                  <div style={{ height: '100%', width: '70%', background: pal.primary, borderRadius: 2 }} />
+                                </div>
+                              </div>
+                            )}
+                            <div style={{ fontSize: 6, color: 'rgba(var(--cb-fg-rgb),0.35)' }}>
+                              {s.cardType === 'stamps'
+                                ? <>Faltan <span style={{ color: pal.primary, fontWeight: 700 }}>{wTotal - wFilled}</span> sellos</>
+                                : <>Faltan <span style={{ color: pal.primary, fontWeight: 700 }}>30 pts</span> para la recompensa</>}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'center', fontSize: 8, color: 'var(--cb-dim)', letterSpacing: '0.06em' }}>
+                        {walletFlipped ? '↑ toca para ver el frente' : `↓ toca para ver ${s.cardType === 'stamps' ? 'sellos' : 'puntos'}`}
+                      </div>
+                      <div style={{ marginTop: 'auto', flexShrink: 0, position: 'relative', height: 56, overflow: 'hidden' }}>
+                        {[['#A855F7', 'redBus'], ['#22C55E', 'Rewards'], ['#3B82F6', 'Coffee Club']].map(([color, label], i) => (
+                          <div key={label} style={{ position: 'absolute', top: i * 12, left: 0, right: 0, height: 44, borderRadius: 8, background: color, display: 'flex', alignItems: 'center', padding: '0 10px', zIndex: i + 1, boxShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
+                            <span style={{ fontSize: 8, fontWeight: 700, color: '#fff', fontFamily: 'Syne,sans-serif' }}>{label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ height: 20, background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <div style={{ width: 60, height: 3, background: 'rgba(255,255,255,0.15)', borderRadius: 2 }} />
+                    </div>
+                  </div>
                   </div>
                 </div>
               );

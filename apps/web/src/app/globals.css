@@ -3,6 +3,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Special card effects */
+@keyframes foilShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 /* Card builder scrollbar */
 .sellio-builder ::-webkit-scrollbar { width: 3px; height: 3px; }
 .sellio-builder ::-webkit-scrollbar-track { background: transparent; }

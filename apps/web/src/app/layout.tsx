@@ -3,6 +3,7 @@ import {
   Syne, Space_Grotesk, Outfit, Nunito,
   Playfair_Display, DM_Sans, Cormorant_Garamond, Lato,
   Plus_Jakarta_Sans, Bebas_Neue, Inter, Josefin_Sans, Source_Serif_4,
+  Raleway, Montserrat, Poppins, Cinzel, Fraunces,
 } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
@@ -23,6 +24,11 @@ const bebasNeue = Bebas_Neue({ subsets: ['latin'], weight: ['400'], variable: '-
 const inter = Inter({ subsets: ['latin'], weight: ['300', '400', '500', '600'], variable: '--font-inter', display: 'swap' });
 const josefinSans = Josefin_Sans({ subsets: ['latin'], weight: ['300', '400', '600', '700'], variable: '--font-josefin', display: 'swap' });
 const sourceSerif4 = Source_Serif_4({ subsets: ['latin'], weight: ['400', '600'], style: ['normal', 'italic'], variable: '--font-source-serif', display: 'swap' });
+const raleway = Raleway({ subsets: ['latin'], weight: ['400', '500', '700', '800'], variable: '--font-raleway', display: 'swap' });
+const montserrat = Montserrat({ subsets: ['latin'], weight: ['400', '500', '700', '800'], variable: '--font-montserrat', display: 'swap' });
+const poppins = Poppins({ subsets: ['latin'], weight: ['400', '500', '700', '800'], variable: '--font-poppins', display: 'swap' });
+const cinzel = Cinzel({ subsets: ['latin'], weight: ['400', '700', '900'], variable: '--font-cinzel', display: 'swap' });
+const fraunces = Fraunces({ subsets: ['latin'], weight: ['400', '700', '900'], style: ['normal', 'italic'], variable: '--font-fraunces', display: 'swap' });
 
 export const metadata: Metadata = {
   title: {
@@ -56,7 +62,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     syne.variable, spaceGrotesk.variable, outfit.variable, nunito.variable,
     playfairDisplay.variable, dmSans.variable, cormorantGaramond.variable, lato.variable,
     plusJakartaSans.variable, bebasNeue.variable, inter.variable, josefinSans.variable,
-    sourceSerif4.variable,
+    sourceSerif4.variable, raleway.variable, montserrat.variable, poppins.variable,
+    cinzel.variable, fraunces.variable,
   ].join(' ');
 
   const locale = await getLocale();
