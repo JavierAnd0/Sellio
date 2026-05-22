@@ -108,6 +108,7 @@ export default async function MembershipSlugPage({ params }: SlugPageProps) {
       customerName={customer?.name ?? null}
       primaryColor={primaryColor}
       checkInUrl={checkInUrl}
+      membershipSlug={membership.slug}
     />
   );
 }

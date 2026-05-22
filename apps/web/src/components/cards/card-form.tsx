@@ -17,7 +17,7 @@ import {
   canUse, BASE_PALETTES, PATTERNS, FONTS, TEMPLATES,
   BADGE_OPTIONS, POINTS_STYLES, STAMP_SHAPES, STAMP_CATEGORIES, STAMP_ICONS_EXTENDED, DEFAULT_BUILDER, QR, ClassicCard, CARD_RENDERERS,
   stampShapeStyle, buildGradientBg, GRADIENT_STYLES, SPECIAL_EFFECTS, SpecialEffectOverlay, effectWrapperStyle,
-  type FreeLayoutElem, defaultFreeElems, FreeLayoutOverlay, SNAP_POINTS,
+  type FreeLayoutElem, defaultFreeElems, defaultFreeElemsBack, FreeLayoutOverlay, SNAP_POINTS,
 } from './card-renderer';
 
 // ── Types ──────────────────────────────────────────────────────
@@ -210,6 +210,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
       customGradDark: (savedDesign?.customGradDark as string) ?? undefined,
       freeLayout: (savedDesign?.freeLayout as boolean) ?? false,
       freeElems: Array.isArray(savedDesign?.freeElems) ? (savedDesign.freeElems as FreeLayoutElem[]) : [],
+      freeElemsBack: Array.isArray(savedDesign?.freeElemsBack) ? (savedDesign.freeElemsBack as FreeLayoutElem[]) : [],
       customLayout: (savedDesign?.customLayout as BuilderState['customLayout']) ?? 'stack',
       customElemBiz:      (savedDesign?.customElemBiz      as boolean) ?? true,
       customElemCardName: (savedDesign?.customElemCardName as boolean) ?? true,
@@ -251,11 +252,14 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
   // Face switcher — which face is currently being edited
   const [activeView, setActiveView] = useState<'front' | 'back' | 'wallet'>('front');
 
-  // Free layout drag state
+  // Free layout drag state (front)
   const freeDragRef = useRef<{ elemId: string; startPtrX: number; startPtrY: number; startElemX: number; startElemY: number; hasMoved: boolean } | null>(null);
   const [freeLivePos, setFreeLivePos] = useState<{ id: string; x: number; y: number } | null>(null);
   const [freeEditingId, setFreeEditingId] = useState<string | null>(null);
   const [freeEditingValue, setFreeEditingValue] = useState('');
+  // Free layout drag state (back)
+  const freeDragRefBack = useRef<{ elemId: string; startPtrX: number; startPtrY: number; startElemX: number; startElemY: number } | null>(null);
+  const [freeLivePosBack, setFreeLivePosBack] = useState<{ id: string; x: number; y: number } | null>(null);
   const FREE_SCALE = 1.16;
 
   // 3D tilt on hover
@@ -350,6 +354,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
 
   // Free layout helpers
   const freeElems: FreeLayoutElem[] = s.freeElems.length > 0 ? s.freeElems : defaultFreeElems(pal);
+  const freeElemsBack: FreeLayoutElem[] = s.freeElemsBack.length > 0 ? s.freeElemsBack : defaultFreeElemsBack(pal);
   const nearestSnap = useCallback((x: number, y: number) => {
     let bestX: number = SNAP_POINTS[0]!.x;
     let bestY: number = SNAP_POINTS[0]!.y;
@@ -363,7 +368,6 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
   const toggleFreeLayout = useCallback(() => {
     setS(prev => {
       const on = !prev.freeLayout;
-      if (!on) setActiveView(v => v === 'wallet' ? 'front' : v);
       return { ...prev, freeLayout: on, freeElems: on && prev.freeElems.length === 0 ? defaultFreeElems(pal) : prev.freeElems };
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -391,6 +395,9 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
     cardType: s.cardType,
     gradientStyle: s.gradientStyle,
     specialEffect: s.specialEffect,
+    freeLayout: s.freeLayout,
+    freeElems: s.freeElems,
+    freeElemsBack: s.freeElemsBack,
   }), [s]);
 
   const designPayloadJSON = useMemo(() => JSON.stringify(designPayload), [designPayload]);
@@ -587,6 +594,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                   disabled={!typeConfirmed}
                   onClick={() => {
                     setActiveView(view);
+                    // En modo libre el overlay siempre es el frente — no volteamos
                     if (view !== 'wallet') setIsFlipped(view === 'back');
                   }}
                   style={{
@@ -886,10 +894,51 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                     </>
                   )}
 
+                  {/* Elementos del reverso — modo libre */}
+                  {s.freeLayout && s.cardType === 'stamps' && (
+                    <div style={{ marginTop: 16, borderTop: '1px solid rgba(var(--cb-fg-rgb),0.07)', paddingTop: 16 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <div style={{ fontSize: 9, color: '#E8341A', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Elementos del reverso</div>
+                        <button type="button" onClick={() => setS(prev => ({ ...prev, freeElemsBack: defaultFreeElemsBack(pal) }))}
+                          style={{ fontSize: 9, color: 'var(--cb-muted)', background: 'none', border: '1px solid rgba(var(--cb-fg-rgb),0.1)', borderRadius: 5, padding: '2px 7px', cursor: 'pointer', fontWeight: 600 }}>
+                          Restablecer
+                        </button>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        {freeElemsBack.map(el => {
+                          const labelMap: Record<string, string> = { biz: 'Nombre del negocio', points: 'Grid de sellos' };
+                          const updateElemsBack = (updater: (fe: FreeLayoutElem) => FreeLayoutElem) =>
+                            setS(prev => ({ ...prev, freeElemsBack: (prev.freeElemsBack.length > 0 ? prev.freeElemsBack : defaultFreeElemsBack(pal)).map(fe => fe.id === el.id ? updater(fe) : fe) }));
+                          return (
+                            <div key={el.id} style={{ borderRadius: 8, background: 'rgba(var(--cb-fg-rgb),0.02)', border: '1px solid rgba(var(--cb-fg-rgb),0.05)', overflow: 'hidden' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px' }}>
+                                <span style={{ fontSize: 10, fontWeight: 500, color: el.visible ? '#A39D98' : 'var(--cb-deep)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{labelMap[el.id] ?? el.id}</span>
+                                {el.id === 'biz' && <span style={{ fontSize: 8, color: 'var(--cb-deep)', fontWeight: 600, minWidth: 22, textAlign: 'right' }}>{Math.round(el.fontSize)}px</span>}
+                                <button type="button" onClick={() => updateElemsBack(fe => ({ ...fe, visible: !fe.visible }))}
+                                  style={{ fontSize: 10, color: el.visible ? 'var(--cb-muted)' : 'var(--cb-deep)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 3px', flexShrink: 0, lineHeight: 1 }}
+                                  title={el.visible ? 'Ocultar' : 'Mostrar'}>
+                                  {el.visible ? '●' : '○'}
+                                </button>
+                              </div>
+                              {el.visible && el.id === 'biz' && (
+                                <div style={{ padding: '0 10px 7px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <span style={{ fontSize: 8, color: 'var(--cb-deep)', width: 22 }}>Tam.</span>
+                                  <input type="range" min={7} max={22} step={1} value={Math.round(el.fontSize)}
+                                    onChange={ev => updateElemsBack(fe => ({ ...fe, fontSize: Number(ev.target.value) }))}
+                                    style={{ flex: 1, accentColor: '#E8341A', height: 3 }} />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Preview live hint */}
                   <div style={{ marginTop: 4, padding: '10px 12px', borderRadius: 8, background: 'rgba(232,52,26,0.05)', border: '1px solid rgba(232,52,26,0.12)' }}>
                     <div style={{ fontSize: 10, color: '#E8341A', fontWeight: 600, marginBottom: 3 }}>Vista en tiempo real</div>
-                    <div style={{ fontSize: 10, color: 'var(--cb-muted)', lineHeight: 1.5 }}>Toca la tarjeta en el canvas para ver la animación de volteo, o haz clic en "Frente" para regresar.</div>
+                    <div style={{ fontSize: 10, color: 'var(--cb-muted)', lineHeight: 1.5 }}>{'Toca la tarjeta en el canvas para ver la animación de volteo, o haz clic en "Frente" para regresar.'}</div>
                   </div>
 
                   {currentIconComp && s.cardType === 'stamps' && (
@@ -1653,7 +1702,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
           >
 
             {/* Left: two-view card — hidden when showing wallet view in free layout */}
-            {!(s.freeLayout && activeView === 'wallet') && (() => {
+            {activeView !== 'wallet' && (() => {
               const faceStyle = (active: boolean): React.CSSProperties => ({
                 position: 'absolute', inset: 0, borderRadius: 18, overflow: 'hidden',
                 transformOrigin: '50% 50%',
@@ -1677,7 +1726,10 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                     >
                       {/* Tilt + float + shadow */}
                       <div
-                        onClick={() => { if (!s.freeLayout) { setIsFlipped(v => { setActiveView(!v ? 'back' : 'front'); return !v; }); } }}
+                        onClick={() => {
+                          if (s.freeLayout && isFlipped) { setIsFlipped(false); setActiveView('front'); return; }
+                          if (!s.freeLayout) { setIsFlipped(v => { setActiveView(!v ? 'back' : 'front'); return !v; }); }
+                        }}
                         style={{
                           width: 380, height: 230,
                           position: 'relative',
@@ -1702,14 +1754,29 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                               {freeDragRef.current && SNAP_POINTS.map(pt => (
                                 <div key={pt.id} style={{ position: 'absolute', left: pt.x, top: pt.y, width: 4, height: 4, borderRadius: '50%', background: 'rgba(167,139,250,0.35)', transform: 'translate(-50%,-50%)', pointerEvents: 'none' }} />
                               ))}
-                              {/* Draggable elements */}
-                              {freeElems.filter(el => el.visible).map(el => {
+                              {/* Draggable elements — hide points handle on stamps front */}
+                              {freeElems.filter(el => el.visible && !(el.id === 'points' && s.cardType === 'stamps')).map(el => {
                                 const isLive = freeLivePos?.id === el.id;
                                 const isEditing = freeEditingId === el.id;
                                 const ex = isLive ? freeLivePos!.x : el.x;
                                 const ey = isLive ? freeLivePos!.y : el.y;
                                 const isText = el.id === 'biz' || el.id === 'cardname';
                                 const labelMap: Record<string, string> = { biz: 'Negocio', cardname: 'Tarjeta', logo: 'Logo', points: 'Pts', member: 'Miembro', qr: 'QR' };
+                                // Compute approximate visual bounds so the selection border matches the element size
+                                const getElemBounds = (): { w: number; h: number } => {
+                                  if (el.id === 'logo' || el.id === 'qr') return { w: el.fontSize, h: el.fontSize };
+                                  if (el.id === 'biz') { const t = s.businessName || 'Tu Negocio'; return { w: Math.max(40, t.length * el.fontSize * 0.62), h: el.fontSize * 1.3 }; }
+                                  if (el.id === 'cardname') { const t = s.cardName || 'Member Card'; return { w: Math.max(30, t.length * el.fontSize * 0.52), h: el.fontSize * 1.3 }; }
+                                  if (el.id === 'member') return { w: 'Ana García'.length * el.fontSize * 0.55, h: el.fontSize * 1.3 };
+                                  if (el.id === 'points') {
+                                    if (s.cardType === 'stamps') { const c = Math.round(el.fontSize * 0.38); const g = c * 0.3; return { w: 4 * c + 3 * g, h: 2 * c + g }; }
+                                    if (s.pointsStyle === 'bar') return { w: el.fontSize * 2.4, h: el.fontSize * 1.5 };
+                                    if (s.pointsStyle === 'stars') return { w: el.fontSize * 5 * 0.55 + 4 * el.fontSize * 0.12, h: el.fontSize * 0.6 };
+                                    return { w: el.fontSize * 1.6, h: el.fontSize * 1.4 };
+                                  }
+                                  return { w: 30, h: 20 };
+                                };
+                                const bounds = getElemBounds();
                                 return (
                                   <div
                                     key={el.id}
@@ -1747,15 +1814,18 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                                     }}
                                     style={{
                                       position: 'absolute', left: ex, top: ey,
-                                      padding: isEditing ? 0 : '3px 5px',
-                                      border: isEditing ? 'none' : isLive ? '1.5px solid #A78BFA' : isText ? '1.5px dashed rgba(167,139,250,0.25)' : '1.5px dashed rgba(167,139,250,0.15)',
+                                      width: isEditing ? undefined : bounds.w,
+                                      height: isEditing ? undefined : bounds.h,
+                                      border: isEditing ? 'none' : isLive ? '1.5px solid #A78BFA' : isText ? '1.5px dashed rgba(167,139,250,0.3)' : '1.5px dashed rgba(167,139,250,0.18)',
                                       borderRadius: 5,
                                       cursor: isEditing ? 'text' : isText ? 'pointer' : 'grab',
-                                      background: isEditing ? 'transparent' : isLive ? 'rgba(167,139,250,0.12)' : 'transparent',
+                                      background: isEditing ? 'transparent' : isLive ? 'rgba(167,139,250,0.08)' : 'transparent',
                                       zIndex: isEditing ? 40 : isLive ? 30 : 20,
                                       transition: isLive ? 'none' : 'border-color 0.15s, background 0.15s',
                                       userSelect: 'none',
                                       transform: 'translate(-2px, -2px)',
+                                      boxSizing: 'border-box',
+                                      overflow: 'visible',
                                     }}
                                   >
                                     {isEditing ? (
@@ -1787,7 +1857,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                                         }}
                                       />
                                     ) : (
-                                      <span style={{ fontSize: 7, fontWeight: 700, color: isLive ? '#A78BFA' : isText ? 'rgba(167,139,250,0.6)' : 'rgba(167,139,250,0.4)', letterSpacing: '0.05em', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
+                                      <span style={{ position: 'absolute', top: 2, left: 3, fontSize: 7, fontWeight: 700, color: isLive ? '#A78BFA' : isText ? 'rgba(167,139,250,0.65)' : 'rgba(167,139,250,0.45)', letterSpacing: '0.05em', pointerEvents: 'none', whiteSpace: 'nowrap', lineHeight: 1 }}>
                                         {isText ? '✎ ' : ''}{labelMap[el.id] ?? el.id}
                                       </span>
                                     )}
@@ -1797,6 +1867,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                               {/* Actual content rendered at live positions */}
                               <FreeLayoutOverlay
                                 s={s} pal={pal} font={font} pattern={pattern} W={380} H={230}
+                                hidePoints={s.cardType === 'stamps'}
                                 elemsOverride={freeElems.map(fe => freeLivePos?.id === fe.id ? { ...fe, x: freeLivePos.x, y: freeLivePos.y } : fe)}
                               />
                             </div>
@@ -1841,50 +1912,111 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                               }
                               const rows = Math.ceil(totalStamps / cols);
                               const iconSize = cols <= 3 ? 20 : cols <= 4 ? 17 : cols <= 5 ? 14 : cols <= 6 ? 12 : 10;
+                              // Back face element positions (free layout or defaults)
+                              const backBizElem = freeElemsBack.find(e => e.id === 'biz') ?? { x: 18, y: 14, fontSize: 10, color: pal.primary, fontWeight: 800, visible: true, id: 'biz' as const };
+                              const backGridElem = freeElemsBack.find(e => e.id === 'points') ?? { x: 18, y: 50, fontSize: 44, color: pal.primary, fontWeight: 900, visible: true, id: 'points' as const };
+                              const cellPx = cols <= 3 ? 64 : cols <= 4 ? 54 : cols <= 5 ? 46 : cols <= 6 ? 38 : 32;
                               return (
                                 <div style={{ position: 'relative', width: 380, height: 230, ...effectWrapperStyle(s.specialEffect, pal.primary) }}>
                                   <div style={{ position: 'absolute', inset: 0, borderRadius: 20, background: backFaceBg }}>
                                     {pattern.id !== 'none' && <div style={{ position: 'absolute', inset: 0, backgroundImage: pattern.css, backgroundSize: pattern.size || undefined, borderRadius: 20 }} />}
                                   </div>
-                                  {/* Stamp grid overlay */}
-                                  <div style={{ position: 'absolute', inset: 0, padding: '14px 18px 12px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                    <div style={{ flexShrink: 0 }}>
-                                      <div style={{ fontSize: 10, fontWeight: 800, fontFamily: `'${font.display}',sans-serif`, color: pal.primary, letterSpacing: '-0.01em' }}>{s.businessName || 'Tu Negocio'}</div>
-                                      <div style={{ fontSize: 7, color: 'rgba(var(--cb-fg-rgb),0.35)', letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: 1 }}>Stamp Card</div>
-                                    </div>
-                                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, justifyContent: 'center' }}>
-                                      {Array.from({ length: rows }, (_, r) => (
-                                        <div key={r} style={{ display: 'flex', gap: s.stampShape === 'pill' ? 4 : 6, justifyContent: 'center' }}>
-                                          {Array.from({ length: cols }, (_, c) => {
-                                            const i = r * cols + c;
-                                            if (i >= totalStamps) return <div key={c} style={{ flex: 1 }} />;
-                                            const isFilled = i < filled;
-                                            // compute a representative pixel size for this grid cell
-                                            const cellPx = cols <= 3 ? 64 : cols <= 4 ? 54 : cols <= 5 ? 46 : cols <= 6 ? 38 : 32;
-                                            const shapeStyle = stampShapeStyle(s.stampShape, isFilled, pal.primary, cellPx);
-                                            // For pill, width is wider — but inside a flex-1 context we override width to 'auto' and let flex handle it
-                                            const cellStyle: React.CSSProperties = s.stampShape === 'pill'
-                                              ? { ...shapeStyle, flex: 1.5, width: undefined, height: cellPx * 0.62, minWidth: 0 }
-                                              : { ...shapeStyle, flex: 1, width: undefined, height: undefined, aspectRatio: '1', minWidth: 0 };
-                                            return (
-                                              <div key={c} style={cellStyle}>
-                                                {s.pointsStyle === 'stars'
-                                                  ? <span style={{ fontSize: iconSize, color: isFilled ? '#fff' : 'rgba(var(--cb-fg-rgb),0.2)', transform: s.stampShape === 'diamond' ? 'rotate(-45deg)' : undefined, display: 'inline-block', lineHeight: 1 }}>★</span>
-                                                  : <IconComp size={iconSize} color={isFilled ? '#fff' : 'rgba(var(--cb-fg-rgb),0.22)'} style={s.stampShape === 'diamond' ? { transform: 'rotate(-45deg)' } as React.CSSProperties : undefined} />
-                                                }
-                                              </div>
-                                            );
-                                          })}
-                                        </div>
-                                      ))}
-                                    </div>
-                                    <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                      <div style={{ fontSize: 8.5, color: 'rgba(var(--cb-fg-rgb),0.3)', fontFamily: `'${font.display}',sans-serif` }}>
-                                        {filled}/{totalStamps} · <span style={{ color: pal.primary, fontWeight: 700 }}>{totalStamps - filled} para la recompensa</span>
+                                  {/* Business name — absolutely positioned */}
+                                  {backBizElem.visible && (() => {
+                                    const liveBiz = freeLivePosBack?.id === 'biz';
+                                    const bx = liveBiz ? freeLivePosBack!.x : backBizElem.x;
+                                    const by = liveBiz ? freeLivePosBack!.y : backBizElem.y;
+                                    return (
+                                      <div style={{ position: 'absolute', left: bx, top: by }}>
+                                        <div style={{ fontSize: backBizElem.fontSize, fontWeight: backBizElem.fontWeight, fontFamily: `'${font.display}',sans-serif`, color: backBizElem.color, letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>{s.businessName || 'Tu Negocio'}</div>
+                                        <div style={{ fontSize: Math.round(backBizElem.fontSize * 0.7), color: 'rgba(255,255,255,0.35)', letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: 1 }}>Stamp Card</div>
                                       </div>
-                                      <div style={{ fontSize: 7, fontWeight: 800, color: 'rgba(var(--cb-fg-rgb),0.1)', letterSpacing: '0.12em' }}>SELLIO</div>
+                                    );
+                                  })()}
+                                  {/* Stamp grid — absolutely positioned */}
+                                  {backGridElem.visible && (() => {
+                                    const liveGrid = freeLivePosBack?.id === 'points';
+                                    const gx = liveGrid ? freeLivePosBack!.x : backGridElem.x;
+                                    const gy = liveGrid ? freeLivePosBack!.y : backGridElem.y;
+                                    return (
+                                      <div style={{ position: 'absolute', left: gx, top: gy, display: 'flex', flexDirection: 'column', gap: s.stampShape === 'pill' ? 3 : 5 }}>
+                                        {Array.from({ length: rows }, (_, r) => (
+                                          <div key={r} style={{ display: 'flex', gap: s.stampShape === 'pill' ? 4 : 5 }}>
+                                            {Array.from({ length: cols }, (_, c) => {
+                                              const i = r * cols + c;
+                                              if (i >= totalStamps) return <div key={c} style={{ width: s.stampShape === 'pill' ? cellPx * 1.5 : cellPx }} />;
+                                              const isFilled = i < filled;
+                                              const shapeStyle = stampShapeStyle(s.stampShape, isFilled, pal.primary, cellPx);
+                                              return (
+                                                <div key={c} style={shapeStyle}>
+                                                  {s.pointsStyle === 'stars'
+                                                    ? <span style={{ fontSize: iconSize, color: isFilled ? '#fff' : 'rgba(255,255,255,0.2)', transform: s.stampShape === 'diamond' ? 'rotate(-45deg)' : undefined, display: 'inline-block', lineHeight: 1 }}>★</span>
+                                                    : <IconComp size={iconSize} color={isFilled ? '#fff' : 'rgba(255,255,255,0.22)'} style={s.stampShape === 'diamond' ? { transform: 'rotate(-45deg)' } as React.CSSProperties : undefined} />
+                                                  }
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    );
+                                  })()}
+                                  {/* Fixed footer */}
+                                  <div style={{ position: 'absolute', bottom: 12, left: 18, right: 18, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ fontSize: 8.5, color: 'rgba(255,255,255,0.3)', fontFamily: `'${font.display}',sans-serif` }}>
+                                      {filled}/{totalStamps} · <span style={{ color: pal.primary, fontWeight: 700 }}>{totalStamps - filled} para la recompensa</span>
                                     </div>
+                                    <div style={{ fontSize: 7, fontWeight: 800, color: 'rgba(255,255,255,0.1)', letterSpacing: '0.12em' }}>SELLIO</div>
                                   </div>
+                                  {/* Drag handles for back elements (free layout mode only) */}
+                                  {s.freeLayout && freeElemsBack.filter(e => e.visible).map(el => {
+                                    const isLive = freeLivePosBack?.id === el.id;
+                                    const ex = isLive ? freeLivePosBack!.x : el.x;
+                                    const ey = isLive ? freeLivePosBack!.y : el.y;
+                                    const labelBack: Record<string, string> = { biz: 'Negocio', points: 'Sellos' };
+                                    const backBounds = el.id === 'biz'
+                                      ? { w: Math.max(40, (s.businessName || 'Tu Negocio').length * el.fontSize * 0.62), h: el.fontSize * 2.2 }
+                                      : { w: cols * (cellPx + 5), h: rows * (cellPx + 5) };
+                                    return (
+                                      <div
+                                        key={el.id}
+                                        onPointerDown={(e) => {
+                                          e.stopPropagation();
+                                          e.currentTarget.setPointerCapture(e.pointerId);
+                                          freeDragRefBack.current = { elemId: el.id, startPtrX: e.clientX, startPtrY: e.clientY, startElemX: el.x, startElemY: el.y };
+                                          setFreeLivePosBack({ id: el.id, x: el.x, y: el.y });
+                                        }}
+                                        onPointerMove={(e) => {
+                                          if (!freeDragRefBack.current || freeDragRefBack.current.elemId !== el.id) return;
+                                          const nx = Math.max(0, Math.min(360, freeDragRefBack.current.startElemX + (e.clientX - freeDragRefBack.current.startPtrX) / FREE_SCALE));
+                                          const ny = Math.max(0, Math.min(210, freeDragRefBack.current.startElemY + (e.clientY - freeDragRefBack.current.startPtrY) / FREE_SCALE));
+                                          setFreeLivePosBack({ id: el.id, x: nx, y: ny });
+                                        }}
+                                        onPointerUp={(e) => {
+                                          if (!freeDragRefBack.current || freeDragRefBack.current.elemId !== el.id) return;
+                                          const nx = Math.max(0, Math.min(360, freeDragRefBack.current.startElemX + (e.clientX - freeDragRefBack.current.startPtrX) / FREE_SCALE));
+                                          const ny = Math.max(0, Math.min(210, freeDragRefBack.current.startElemY + (e.clientY - freeDragRefBack.current.startPtrY) / FREE_SCALE));
+                                          freeDragRefBack.current = null;
+                                          setFreeLivePosBack(null);
+                                          setS(prev => ({ ...prev, freeElemsBack: (prev.freeElemsBack.length > 0 ? prev.freeElemsBack : defaultFreeElemsBack(pal)).map(fe => fe.id === el.id ? { ...fe, x: nx, y: ny } : fe) }));
+                                        }}
+                                        style={{
+                                          position: 'absolute', left: ex, top: ey,
+                                          width: backBounds.w, height: backBounds.h,
+                                          border: isLive ? '1.5px solid #E8341A' : '1.5px dashed rgba(232,52,26,0.35)',
+                                          borderRadius: 5, cursor: 'grab',
+                                          background: isLive ? 'rgba(232,52,26,0.08)' : 'transparent',
+                                          zIndex: isLive ? 30 : 20,
+                                          transition: isLive ? 'none' : 'border-color 0.15s',
+                                          userSelect: 'none', transform: 'translate(-2px,-2px)', boxSizing: 'border-box',
+                                        }}
+                                      >
+                                        <span style={{ position: 'absolute', top: 2, left: 3, fontSize: 7, fontWeight: 700, color: isLive ? '#E8341A' : 'rgba(232,52,26,0.6)', letterSpacing: '0.05em', whiteSpace: 'nowrap', lineHeight: 1, pointerEvents: 'none' }}>
+                                          {labelBack[el.id] ?? el.id}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
                                   <SpecialEffectOverlay effect={s.specialEffect} primary={pal.primary} />
                                 </div>
                               );
@@ -1900,7 +2032,9 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
                   {/* flip label / free layout hint below card */}
                   {s.freeLayout ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5, opacity: 0.6 }}>
-                      <span style={{ fontSize: 9, fontWeight: 600, color: '#A78BFA', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Modo Libre — arrastra · snap a zonas</span>
+                      <span style={{ fontSize: 9, fontWeight: 600, color: isFlipped ? '#E8341A' : '#A78BFA', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                        {isFlipped ? `Reverso · arrastra elementos · ↻ volver` : 'Frente · Modo Libre — arrastra · snap a zonas'}
+                      </span>
                     </div>
                   ) : (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5, opacity: 0.45 }}>
@@ -2065,8 +2199,8 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
               );
             })()}
 
-            {/* Wallet panel — free layout mode only, shown when activeView === 'wallet' */}
-            {s.freeLayout && activeView === 'wallet' && (() => {
+            {/* Wallet panel — shown when activeView === 'wallet' */}
+            {activeView === 'wallet' && (() => {
               const W_CARD = 192;
               const H_CARD = Math.round(W_CARD * 230 / 380);
               const wScale = W_CARD / 380;
