@@ -56,6 +56,12 @@ export function defaultFreeElems(pal: { primary: string }): FreeLayoutElem[] {
     { id: 'qr',       x: 316, y: 174, visible: true, fontSize: 42, color: 'rgba(255,255,255,0.55)', fontWeight: 400 },
   ];
 }
+export function defaultFreeElemsBack(pal: { primary: string }): FreeLayoutElem[] {
+  return [
+    { id: 'biz',    x: 18, y: 14, visible: true, fontSize: 10, color: pal.primary,               fontWeight: 800 },
+    { id: 'points', x: 18, y: 50, visible: true, fontSize: 44, color: pal.primary,               fontWeight: 900 },
+  ];
+}
 export type CustomLayoutId = 'stack' | 'centered' | 'split';
 export type GradientStyleId = 'diagonal' | 'flat' | 'radial' | 'sweep' | 'bottom';
 export const GRADIENT_STYLES: Array<{ id: GradientStyleId; label: string }> = [
@@ -117,6 +123,7 @@ export interface BuilderState {
   // ── Free layout overlay ───────────────────────────────────────
   freeLayout: boolean;
   freeElems: FreeLayoutElem[];
+  freeElemsBack: FreeLayoutElem[];
   // ── Custom template controls ──────────────────────────────────
   customLayout: CustomLayoutId;
   customElemBiz: boolean;
@@ -471,6 +478,7 @@ export const DEFAULT_BUILDER: BuilderState = {
   customGradDark: undefined,
   freeLayout: false,
   freeElems: [],
+  freeElemsBack: [],
   customLayout: 'stack',
   customElemBiz: true,
   customElemCardName: true,
@@ -1215,7 +1223,7 @@ export const CARD_RENDERERS: Record<TemplateId, React.ComponentType<CardProps>> 
 // ── FreeLayoutOverlay — renders free-positioned elements on top of any template ──
 
 export function FreeLayoutOverlay({
-  s, pal, font, W = 380,
+  s, pal, font, W = 380, hidePoints,
   elemsOverride,
 }: CardProps & { elemsOverride?: FreeLayoutElem[] }) {
   const scale = W / 380;
@@ -1240,11 +1248,15 @@ export function FreeLayoutOverlay({
           return <div key={el.id} style={base}><QR size={el.fontSize * scale} color={el.color} /></div>;
         }
         if (el.id === 'points') {
+          if (hidePoints) return null;
           if (s.cardType === 'stamps') {
             // Mini stamp grid
             const filled = 5;
             const cellSz = Math.round(el.fontSize * scale * 0.38);
-            const IconComp = STAMP_ICONS_EXTENDED.find(x => x.id === s.stampIcon)?.icon ?? Check;
+            const IconComp = s.stampIcon !== 'custom'
+              ? (STAMP_ICONS_EXTENDED.find(x => x.id === s.stampIcon)?.icon ?? Check)
+              : Check;
+            const iconSz = Math.round(cellSz * 0.55);
             return (
               <div key={el.id} style={{ ...base, display: 'flex', flexDirection: 'column', gap: cellSz * 0.3 }}>
                 {[0, 1].map(row => (
@@ -1252,10 +1264,12 @@ export function FreeLayoutOverlay({
                     {Array.from({ length: 4 }, (_, col) => {
                       const idx = row * 4 + col;
                       const isFilled = idx < filled;
-                      const shapeStyle = stampShapeStyle(s.stampShape, isFilled, el.color, cellSz);
+                      const shapeStyle = stampShapeStyle(s.stampShape, isFilled, pal.primary, cellSz);
                       return (
                         <div key={col} style={shapeStyle}>
-                          <IconComp size={Math.round(cellSz * 0.55)} color={isFilled ? '#fff' : 'rgba(255,255,255,0.25)'} />
+                          {s.stampIcon === 'custom' && s.customStampUrl
+                            ? <img src={s.customStampUrl} style={{ width: iconSz, height: iconSz, objectFit: 'contain', opacity: isFilled ? 1 : 0.25 }} alt="" />
+                            : <IconComp size={iconSz} color={isFilled ? '#fff' : 'rgba(255,255,255,0.25)'} />}
                         </div>
                       );
                     })}
@@ -1374,6 +1388,7 @@ export function CardFromDesign({ design, primaryColor = '#E8341A', W = 380, H = 
     customGradDark: (design.customGradDark as string) ?? undefined,
     freeLayout: (design.freeLayout as boolean) ?? false,
     freeElems: Array.isArray(design.freeElems) ? (design.freeElems as FreeLayoutElem[]) : [],
+    freeElemsBack: Array.isArray(design.freeElemsBack) ? (design.freeElemsBack as FreeLayoutElem[]) : [],
     customLayout: (design.customLayout as CustomLayoutId) ?? 'stack',
     customElemBiz:      (design.customElemBiz      as boolean) ?? true,
     customElemCardName: (design.customElemCardName as boolean) ?? true,
