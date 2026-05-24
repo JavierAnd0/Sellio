@@ -11,6 +11,7 @@ import {
 } from '@sellio/db/repositories';
 
 import { CustomerTable } from '@/components/cards/customer-table';
+import { ImportCustomersModal } from '@/components/customers/import-customers-modal';
 
 export const metadata: Metadata = { title: 'Clientes de tarjeta' };
 
@@ -64,6 +65,7 @@ export default async function CardCustomersPage({ params }: CustomersPageProps) 
               {customers.length}{maxCustomers ? `/${maxCustomers}` : ''} clientes
             </p>
           </div>
+          <ImportCustomersModal cardId={id} />
         </div>
       </div>
 

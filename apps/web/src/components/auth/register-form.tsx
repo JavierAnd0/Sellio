@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { type FormEvent, useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
 
 import { Alert, Button, FormField, Input, Separator } from '@sellio/ui';
 import { createClient } from '@sellio/db/client';
@@ -23,6 +24,8 @@ const STRENGTH_COLORS = ['', '#FF4444', '#E8B96A', '#4FC3F7', '#52D699'];
 
 export function RegisterForm() {
   const t = useTranslations('auth.register');
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get('invite_token') || undefined;
 
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -73,10 +76,10 @@ export function RegisterForm() {
     <div className="animate-fade-slide-in">
       <div className="mb-8">
         <h1 className="mb-2 font-display text-3xl font-extrabold tracking-tight text-fg">
-          {t('title')}
+          {inviteToken ? 'Unirse al equipo' : t('title')}
         </h1>
         <p className="text-sm leading-relaxed text-muted">
-          {t('subtitle')}
+          {inviteToken ? 'Completa tus datos para activar tu cuenta de miembro de equipo.' : t('subtitle')}
         </p>
       </div>
 
@@ -87,6 +90,10 @@ export function RegisterForm() {
       )}
 
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
+        {inviteToken && (
+          <input type="hidden" name="inviteToken" value={inviteToken} />
+        )}
+
         <FormField label={t('fullName')} htmlFor="fullName" error={fieldErrors.fullName} required>
           <Input
             id="fullName"
@@ -98,16 +105,18 @@ export function RegisterForm() {
           />
         </FormField>
 
-        <FormField label={t('businessName')} htmlFor="businessName" error={fieldErrors.businessName} required>
-          <Input
-            id="businessName"
-            name="businessName"
-            type="text"
-            autoComplete="organization"
-            placeholder={t('businessNamePlaceholder')}
-            error={!!fieldErrors.businessName}
-          />
-        </FormField>
+        {!inviteToken && (
+          <FormField label={t('businessName')} htmlFor="businessName" error={fieldErrors.businessName} required>
+            <Input
+              id="businessName"
+              name="businessName"
+              type="text"
+              autoComplete="organization"
+              placeholder={t('businessNamePlaceholder')}
+              error={!!fieldErrors.businessName}
+            />
+          </FormField>
+        )}
 
         <FormField label={t('email')} htmlFor="email" error={fieldErrors.email} required>
           <Input

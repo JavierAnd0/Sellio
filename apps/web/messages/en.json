@@ -44,6 +44,7 @@
       "password": "Password",
       "privacy": "Privacy",
       "billing": "Billing",
+      "team": "Team",
       "deleteAccount": "Delete account"
     },
     "profile": {

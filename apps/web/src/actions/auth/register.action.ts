@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
 import { createClient } from '@sellio/db/server';
+import { createAdminClient } from '@sellio/db/admin';
 import { SupabaseOrganizationRepository } from '@sellio/db/repositories';
 import { deriveSlug } from '@sellio/domain';
 
@@ -15,7 +16,8 @@ const registerSchema = z.object({
     .regex(/[A-Z]/, 'Debe tener al menos una mayúscula')
     .regex(/[0-9]/, 'Debe tener al menos un número'),
   fullName: z.string().min(2, 'Ingresa tu nombre completo').max(100),
-  businessName: z.string().min(2, 'Ingresa el nombre de tu negocio').max(100),
+  businessName: z.string().max(100).optional(),
+  inviteToken: z.string().optional(),
 });
 
 export type RegisterResult =
@@ -35,7 +37,8 @@ export async function registerAction(formData: FormData): Promise<RegisterResult
     email: formData.get('email'),
     password: formData.get('password'),
     fullName: formData.get('fullName'),
-    businessName: formData.get('businessName'),
+    businessName: formData.get('businessName') || undefined,
+    inviteToken: formData.get('inviteToken') || undefined,
   });
 
   if (!parsed.success) {
@@ -43,7 +46,32 @@ export async function registerAction(formData: FormData): Promise<RegisterResult
     return { ok: false, error: first?.message ?? 'Datos inválidos', field: String(first?.path[0] ?? '') };
   }
 
-  const { email, password, fullName, businessName } = parsed.data;
+  const { email, password, fullName, businessName, inviteToken } = parsed.data;
+
+  if (!inviteToken && (!businessName || businessName.trim().length < 2)) {
+    return { ok: false, error: 'Ingresa el nombre de tu negocio', field: 'businessName' };
+  }
+
+  const adminDb = createAdminClient();
+  let invitation = null;
+
+  if (inviteToken) {
+    const { data: inv, error: invError } = await adminDb
+      .from('invitations')
+      .select('*')
+      .eq('token', inviteToken)
+      .single();
+
+    if (invError || !inv) {
+      return { ok: false, error: 'La invitación no es válida o ha expirado.' };
+    }
+
+    if (new Date(inv.expires_at) < new Date()) {
+      return { ok: false, error: 'La invitación ha expirado.' };
+    }
+    invitation = inv;
+  }
+
   const db = await createClient();
 
   const { data, error: authError } = await db.auth.signUp({
@@ -60,38 +88,59 @@ export async function registerAction(formData: FormData): Promise<RegisterResult
   }
 
   const newUser = data.user;
-  const orgRepo = new SupabaseOrganizationRepository();
-  const baseSlug = deriveSlug(businessName);
 
-  const tryCreateOrg = async (slug: string) =>
-    orgRepo.create({ ownerId: newUser.id, name: businessName, slug });
+  if (invitation) {
+    // Add to organization_members using admin client
+    const { error: memberError } = await adminDb
+      .from('organization_members')
+      .insert({
+        org_id: invitation.org_id,
+        user_id: newUser.id,
+        role: invitation.role,
+      });
 
-  try {
-    await tryCreateOrg(baseSlug);
-  } catch (firstError) {
-    if (getErrorCode(firstError) === 'slug_taken') {
-      const suffix = Math.random().toString(36).slice(2, 5);
-      try {
-        await tryCreateOrg(`${baseSlug.slice(0, 37)}-${suffix}`);
-      } catch (secondError) {
-        const secondCode = getErrorCode(secondError);
-        if (secondCode === 'org_insert_blocked') {
+    if (memberError) {
+      console.error('[registerAction] Error joining organization members:', memberError);
+      return { ok: false, error: 'No se pudo vincular tu usuario al negocio.' };
+    }
+
+    // Consume invitation
+    await adminDb.from('invitations').delete().eq('id', invitation.id);
+  } else {
+    // Create new organization
+    const orgRepo = new SupabaseOrganizationRepository();
+    const baseSlug = deriveSlug(businessName!);
+
+    const tryCreateOrg = async (slug: string) =>
+      orgRepo.create({ ownerId: newUser.id, name: businessName!, slug });
+
+    try {
+      await tryCreateOrg(baseSlug);
+    } catch (firstError) {
+      if (getErrorCode(firstError) === 'slug_taken') {
+        const suffix = Math.random().toString(36).slice(2, 5);
+        try {
+          await tryCreateOrg(`${baseSlug.slice(0, 37)}-${suffix}`);
+        } catch (secondError) {
+          const secondCode = getErrorCode(secondError);
+          if (secondCode === 'org_insert_blocked') {
+            return { ok: false, error: 'No hay permisos para crear organizaciones (RLS). Ejecuta migraciones y revisa políticas.' };
+          }
+          if (secondCode === 'org_members_bootstrap_blocked') {
+            return { ok: false, error: 'No se pudo vincular tu usuario al negocio. Aplica la migración de bootstrap de organization_members.' };
+          }
+          return { ok: false, error: 'No se pudo crear tu organización. Intenta de nuevo.' };
+        }
+      } else {
+        const firstCode = getErrorCode(firstError);
+        if (firstCode === 'org_insert_blocked') {
           return { ok: false, error: 'No hay permisos para crear organizaciones (RLS). Ejecuta migraciones y revisa políticas.' };
         }
-        if (secondCode === 'org_members_bootstrap_blocked') {
+        if (firstCode === 'org_members_bootstrap_blocked') {
           return { ok: false, error: 'No se pudo vincular tu usuario al negocio. Aplica la migración de bootstrap de organization_members.' };
         }
         return { ok: false, error: 'No se pudo crear tu organización. Intenta de nuevo.' };
       }
-    } else {
-      const firstCode = getErrorCode(firstError);
-      if (firstCode === 'org_insert_blocked') {
-        return { ok: false, error: 'No hay permisos para crear organizaciones (RLS). Ejecuta migraciones y revisa políticas.' };
-      }
-      if (firstCode === 'org_members_bootstrap_blocked') {
-        return { ok: false, error: 'No se pudo vincular tu usuario al negocio. Aplica la migración de bootstrap de organization_members.' };
-      }
-      return { ok: false, error: 'No se pudo crear tu organización. Intenta de nuevo.' };
     }
   }
 

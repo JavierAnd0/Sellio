@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { User, Lock, Shield, CreditCard, Trash2 } from 'lucide-react';
+import { User, Lock, Shield, CreditCard, Trash2, Users } from 'lucide-react';
 import { cn } from '@sellio/ui';
 
 export function SettingsNav() {
@@ -15,6 +15,7 @@ export function SettingsNav() {
     { label: t('password'), href: '/app/settings/security', icon: Lock     },
     { label: t('privacy'),  href: '/app/settings/privacy',  icon: Shield   },
     { label: t('billing'),  href: '/app/settings/billing',  icon: CreditCard },
+    { label: t('team'),     href: '/app/settings/team',     icon: Users    },
   ];
 
   return (

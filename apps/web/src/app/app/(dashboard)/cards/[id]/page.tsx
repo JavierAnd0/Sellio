@@ -81,6 +81,7 @@ export default async function CardDetailPage({ params }: CardDetailPageProps) {
         card={card}
         primaryColor={primaryColor}
         memberCount={memberCount}
+        orgSlug={org.slug}
       />
     </div>
   );

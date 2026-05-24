@@ -70,6 +70,18 @@ export async function createCardAction(formData: FormData): Promise<CreateCardRe
     return { ok: false, error: 'Tu prueba gratuita ha expirado. Actualiza tu plan para crear tarjetas.' };
   }
 
+  // Enforce card limits based on organization plan
+  if (org.plan === 'free' || org.plan === 'basic') {
+    const cards = await new SupabaseCardRepository().findByOrg(org.id);
+    const limit = org.plan === 'free' ? 1 : 3;
+    if (cards.length >= limit) {
+      return {
+        ok: false,
+        error: `Has alcanzado el límite de ${limit} ${limit === 1 ? 'tarjeta' : 'tarjetas'} en el plan ${org.plan === 'free' ? 'Gratuito' : 'Basic'}. Por favor, actualiza tu plan en Facturación.`,
+      };
+    }
+  }
+
   const { name, description, pointsPerCheckin, pointsForReward, rewardDescription, maxMembers, design } =
     parsed.data;
 
