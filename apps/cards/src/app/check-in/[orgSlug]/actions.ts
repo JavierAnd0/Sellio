@@ -17,6 +17,11 @@ export type CheckInResult =
 export async function checkInAction(orgSlug: string, formData: FormData): Promise<CheckInResult> {
   const rawPhone = (formData.get('phone') as string | null)?.trim() ?? '';
   const phone = rawPhone.replace(/\s/g, '');
+  const name = (formData.get('name') as string | null)?.trim() ?? '';
+
+  if (!name) {
+    return { ok: false, error: 'Ingresa tu nombre completo.' };
+  }
 
   if (!phone || !/^\+?[0-9()\-. ]{7,20}$/.test(rawPhone)) {
     return { ok: false, error: 'Ingresa un número de teléfono válido.' };
@@ -45,11 +50,11 @@ export async function checkInAction(orgSlug: string, formData: FormData): Promis
 
   const { data: customer, error: customerError } = await db
     .from('customers')
-    .upsert({ org_id: org.id, phone }, { onConflict: 'org_id,phone' })
+    .upsert({ org_id: org.id, phone, name }, { onConflict: 'org_id,phone' })
     .select('id, name')
     .single();
 
-  if (customerError || !customer) return { ok: false, error: 'Error al registrar tu número.' };
+  if (customerError || !customer) return { ok: false, error: 'Error al registrar tu información.' };
 
   const { data: membership, error: membershipError } = await db
     .from('memberships')

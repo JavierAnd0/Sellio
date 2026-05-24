@@ -27,6 +27,8 @@ export function CheckInForm({
 }: CheckInFormProps) {
   const [isPending, startTransition] = useTransition();
   const [phone, setPhone] = useState('');
+  const [name, setName] = useState('');
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [result, setResult] = useState<CheckInResult | null>(null);
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -148,6 +150,22 @@ export function CheckInForm({
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <div>
                 <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.1em] text-muted">
+                  Tu nombre completo
+                </label>
+                <input
+                  name="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Ej. Juan Pérez"
+                  required
+                  className="w-full rounded-xl border border-border/50 bg-surface-2/60 px-4 py-3 text-[15px] text-fg placeholder:text-muted/50 outline-none transition-all focus:border-[var(--accent)]/60 focus:ring-2 focus:ring-[var(--accent)]/10"
+                  style={{ '--accent': primaryColor } as React.CSSProperties}
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.1em] text-muted">
                   Tu número de teléfono
                 </label>
                 <input
@@ -162,6 +180,28 @@ export function CheckInForm({
                 />
               </div>
 
+              <div className="flex items-start gap-2.5 mt-2">
+                <input
+                  id="privacy-consent"
+                  name="consent"
+                  type="checkbox"
+                  required
+                  className="mt-1 h-4 w-4 rounded border-border/40 text-[var(--accent)] focus:ring-[var(--accent)]/20"
+                  style={{ '--accent': primaryColor } as React.CSSProperties}
+                />
+                <label htmlFor="privacy-consent" className="text-[11px] leading-relaxed text-muted">
+                  Acepto el tratamiento de mis datos personales de acuerdo con la{' '}
+                  <button
+                    type="button"
+                    onClick={() => setShowPrivacyModal(true)}
+                    className="underline hover:text-fg font-semibold transition-colors"
+                  >
+                    Política de Tratamiento de Datos (Ley 1581 de 2012 - Habeas Data)
+                  </button>
+                  .
+                </label>
+              </div>
+
               {result && !result.ok && (
                 <div className="flex items-start gap-3 rounded-xl border border-border/30 bg-surface-2/60 p-3">
                   <Clock size={15} className="mt-0.5 shrink-0 text-muted" />
@@ -171,7 +211,7 @@ export function CheckInForm({
 
               <button
                 type="submit"
-                disabled={isPending || !phone.trim()}
+                disabled={isPending || !phone.trim() || !name.trim()}
                 className="flex items-center justify-center gap-2 rounded-[14px] py-4 text-[15px] font-bold text-white transition-all disabled:cursor-not-allowed disabled:opacity-50"
                 style={{ background: isPending ? '#6B6560' : primaryColor }}
               >
@@ -186,6 +226,38 @@ export function CheckInForm({
           Powered by <span className="font-bold text-fg">Sellio</span>
         </p>
       </div>
+
+      {showPrivacyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-md rounded-[28px] border border-border/40 bg-surface p-6 shadow-xl max-h-[80vh] flex flex-col">
+            <h3 className="font-display text-lg font-black uppercase tracking-wider text-fg mb-4">
+              Autorización de Datos Personales
+            </h3>
+            <div className="flex-1 overflow-y-auto text-xs text-muted leading-relaxed space-y-3 pr-2 mb-6">
+              <p>
+                De conformidad con la Ley 1581 de 2012 de Habeas Data de Colombia (y estándares internacionales de protección de datos como el RGPD), al registrarte en este programa de lealtad, autorizas de manera previa, expresa e informada a <strong>{orgName}</strong> y a la plataforma <strong>Sellio</strong> para recolectar, almacenar, usar y procesar tus datos personales (nombre y teléfono).
+              </p>
+              <p><strong>Finalidades del Tratamiento:</strong></p>
+              <ul className="list-disc pl-4 space-y-1.5">
+                <li>Gestionar tu participación en el programa de acumulación de puntos y beneficios del comercio.</li>
+                <li>Actualizar tu saldo de puntos y notificarte por canales autorizados sobre recompensas disponibles.</li>
+                <li>Fines estadísticos e históricos de visitas.</li>
+              </ul>
+              <p>
+                Como titular de los datos, tienes derecho a conocer, actualizar, rectificar y solicitar la supresión de tu información en cualquier momento a través de los canales de atención del comercio o de Sellio.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowPrivacyModal(false)}
+              className="w-full rounded-xl py-3 text-sm font-bold text-white transition-colors"
+              style={{ background: primaryColor }}
+            >
+              Entendido y Cerrar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

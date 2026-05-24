@@ -12,6 +12,7 @@ import {
 import { Button } from '@sellio/ui';
 
 import { CardFromDesign } from '@/components/cards/card-renderer';
+import { HelpTourButton } from '@/components/dashboard/help-tour-button';
 
 export const metadata: Metadata = { title: 'Dashboard' };
 
@@ -51,15 +52,18 @@ export default async function DashboardPage() {
   return (
     <div className="flex flex-col gap-6 sm:gap-8 pb-12 w-full max-w-6xl mx-auto">
       {/* Page header */}
-      <div>
-        <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.15em] text-muted mb-1.5">Bienvenido a Selio</p>
-        <h1 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-fg flex items-center gap-2">
-          Hola, <span className="text-[#E8341A]">{org.name}</span> <Hand size={30} className="inline-block origin-bottom-right hover:animate-floatB cursor-default transition-transform transform hover:scale-110" />
-        </h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.15em] text-muted mb-1.5">Bienvenido a Sellio</p>
+          <h1 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-fg flex items-center gap-2">
+            Hola, <span className="text-[#E8341A]">{org.name}</span> <Hand size={30} className="inline-block origin-bottom-right hover:animate-floatB cursor-default transition-transform transform hover:scale-110" />
+          </h1>
+        </div>
+        <HelpTourButton />
       </div>
 
       {/* Banner */}
-      <div className="relative overflow-hidden rounded-[24px] sm:rounded-[32px] bg-gradient-to-br from-[#FEF5F4] to-[#FDF0EE] dark:from-coral/10 dark:to-coral/5 border border-coral/10 p-6 sm:p-10 flex flex-col sm:flex-row items-center justify-between gap-8 shadow-sm">
+      <div id="tour-card-banner" className="relative overflow-hidden rounded-[24px] sm:rounded-[32px] bg-gradient-to-br from-[#FEF5F4] to-[#FDF0EE] dark:from-coral/10 dark:to-coral/5 border border-coral/10 p-6 sm:p-10 flex flex-col sm:flex-row items-center justify-between gap-8 shadow-sm">
         <div className="relative z-10 max-w-xl">
           {hasCards ? (
             <>
@@ -159,7 +163,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div id="tour-stats" className="grid gap-4 sm:grid-cols-3">
          {/* Stat 1 */}
          <div className="rounded-[20px] border border-border/60 bg-surface p-7 sm:p-8 relative hover:border-border transition-colors group">
            <div className="absolute top-7 right-7 w-3.5 h-3.5 rounded-full border-[2.5px] border-border/50 group-hover:border-coral/50 transition-colors"></div>
@@ -186,7 +190,7 @@ export default async function DashboardPage() {
       {/* Bottom Sections */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* Primeros pasos */}
-        <div className="rounded-[24px] border border-border/60 bg-surface p-8 sm:p-10 shadow-sm hover:shadow-md transition-shadow">
+        <div id="tour-checklist" className="rounded-[24px] border border-border/60 bg-surface p-8 sm:p-10 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex justify-between items-end mb-6">
             <h3 className="font-display text-2xl sm:text-[28px] font-extrabold tracking-tight text-fg leading-none">Primeros pasos</h3>
             <span className="text-sm font-black text-[#E8341A] tracking-widest">{hasCards ? '1/4' : '0/4'}</span>
@@ -223,7 +227,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* Actividad reciente */}
-        <div className="rounded-[24px] border border-border/60 bg-surface p-8 sm:p-10 flex flex-col shadow-sm hover:shadow-md transition-shadow">
+        <div id="tour-activity" className="rounded-[24px] border border-border/60 bg-surface p-8 sm:p-10 flex flex-col shadow-sm hover:shadow-md transition-shadow">
           <h3 className="font-display text-2xl sm:text-[28px] font-extrabold tracking-tight text-fg mb-10 leading-none">Actividad reciente</h3>
           <div className="flex-1 flex flex-col items-center justify-center text-center pb-2">
             <div className="mb-6 drop-shadow-xl animate-floatB flex items-center justify-center">

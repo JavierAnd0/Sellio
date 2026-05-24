@@ -9,6 +9,12 @@ import { Logo, cn } from '@sellio/ui';
 import { useUiStore } from '@/lib/stores/ui.store';
 
 import type { OrgPlan } from '@sellio/db';
+import dynamic from 'next/dynamic';
+
+const DashboardTour = dynamic(
+  () => import('./dashboard-tour').then((mod) => mod.DashboardTour),
+  { ssr: false }
+);
 
 const PLAN_CONFIG: Record<OrgPlan, { label: string; maxCards: number | null; maxCustomers: number | null }> = {
   free:       { label: 'Prueba gratuita', maxCards: 5,    maxCustomers: 500  },
@@ -99,6 +105,7 @@ function SidebarItem({ href, icon: Icon, children, badge, activeIcon: ActiveIcon
 }
 
 export function Sidebar({ plan = 'free', trialDaysLeft, totalCards = 0, totalCustomers = 0, firstCardId, orgName, userEmail }: SidebarProps) {
+  const pathname = usePathname();
   const { sidebarOpen, setSidebarOpen } = useUiStore();
   const tNav = useTranslations('nav');
   const tSidebar = useTranslations('sidebar');
@@ -126,6 +133,7 @@ export function Sidebar({ plan = 'free', trialDaysLeft, totalCards = 0, totalCus
 
       {/* Sidebar */}
       <aside
+        id="tour-sidebar"
         className={cn(
           'fixed inset-y-0 left-0 z-50 flex h-screen w-[260px] flex-col border-r border-border/20 bg-surface transition-transform duration-300',
           'md:sticky md:top-0 md:inset-auto md:z-auto md:shrink-0 md:translate-x-0',
@@ -277,6 +285,7 @@ export function Sidebar({ plan = 'free', trialDaysLeft, totalCards = 0, totalCus
           </div>
         </div>
       </aside>
+      {pathname === '/app/dashboard' && <DashboardTour orgName={orgName ?? ''} />}
     </>
   );
 }
