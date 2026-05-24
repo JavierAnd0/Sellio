@@ -548,12 +548,106 @@ export interface Database {
           },
         ];
       };
+      campaigns: {
+        Row: {
+          id: string;
+          org_id: string;
+          card_id: string | null;
+          title: string;
+          message: string;
+          status: string;
+          sent_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          card_id?: string | null;
+          title: string;
+          message: string;
+          status?: string;
+          sent_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          org_id?: string;
+          card_id?: string | null;
+          title?: string;
+          message?: string;
+          status?: string;
+          sent_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'campaigns_org_id_fkey';
+            columns: ['org_id'];
+            isOneToOne: false;
+            referencedRelation: 'organizations';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'campaigns_card_id_fkey';
+            columns: ['card_id'];
+            isOneToOne: false;
+            referencedRelation: 'cards';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      referrals: {
+        Row: {
+          id: string;
+          membership_id: string;
+          referred_phone: string;
+          status: string;
+          points_rewarded: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          membership_id: string;
+          referred_phone: string;
+          status?: string;
+          points_rewarded?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          membership_id?: string;
+          referred_phone?: string;
+          status?: string;
+          points_rewarded?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'referrals_membership_id_fkey';
+            columns: ['membership_id'];
+            isOneToOne: false;
+            referencedRelation: 'memberships';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      get_cohort_retention: {
+        Args: {
+          p_org_id: string;
+        };
+        Returns: {
+          cohort_month: string;
+          new_users: number;
+          m1_retention: number;
+          m2_retention: number;
+          m3_retention: number;
+        }[];
+      };
     };
     Enums: {
       org_role: OrgRole;

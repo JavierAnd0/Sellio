@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { ThemeInitializer } from '@/components/theme-initializer';
 import {
   Syne, Space_Grotesk, Outfit, Nunito,
   Playfair_Display, DM_Sans, Cormorant_Garamond, Lato,
@@ -71,15 +72,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang={locale} suppressHydrationWarning>
-      {/* Inline script runs before paint — prevents theme flash */}
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('sellio-theme');if(t==='dark'||t==='light'){document.documentElement.classList.add(t)}}catch(e){}})()`,
-          }}
-        />
-      </head>
+      <head />
       <body className={fontVars}>
+        <ThemeInitializer />
         <NextIntlClientProvider locale={locale} messages={messages}>
           {children}
         </NextIntlClientProvider>
