@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { type FormEvent, useState, useTransition } from 'react';
+import { type FormEvent, useState, useTransition, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { Alert, Button, FormField, Input, Separator } from '@sellio/ui';
+import { createClient } from '@sellio/db/client';
 
 import { loginAction } from '@/actions/auth/login.action';
 
@@ -13,11 +14,19 @@ export function LoginForm() {
   const t = useTranslations('auth.login');
   const searchParams = useSearchParams();
   const resetSuccess = searchParams.get('reset') === 'success';
+  const oauthFailed = searchParams.get('error') === 'oauth_failed';
 
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [showPass, setShowPass] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [isPendingGoogle, setIsPendingGoogle] = useState(false);
+
+  useEffect(() => {
+    if (oauthFailed) {
+      setError('No se pudo iniciar sesión con Google. Intenta de nuevo o ingresa con tu correo.');
+    }
+  }, [oauthFailed]);
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -31,6 +40,27 @@ export function LoginForm() {
         else setError(result.error);
       }
     });
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsPendingGoogle(true);
+    setError(null);
+    try {
+      const supabase = createClient();
+      const { error: oauthErr } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (oauthErr) {
+        setError(oauthErr.message);
+        setIsPendingGoogle(false);
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Error al iniciar sesión con Google');
+      setIsPendingGoogle(false);
+    }
   };
 
   return (
@@ -105,14 +135,16 @@ export function LoginForm() {
 
       <button
         type="button"
-        disabled
-        className="flex w-full cursor-not-allowed items-center justify-center gap-2.5 rounded-lg border border-border/20 bg-surface-2 px-4 py-3 text-sm font-semibold text-muted opacity-60"
+        onClick={handleGoogleSignIn}
+        disabled={isPending || isPendingGoogle}
+        className="flex w-full items-center justify-center gap-2.5 rounded-lg border border-border bg-surface-2 px-4 py-3 text-sm font-semibold text-fg hover:bg-surface hover:border-muted active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none"
       >
-        <GoogleIcon />
+        {isPendingGoogle ? (
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-muted/30 border-t-muted" />
+        ) : (
+          <GoogleIcon />
+        )}
         {t('continueWithGoogle')}
-        <span className="ml-auto rounded-md bg-surface px-2 py-0.5 text-[10px] text-muted">
-          {t('comingSoon')}
-        </span>
       </button>
 
       <p className="mt-6 text-center text-sm text-muted">

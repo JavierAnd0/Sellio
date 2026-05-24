@@ -19,6 +19,7 @@
     "migrate": "supabase db push",
     "reset": "supabase db reset",
     "seed": "tsx scripts/seed.ts",
+    "verify-rls": "tsx scripts/verify-rls.ts",
     "types": "supabase gen types typescript --local > src/types.generated.ts"
   },
   "dependencies": {

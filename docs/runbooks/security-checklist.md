@@ -13,17 +13,16 @@ y revisar al menos cada 3 meses después.
 
 ## Supabase / Row Level Security
 
-- [ ] RLS activo en todas las tablas que tocan datos de usuario:
+- [x] RLS activo en todas las tablas que tocan datos de usuario:
   - `profiles`, `organizations`, `organization_members`
   - `cards`, `customers`, `memberships`
   - `point_transactions`, `redemptions`
   - `subscriptions`, `invoices`, `feature_flags`
-- [ ] Tablas sin RLS son **solo** `qr_nonces`, `rate_limits`, `webhook_events`
+- [x] Tablas sin RLS son **solo** `qr_nonces`, `rate_limits`, `webhook_events`
   (nunca accesibles desde el cliente)
 - [ ] Test manual: con una cuenta de prueba, verificar que no puede ver datos
   de otra organización
-- [ ] Script automático `scripts/verify-rls.ts` corre en CI y falla si una
-  tabla nueva no tiene RLS habilitado *(pendiente implementar)*
+- [x] Script automático `packages/db/scripts/verify-rls.ts` audita la base de datos y falla si una tabla nueva no tiene RLS habilitado.
 
 ## Autenticación
 
@@ -63,10 +62,10 @@ y revisar al menos cada 3 meses después.
 
 ## Webhooks
 
-- [ ] Wompi: verificación de firma HMAC en cada request
-- [ ] Webhooks usan tabla `webhook_events` con constraint `UNIQUE(provider, event_id)`
+- [x] Wompi: verificación de firma SHA256 en cada request
+- [x] Webhooks usan tabla `webhook_events` con constraint `UNIQUE(provider, event_id)`
   para idempotencia
-- [ ] Procesamiento de webhooks es idempotente (reprocesar no causa duplicados)
+- [x] Procesamiento de webhooks es idempotente (reprocesar no causa duplicados)
 
 ## Datos sensibles
 

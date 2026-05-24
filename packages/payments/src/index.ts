@@ -13,15 +13,17 @@ export function getPaymentProvider(country: 'CO' | 'US'): PaymentProvider {
     const publicKey = process.env.WOMPI_PUBLIC_KEY;
     const privateKey = process.env.WOMPI_PRIVATE_KEY;
     const eventsSecret = process.env.WOMPI_EVENTS_SECRET;
+    const integritySecret = process.env.WOMPI_INTEGRITY_SECRET ?? '';
 
     if (!publicKey || !privateKey || !eventsSecret) {
-      throw new Error('Missing Wompi environment variables');
+      throw new Error('Missing Wompi environment variables (WOMPI_PUBLIC_KEY, WOMPI_PRIVATE_KEY, WOMPI_EVENTS_SECRET)');
     }
 
     return new WompiProvider({
       publicKey,
       privateKey,
       eventsSecret,
+      integritySecret,
       sandbox: publicKey.startsWith('pub_test_'),
     });
   }

@@ -52,6 +52,51 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/app', request.url));
   }
 
+  // Si está autenticado y accede al panel (/app/*), validar su estado de suscripción y trial
+  if (user && pathname.startsWith('/app')) {
+    const isBillingPath = pathname === '/app/settings/billing';
+    const isApiPath = pathname.startsWith('/api');
+
+    if (!isBillingPath && !isApiPath) {
+      // 1. Obtener la organización vinculada al usuario
+      const { data: orgMember } = await supabase
+        .from('organization_members')
+        .select('org_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (orgMember) {
+        // 2. Obtener plan y fecha de fin de trial de la organización
+        const { data: org } = await supabase
+          .from('organizations')
+          .select('plan, trial_ends_at')
+          .eq('id', orgMember.org_id)
+          .maybeSingle();
+
+        if (org) {
+          const isTrialExpired = org.trial_ends_at && new Date(org.trial_ends_at) < new Date();
+
+          // Si el trial ya expiró y sigue en plan gratuito ('free')
+          if (isTrialExpired && org.plan === 'free') {
+            // 3. Validar si tiene una suscripción pagada activa
+            const { data: sub } = await supabase
+              .from('subscriptions')
+              .select('status')
+              .eq('org_id', orgMember.org_id)
+              .maybeSingle();
+
+            if (!sub || sub.status !== 'active') {
+              // Redirigir a facturación con parámetro de expiración
+              const billingUrl = new URL('/app/settings/billing', request.url);
+              billingUrl.searchParams.set('expired', 'true');
+              return NextResponse.redirect(billingUrl);
+            }
+          }
+        }
+      }
+    }
+  }
+
   return supabaseResponse;
 }
 

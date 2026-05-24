@@ -417,6 +417,99 @@ export interface Database {
         };
         Relationships: [];
       };
+      invoices: {
+        Row: {
+          id: string;
+          org_id: string;
+          subscription_id: string | null;
+          amount_cents: number;
+          currency: string;
+          status: string;
+          provider: PaymentProvider;
+          provider_invoice_id: string | null;
+          paid_at: string | null;
+          period_start: string | null;
+          period_end: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          subscription_id?: string | null;
+          amount_cents: number;
+          currency?: string;
+          status: string;
+          provider: PaymentProvider;
+          provider_invoice_id?: string | null;
+          paid_at?: string | null;
+          period_start?: string | null;
+          period_end?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          org_id?: string;
+          subscription_id?: string | null;
+          amount_cents?: number;
+          currency?: string;
+          status?: string;
+          provider?: PaymentProvider;
+          provider_invoice_id?: string | null;
+          paid_at?: string | null;
+          period_start?: string | null;
+          period_end?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'invoices_org_id_fkey';
+            columns: ['org_id'];
+            isOneToOne: false;
+            referencedRelation: 'organizations';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'invoices_subscription_id_fkey';
+            columns: ['subscription_id'];
+            isOneToOne: false;
+            referencedRelation: 'subscriptions';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+      webhook_events: {
+        Row: {
+          id: string;
+          provider: PaymentProvider;
+          event_id: string;
+          event_type: string;
+          payload: Json;
+          processed_at: string | null;
+          error: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          provider: PaymentProvider;
+          event_id: string;
+          event_type: string;
+          payload: Json;
+          processed_at?: string | null;
+          error?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          provider?: PaymentProvider;
+          event_id?: string;
+          event_type?: string;
+          payload?: Json;
+          processed_at?: string | null;
+          error?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
