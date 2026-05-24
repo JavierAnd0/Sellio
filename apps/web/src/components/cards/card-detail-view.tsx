@@ -44,13 +44,11 @@ export function CardDetailView({ card, primaryColor, memberCount, orgSlug }: Car
         <div className="space-y-8">
           <div className="rounded-[28px] border border-border/40 bg-[#EAE7DF]/40 p-6 shadow-sm dark:bg-surface-2">
             {/* Card preview */}
-            <div className="relative mb-8 flex h-[260px] w-full items-center justify-center overflow-hidden rounded-[20px]">
+            <div className="relative mb-8 flex h-[200px] sm:h-[260px] w-full items-center justify-center overflow-hidden rounded-[20px]">
               <div
+                className="transform scale-[0.78] sm:scale-100 md:scale-[1.05] transition-transform origin-center flex shrink-0"
                 style={{
-                  transform: 'scale(1.05)',
-                  transformOrigin: 'center center',
                   filter: 'drop-shadow(0 24px 32px rgba(0,0,0,0.15))',
-                  maxWidth: '100%',
                   width: 380,
                 }}
               >

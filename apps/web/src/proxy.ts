@@ -35,8 +35,9 @@ export async function proxy(request: NextRequest) {
   });
 
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user;
 
   const pathname = request.nextUrl.pathname;
 
@@ -58,39 +59,34 @@ export async function proxy(request: NextRequest) {
     const isApiPath = pathname.startsWith('/api');
 
     if (!isBillingPath && !isApiPath) {
-      // 1. Obtener la organización vinculada al usuario
+      // Obtener la organización, plan, trial y suscripciones vinculadas en un solo query
       const { data: orgMember } = await supabase
         .from('organization_members')
-        .select('org_id')
+        .select(`
+          org_id,
+          organizations (
+            plan,
+            trial_ends_at,
+            subscriptions (
+              status
+            )
+          )
+        `)
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (orgMember) {
-        // 2. Obtener plan y fecha de fin de trial de la organización
-        const { data: org } = await supabase
-          .from('organizations')
-          .select('plan, trial_ends_at')
-          .eq('id', orgMember.org_id)
-          .maybeSingle();
+      const org = orgMember?.organizations as any;
+      if (org) {
+        const isTrialExpired = org.trial_ends_at && new Date(org.trial_ends_at) < new Date();
 
-        if (org) {
-          const isTrialExpired = org.trial_ends_at && new Date(org.trial_ends_at) < new Date();
-
-          // Si el trial ya expiró y sigue en plan gratuito ('free')
-          if (isTrialExpired && org.plan === 'free') {
-            // 3. Validar si tiene una suscripción pagada activa
-            const { data: sub } = await supabase
-              .from('subscriptions')
-              .select('status')
-              .eq('org_id', orgMember.org_id)
-              .maybeSingle();
-
-            if (!sub || sub.status !== 'active') {
-              // Redirigir a facturación con parámetro de expiración
-              const billingUrl = new URL('/app/settings/billing', request.url);
-              billingUrl.searchParams.set('expired', 'true');
-              return NextResponse.redirect(billingUrl);
-            }
+        // Si el trial ya expiró y sigue en plan gratuito ('free')
+        if (isTrialExpired && org.plan === 'free') {
+          const sub = Array.isArray(org.subscriptions) ? org.subscriptions[0] : org.subscriptions;
+          if (!sub || sub.status !== 'active') {
+            // Redirigir a facturación con parámetro de expiración
+            const billingUrl = new URL('/app/settings/billing', request.url);
+            billingUrl.searchParams.set('expired', 'true');
+            return NextResponse.redirect(billingUrl);
           }
         }
       }
@@ -102,10 +98,9 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Correr en todas las rutas excepto:
-     * - _next/static, _next/image, favicon, imágenes
-     */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/app/:path*',
+    '/onboarding/:path*',
+    '/login',
+    '/register',
   ],
 };

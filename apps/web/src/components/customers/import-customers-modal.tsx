@@ -330,7 +330,7 @@ export function ImportCustomersModal({ cardId }: ImportCustomersModalProps) {
                     <p className="text-xs font-bold uppercase tracking-wider text-muted mb-2">
                       Vista previa (primeros 5 clientes):
                     </p>
-                    <div className="border border-border/20 rounded-xl overflow-hidden bg-surface-2/30">
+                    <div className="border border-border/20 rounded-xl overflow-x-auto bg-surface-2/30">
                       <table className="w-full text-xs text-left">
                         <thead>
                           <tr className="bg-surface-2/80 border-b border-border/10 text-muted font-bold">
