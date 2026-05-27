@@ -465,7 +465,7 @@ export function CardForm({ card, primaryColor = '#E8341A', autoSave = false, exi
   useEffect(() => {
     const sig = `${s.template}|${s.palette}|${s.customPrimary ?? ''}|${s.customGradient?.id ?? ''}|${s.font}`;
     prevDesignSig.current = sig;
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps — init only
+  }, []);
 
   useEffect(() => {
     const sig = `${s.template}|${s.palette}|${s.customPrimary ?? ''}|${s.customGradient?.id ?? ''}|${s.font}`;

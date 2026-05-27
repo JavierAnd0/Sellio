@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+
 import { orgRowToEntity } from './organization.repository';
 
 const baseRow = {
@@ -11,6 +12,7 @@ const baseRow = {
   timezone: 'America/Bogota',
   plan: 'free' as const,
   trial_ends_at: null,
+  onboarding_completed_at: null,
   created_at: '2024-01-15T10:00:00Z',
   updated_at: '2024-01-15T10:00:00Z',
 };

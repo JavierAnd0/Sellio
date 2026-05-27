@@ -149,10 +149,11 @@ export function CheckInForm({
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <div>
-                <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.1em] text-muted">
+                <label htmlFor="check-in-name" className="mb-2 block text-[11px] font-bold uppercase tracking-[0.1em] text-muted">
                   Tu nombre completo
                 </label>
                 <input
+                  id="check-in-name"
                   name="name"
                   type="text"
                   value={name}
@@ -165,10 +166,11 @@ export function CheckInForm({
               </div>
 
               <div>
-                <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.1em] text-muted">
+                <label htmlFor="check-in-phone" className="mb-2 block text-[11px] font-bold uppercase tracking-[0.1em] text-muted">
                   Tu número de teléfono
                 </label>
                 <input
+                  id="check-in-phone"
                   name="phone"
                   type="tel"
                   value={phone}

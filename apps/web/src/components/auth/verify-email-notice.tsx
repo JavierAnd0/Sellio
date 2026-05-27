@@ -64,7 +64,7 @@ export function VerifyEmailNotice({ email }: VerifyEmailNoticeProps) {
           </Button>
         )}
         <p className="text-center text-xs text-muted">
-          ¿El correo llegó a spam? Márcalo como "No es spam" para futuros emails.
+          ¿El correo llegó a spam? Márcalo como &quot;No es spam&quot; para futuros emails.
         </p>
       </div>
     </div>

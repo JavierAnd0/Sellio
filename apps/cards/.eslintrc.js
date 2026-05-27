@@ -1,4 +1,4 @@
 module.exports = {
+  ...require('@sellio/config/eslint/nextjs'),
   root: true,
-  extends: ['@sellio/config/eslint/nextjs'],
 };

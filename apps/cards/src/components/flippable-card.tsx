@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { CardPreview } from '@sellio/ui';
+import { useEffect, useState } from 'react';
 
 interface FlippableCardProps {
   businessName: string;
@@ -102,10 +102,13 @@ export function FlippableCard({
   }, []);
 
   return (
-    <div
+    <button
+      type="button"
+      className="block w-full border-0 bg-transparent p-0 text-left"
       style={{ perspective: '1200px', cursor: 'pointer', userSelect: 'none' }}
       onClick={() => setIsFlipped((f) => !f)}
       title={isFlipped ? 'Toca para ver el diseño' : 'Toca para ver tus sellos'}
+      aria-label={isFlipped ? 'Ver el frente de la tarjeta' : 'Ver los sellos de la tarjeta'}
     >
       {/* Flip instruction hint */}
       <p className="mb-2 text-center text-[11px] text-muted opacity-70">
@@ -161,6 +164,6 @@ export function FlippableCard({
           />
         </div>
       </div>
-    </div>
+    </button>
   );
 }
