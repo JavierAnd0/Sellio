@@ -10,6 +10,7 @@ import {
   SupabaseOrganizationRepository,
 } from '@sellio/db/repositories';
 import type { Membership } from '@sellio/domain';
+import { updateGoogleWalletPass } from '@/lib/wallet-updates';
 
 const PHONE_RE = /^\+?[0-9\s\-().]{7,20}$/;
 
@@ -47,7 +48,7 @@ export async function addPointsAction(
   // Verify the membership belongs to a card in the caller's org
   const { data: membershipRow } = await db
     .from('memberships')
-    .select('card_id')
+    .select('card_id, slug')
     .eq('id', membershipId)
     .single();
 
@@ -63,6 +64,11 @@ export async function addPointsAction(
       'manual',
       user.id,
     );
+
+    if (membershipRow.slug) {
+      updateGoogleWalletPass(membershipRow.slug, newPoints, card.pointsForReward).catch(() => {});
+    }
+
     return { ok: true, newPoints };
   } catch {
     return { ok: false, error: 'Error al sumar los puntos.' };

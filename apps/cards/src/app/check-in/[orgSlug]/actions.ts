@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@sellio/db/admin';
+import { updateGoogleWalletPass } from '@/lib/wallet-updates';
 
 export type CheckInResult =
   | {
@@ -102,6 +103,9 @@ export async function checkInAction(orgSlug: string, formData: FormData): Promis
     .from('memberships')
     .update({ points: newPoints, last_activity_at: new Date().toISOString() })
     .eq('id', membership.id);
+
+  // Fire-and-forget wallet update (no bloquea la respuesta al usuario)
+  updateGoogleWalletPass(membership.slug, newPoints, card.points_for_reward).catch(() => {});
 
   return {
     ok: true,

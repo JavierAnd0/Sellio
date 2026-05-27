@@ -13,6 +13,7 @@ import { Button } from '@sellio/ui';
 
 import { CardFromDesign } from '@/components/cards/card-renderer';
 import { HelpTourButton } from '@/components/dashboard/help-tour-button';
+import { NpsSurvey } from '@/components/dashboard/nps-survey';
 
 export const metadata: Metadata = { title: 'Dashboard' };
 
@@ -243,6 +244,8 @@ export default async function DashboardPage() {
           </div>
         </div>
       </div>
+
+      <NpsSurvey />
     </div>
   );
 }

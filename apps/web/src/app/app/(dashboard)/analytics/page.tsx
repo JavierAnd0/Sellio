@@ -368,6 +368,7 @@ export default async function AnalyticsPage() {
     membershipsRes,
     customersCountRes,
     redemptionsRes,
+    cohortRes,
   ] = await Promise.all([
     cardIds.length > 0
       ? db.from('memberships').select('id, card_id, joined_at, last_activity_at, points').in('card_id', cardIds)
@@ -379,9 +380,11 @@ export default async function AnalyticsPage() {
           .in('memberships.card_id', cardIds)
           .gte('redeemed_at', startOfMonth.toISOString())
       : Promise.resolve({ data: [], error: null }),
+    db.rpc('get_cohort_retention', { p_org_id: org.id }),
   ]);
 
   const memberships = membershipsRes.data ?? [];
+  const cohorts = cohortRes.data ?? [];
   const membershipIds = memberships.map((m) => m.id);
   const totalCustomers = customersCountRes.count ?? 0;
   const redemptionsThisMonth = (redemptionsRes.data ?? []).length;
@@ -623,6 +626,54 @@ export default async function AnalyticsPage() {
                     </td>
                   </tr>
                 ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Cohort retention */}
+      {cohorts.length > 0 && (
+        <div style={{ marginBottom: 28 }}>
+          <SectionTitle>Retención por cohorte</SectionTitle>
+          <div style={{ ...cardStyle, padding: 0, overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  {['Cohorte', 'Nuevos', 'Mes 1', 'Mes 2', 'Mes 3'].map((h) => (
+                    <th key={h} style={{ padding: '12px 18px', fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#4A4540', textAlign: h === 'Cohorte' ? 'left' : 'center' }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {cohorts.map((row, i) => {
+                  const month = new Date(row.cohort_month).toLocaleDateString('es-CO', { month: 'short', year: 'numeric' });
+                  const retColor = (pct: number) =>
+                    pct >= 70 ? '#4CAF82' : pct >= 40 ? '#C9A84C' : pct > 0 ? '#E8341A' : '#3A3530';
+                  return (
+                    <tr key={row.cohort_month} style={{ borderBottom: i < cohorts.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                      <td style={{ padding: '12px 18px', fontWeight: 600, color: '#D5D0CB' }}>{month}</td>
+                      <td style={{ padding: '12px 18px', textAlign: 'center', color: '#8A8480' }}>{row.new_users}</td>
+                      {([row.m1_retention, row.m2_retention, row.m3_retention] as number[]).map((r, ri) => (
+                        <td key={ri} style={{ padding: '12px 18px', textAlign: 'center' }}>
+                          {row.new_users > 0 ? (
+                            <span style={{
+                              display: 'inline-block', minWidth: 48,
+                              background: `${retColor(r)}20`,
+                              color: retColor(r),
+                              borderRadius: 6, padding: '3px 8px',
+                              fontWeight: 700, fontSize: 11,
+                            }}>
+                              {r > 0 ? `${r}%` : '—'}
+                            </span>
+                          ) : '—'}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

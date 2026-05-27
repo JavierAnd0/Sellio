@@ -67,6 +67,12 @@ const StarIcon = () => (
   </svg>
 );
 
+const MegaphoneIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 11l19-9-9 19-2-8-8-2z" />
+  </svg>
+);
+
 
 function SidebarItem({ href, icon: Icon, children, badge, activeIcon: ActiveIcon, activePattern }: any) {
   const pathname = usePathname();
@@ -181,15 +187,21 @@ export function Sidebar({ plan = 'free', trialDaysLeft, totalCards = 0, totalCus
               </SidebarItem>
 
               {hasAnalytics ? (
-                <div className="mt-2">
+                <div className="mt-2 flex flex-col gap-1">
                   <SidebarItem href="/app/analytics" icon={StarIcon}>
                     {tNav('analytics')}
                   </SidebarItem>
+                  <SidebarItem href="/app/campaigns" icon={MegaphoneIcon}>
+                    {tNav('campaigns')}
+                  </SidebarItem>
                 </div>
               ) : (
-                <div className="mt-2 pointer-events-none opacity-50 grayscale">
+                <div className="mt-2 flex flex-col gap-1 pointer-events-none opacity-50 grayscale">
                   <SidebarItem href="/app/analytics" icon={StarIcon} badge="ELITE">
                     {tNav('analytics')}
+                  </SidebarItem>
+                  <SidebarItem href="/app/campaigns" icon={MegaphoneIcon} badge="ELITE">
+                    {tNav('campaigns')}
                   </SidebarItem>
                 </div>
               )}

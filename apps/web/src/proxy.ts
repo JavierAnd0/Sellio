@@ -41,8 +41,13 @@ export async function proxy(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // Proteger rutas /app/* y /onboarding
-  if ((pathname.startsWith('/app') || pathname.startsWith('/onboarding')) && !user) {
+  // Proteger rutas /app/*, /onboarding y /admin
+  if (
+    (pathname.startsWith('/app') ||
+      pathname.startsWith('/onboarding') ||
+      pathname.startsWith('/admin')) &&
+    !user
+  ) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('next', pathname);
     return NextResponse.redirect(loginUrl);
@@ -99,6 +104,7 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     '/app/:path*',
+    '/admin/:path*',
     '/onboarding/:path*',
     '/login',
     '/register',

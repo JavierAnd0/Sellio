@@ -3,6 +3,7 @@ import { PKPass } from 'passkit-generator';
 import * as forge from 'node-forge';
 
 import { createAdminClient } from '@sellio/db/admin';
+import { generateAppleAuthToken } from '@/lib/wallet-updates';
 
 // Helper to convert hex colors to Apple Wallet's rgb(r, g, b) format
 function hexToRgb(hex: string): string {
@@ -92,6 +93,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
   const cardUrl = `${cardsBase}/${slug}`;
   const checkInUrl = org?.slug ? `${cardsBase}/check-in/${org.slug}` : cardUrl;
 
+  const authToken = generateAppleAuthToken(slug);
   const passJson = {
     formatVersion: 1,
     passTypeIdentifier: process.env.APPLE_PASS_TYPE_IDENTIFIER || 'pass.com.sellio.loyalty',
@@ -102,6 +104,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
     backgroundColor: primaryColor,
     foregroundColor,
     labelColor,
+    webServiceURL: `${cardsBase}/api/wallet/apple`,
+    authenticationToken: authToken,
     barcodes: [
       {
         format: 'PKBarcodeFormatQR',

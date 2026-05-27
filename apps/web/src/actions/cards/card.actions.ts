@@ -96,6 +96,17 @@ export async function createCardAction(formData: FormData): Promise<CreateCardRe
       maxMembers: maxMembers ?? null,
       design: { primaryColor: org.primaryColor, ...parseDesign(design) },
     });
+
+    // Track onboarding completion on first card creation
+    const existingCards = await new SupabaseCardRepository().findByOrg(org.id);
+    if (existingCards.length === 1) {
+      await db
+        .from('organizations')
+        .update({ onboarding_completed_at: new Date().toISOString() })
+        .eq('id', org.id)
+        .is('onboarding_completed_at', null);
+    }
+
     return { ok: true, cardId: card.id };
   } catch {
     return { ok: false, error: 'Error al crear la tarjeta. Intenta de nuevo.' };

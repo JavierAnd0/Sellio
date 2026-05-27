@@ -61,6 +61,7 @@ export interface Database {
           timezone: string;
           plan: OrgPlan;
           trial_ends_at: string | null;
+          onboarding_completed_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -74,6 +75,7 @@ export interface Database {
           timezone?: string;
           plan?: OrgPlan;
           trial_ends_at?: string | null;
+          onboarding_completed_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -87,10 +89,73 @@ export interface Database {
           timezone?: string;
           plan?: OrgPlan;
           trial_ends_at?: string | null;
+          onboarding_completed_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
         Relationships: [];
+      };
+      wallet_registrations: {
+        Row: {
+          id: string;
+          membership_slug: string;
+          platform: 'apple' | 'google';
+          device_library_id: string | null;
+          pass_type_identifier: string | null;
+          push_token: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          membership_slug: string;
+          platform: 'apple' | 'google';
+          device_library_id?: string | null;
+          pass_type_identifier?: string | null;
+          push_token?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          membership_slug?: string;
+          platform?: 'apple' | 'google';
+          device_library_id?: string | null;
+          pass_type_identifier?: string | null;
+          push_token?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      nps_responses: {
+        Row: {
+          id: string;
+          org_id: string;
+          score: number;
+          comment: string | null;
+          responded_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          score: number;
+          comment?: string | null;
+          responded_at?: string;
+        };
+        Update: {
+          id?: string;
+          org_id?: string;
+          score?: number;
+          comment?: string | null;
+          responded_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'nps_responses_org_id_fkey';
+            columns: ['org_id'];
+            isOneToOne: false;
+            referencedRelation: 'organizations';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       organization_members: {
         Row: {
@@ -646,6 +711,19 @@ export interface Database {
           m1_retention: number;
           m2_retention: number;
           m3_retention: number;
+        }[];
+      };
+      get_m3_kpis: {
+        Args: Record<string, never>;
+        Returns: {
+          total_orgs: number;
+          paying_orgs: number;
+          elite_orgs: number;
+          mrr_cop: number;
+          churn_rate_30d: number;
+          nps_score: number | null;
+          nps_count: number;
+          avg_onboarding_mins: number | null;
         }[];
       };
     };
