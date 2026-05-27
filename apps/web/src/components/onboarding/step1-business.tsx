@@ -55,7 +55,6 @@ export function Step1Business({ businessName, category, onNext }: Step1BusinessP
             if (errors.name) setErrors((prev) => ({ ...prev, name: undefined }));
           }}
           error={!!errors.name}
-          autoFocus
         />
       </FormField>
 

@@ -104,10 +104,11 @@ export function CampaignsClient({ campaigns: initial, cards, orgName }: Props) {
           <h2 className="font-display text-lg font-bold text-fg mb-5">Nueva campaña</h2>
           <form action={handleCreate} className="flex flex-col gap-4">
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-widest text-muted mb-1.5">
+              <label htmlFor="campaign-title" className="block text-[11px] font-bold uppercase tracking-widest text-muted mb-1.5">
                 Título
               </label>
               <input
+                id="campaign-title"
                 name="title"
                 required
                 placeholder="Ej: Promo del fin de semana"
@@ -115,10 +116,11 @@ export function CampaignsClient({ campaigns: initial, cards, orgName }: Props) {
               />
             </div>
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-widest text-muted mb-1.5">
+              <label htmlFor="campaign-message" className="block text-[11px] font-bold uppercase tracking-widest text-muted mb-1.5">
                 Mensaje
               </label>
               <textarea
+                id="campaign-message"
                 name="message"
                 required
                 rows={3}
@@ -128,10 +130,11 @@ export function CampaignsClient({ campaigns: initial, cards, orgName }: Props) {
             </div>
             {cards.length > 0 && (
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-widest text-muted mb-1.5">
+                <label htmlFor="campaign-card-id" className="block text-[11px] font-bold uppercase tracking-widest text-muted mb-1.5">
                   Tarjeta (opcional — deja en blanco para todas)
                 </label>
                 <select
+                  id="campaign-card-id"
                   name="card_id"
                   className="w-full rounded-xl border border-border bg-surface-2 px-4 py-2.5 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-[#E8341A]/30"
                 >

@@ -5,7 +5,6 @@ import type {
   UpdateOrganizationInput,
 } from '@sellio/domain';
 
-import { createClient } from '../server';
 import type { Tables } from '../types';
 
 type OrgRow = Tables<'organizations'>;
@@ -28,6 +27,7 @@ export function orgRowToEntity(row: OrgRow): Organization {
 
 export class SupabaseOrganizationRepository implements IOrganizationRepository {
   async create(input: CreateOrganizationInput): Promise<Organization> {
+    const { createClient } = await import('../server');
     const db = await createClient();
     const orgId = crypto.randomUUID();
 
@@ -73,6 +73,7 @@ export class SupabaseOrganizationRepository implements IOrganizationRepository {
   }
 
   async findByOwner(userId: string): Promise<Organization | null> {
+    const { createClient } = await import('../server');
     const db = await createClient();
 
     const { data, error } = await db
@@ -89,6 +90,7 @@ export class SupabaseOrganizationRepository implements IOrganizationRepository {
   }
 
   async findBySlug(slug: string): Promise<Organization | null> {
+    const { createClient } = await import('../server');
     const db = await createClient();
 
     const { data, error } = await db
@@ -104,6 +106,7 @@ export class SupabaseOrganizationRepository implements IOrganizationRepository {
   }
 
   async update(id: string, updates: UpdateOrganizationInput): Promise<Organization> {
+    const { createClient } = await import('../server');
     const db = await createClient();
 
     const dbUpdates: Partial<OrgRow> = {};

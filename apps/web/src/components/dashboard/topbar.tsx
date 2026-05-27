@@ -72,7 +72,9 @@ export function Topbar({ userEmail, userFullName }: TopbarProps) {
 
         {menuOpen && (
           <>
-            <div
+            <button
+              type="button"
+              aria-label="Cerrar menú"
               className="fixed inset-0 z-10"
               onClick={() => setMenuOpen(false)}
             />

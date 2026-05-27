@@ -131,7 +131,9 @@ export function Sidebar({ plan = 'free', trialDaysLeft, totalCards = 0, totalCus
     <>
       {/* Overlay mobile */}
       {sidebarOpen && (
-        <div
+        <button
+          type="button"
+          aria-label="Cerrar navegación"
           className="fixed inset-0 z-40 bg-bg/80 backdrop-blur-sm md:hidden"
           onClick={() => setSidebarOpen(false)}
         />

@@ -30,15 +30,25 @@ export function DeleteCardModal({ cardId, cardName, memberCount, onClose }: Dele
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
     >
-      <div className="w-full max-w-[520px] overflow-hidden rounded-[24px] bg-white shadow-2xl dark:bg-surface-2">
+      <button
+        type="button"
+        aria-label="Cerrar modal"
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-card-title"
+        className="relative w-full max-w-[520px] overflow-hidden rounded-[24px] bg-white shadow-2xl dark:bg-surface-2"
+      >
         {/* Header */}
         <div className="flex items-center justify-between bg-[#E8341A] px-6 py-4">
           <div className="flex items-center gap-2.5">
             <AlertTriangle size={18} className="text-white" />
-            <span className="font-display text-[17px] font-black text-white">Advertencia</span>
+            <span id="delete-card-title" className="font-display text-[17px] font-black text-white">Advertencia</span>
           </div>
           <button
             type="button"
@@ -85,11 +95,13 @@ export function DeleteCardModal({ cardId, cardName, memberCount, onClose }: Dele
             Advertencia final: esta acción no se puede deshacer.
           </p>
 
-          <label className="mb-2 block text-[13px] font-bold text-muted">
+          <label htmlFor="delete-card-confirmation" className="mb-2 block text-[13px] font-bold text-muted">
             Para confirmar, escribe{' '}
             <span className="font-mono text-fg">{CONFIRM_PHRASE}</span>
           </label>
           <input
+            id="delete-card-confirmation"
+            aria-label={`Escribe ${CONFIRM_PHRASE} para confirmar`}
             ref={inputRef}
             type="text"
             value={inputValue}

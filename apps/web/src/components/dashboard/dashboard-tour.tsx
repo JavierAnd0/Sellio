@@ -443,7 +443,9 @@ export function DashboardTour({ orgName }: DashboardTourProps) {
       `}</style>
 
       {/* Click blocker backdrop layer */}
-      <div 
+      <button
+        type="button"
+        aria-label="Tour activo"
         className="fixed inset-0 z-30 cursor-default pointer-events-auto" 
         onClick={(e) => {
           e.preventDefault();

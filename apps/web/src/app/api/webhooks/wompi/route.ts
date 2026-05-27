@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 
 import { createAdminClient } from '@sellio/db/admin';
 import { getPaymentProvider } from '@sellio/payments';
@@ -14,6 +15,12 @@ export async function POST(request: Request) {
 
     if (!verification.ok) {
       console.warn('[Wompi Webhook] Signature verification failed:', verification.reason);
+      Sentry.addBreadcrumb({
+        category: 'wompi.webhook',
+        level: 'warning',
+        message: 'Signature verification failed',
+        data: { reason: verification.reason },
+      });
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
 
@@ -30,6 +37,7 @@ export async function POST(request: Request) {
 
     if (findEventErr) {
       console.error('[Wompi Webhook] Error checking existing event:', findEventErr);
+      Sentry.captureException(findEventErr, { tags: { provider: 'wompi' }, extra: { eventId: event.eventId } });
       return NextResponse.json({ error: 'DB Error' }, { status: 500 });
     }
 
@@ -64,6 +72,7 @@ export async function POST(request: Request) {
           }
         } else {
           console.error('[Wompi Webhook] Error recording event:', insertWebhookErr);
+          Sentry.captureException(insertWebhookErr, { tags: { provider: 'wompi' }, extra: { eventId: event.eventId } });
           return NextResponse.json({ error: 'DB Error' }, { status: 500 });
         }
       }
@@ -173,6 +182,10 @@ export async function POST(request: Request) {
                 if (insertInvoiceErr) {
                   // We log invoice error but don't fail the whole webhook since subscription is active
                   console.error('[Wompi Webhook] Error creating invoice record (non-blocking):', insertInvoiceErr);
+                  Sentry.captureException(insertInvoiceErr, {
+                    tags: { provider: 'wompi', nonBlocking: 'true' },
+                    extra: { eventId: event.eventId, orgId, transactionId: transaction.id, subId },
+                  });
                 }
               }
             }
@@ -185,6 +198,7 @@ export async function POST(request: Request) {
 
     if (businessError) {
       console.error('[Wompi Webhook] Business processing failed:', businessError);
+      Sentry.captureException(businessError, { tags: { provider: 'wompi' }, extra: { eventId: event.eventId } });
       // Record the error description in webhook_events
       await db
         .from('webhook_events')
@@ -209,12 +223,14 @@ export async function POST(request: Request) {
 
     if (updateWebhookErr) {
       console.error('[Wompi Webhook] Error updating webhook event status:', updateWebhookErr);
+      Sentry.captureException(updateWebhookErr, { tags: { provider: 'wompi' }, extra: { eventId: event.eventId } });
     }
 
     console.log(`[Wompi Webhook] Successfully processed event: ${event.eventId}`);
     return NextResponse.json({ ok: true });
   } catch (err: any) {
     console.error('[Wompi Webhook] Fatal error:', err);
+    Sentry.captureException(err, { tags: { provider: 'wompi' } });
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

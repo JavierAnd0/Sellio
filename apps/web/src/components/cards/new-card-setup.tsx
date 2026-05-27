@@ -275,8 +275,9 @@ export function NewCardSetup({ orgName, primaryColor }: NewCardSetupProps) {
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             {/* Nombre */}
             <div>
-              <label style={LABEL}>Nombre de la tarjeta *</label>
+              <label htmlFor="new-card-name" style={LABEL}>Nombre de la tarjeta *</label>
               <input
+                id="new-card-name"
                 value={cardName}
                 onChange={(e) => setCardName(e.target.value)}
                 placeholder={isStamps ? 'ej: "Tarjeta Café", "Sello Fidelidad"' : 'ej: "Club VIP", "Tarjeta Puntos"'}
@@ -289,8 +290,9 @@ export function NewCardSetup({ orgName, primaryColor }: NewCardSetupProps) {
 
             {/* Recompensa */}
             <div>
-              <label style={LABEL}>Recompensa *</label>
+              <label htmlFor="new-card-reward" style={LABEL}>Recompensa *</label>
               <input
+                id="new-card-reward"
                 value={rewardDescription}
                 onChange={(e) => setRewardDescription(e.target.value)}
                 placeholder={isStamps ? 'ej: "1 café gratis", "Postre de regalo"' : 'ej: "10% de descuento", "$5.000 de regalo"'}
@@ -307,9 +309,10 @@ export function NewCardSetup({ orgName, primaryColor }: NewCardSetupProps) {
             {isStamps ? (
               /* Stamps mode: stamp count with confirm lock */
               <div>
-                <label style={LABEL}>Número de sellos *</label>
+                <label htmlFor="new-card-stamp-count" style={LABEL}>Número de sellos *</label>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <input
+                    id="new-card-stamp-count"
                     type="number"
                     value={stampCount}
                     onChange={(e) => !stampConfirmed && setStampCount(Math.max(2, Math.min(20, Number(e.target.value) || 10)))}
@@ -376,8 +379,9 @@ export function NewCardSetup({ orgName, primaryColor }: NewCardSetupProps) {
               /* Points mode: per-visit + threshold */
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label style={LABEL}>Puntos por visita *</label>
+                  <label htmlFor="new-card-points-per-checkin" style={LABEL}>Puntos por visita *</label>
                   <input
+                    id="new-card-points-per-checkin"
                     type="number"
                     value={pointsPerCheckin}
                     onChange={(e) => setPointsPerCheckin(Math.max(1, Number(e.target.value) || 1))}
@@ -388,8 +392,9 @@ export function NewCardSetup({ orgName, primaryColor }: NewCardSetupProps) {
                   {fieldErrors.pointsPerCheckin && <span style={{ ...HINT, color: '#F87171' }}>{fieldErrors.pointsPerCheckin}</span>}
                 </div>
                 <div>
-                  <label style={LABEL}>Puntos para recompensa *</label>
+                  <label htmlFor="new-card-points-for-reward" style={LABEL}>Puntos para recompensa *</label>
                   <input
+                    id="new-card-points-for-reward"
                     type="number"
                     value={pointsForReward}
                     onChange={(e) => setPointsForReward(Math.max(1, Number(e.target.value) || 1))}
@@ -423,8 +428,9 @@ export function NewCardSetup({ orgName, primaryColor }: NewCardSetupProps) {
 
             {/* Descripción opcional */}
             <div>
-              <label style={LABEL}>Descripción <span style={{ color: '#4A4540', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(opcional)</span></label>
+              <label htmlFor="new-card-description" style={LABEL}>Descripción <span style={{ color: '#4A4540', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(opcional)</span></label>
               <input
+                id="new-card-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder='ej: "Acumula en cada compra mayor a $10.000"'

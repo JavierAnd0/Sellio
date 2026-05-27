@@ -19,11 +19,11 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 
         <footer className="mt-10 text-center text-xs text-muted">
           © 2026 Sellio ·{' '}
-          <a href="#" className="hover:text-fg transition-colors">
+          <a href="/terms" className="hover:text-fg transition-colors">
             Términos
           </a>{' '}
           ·{' '}
-          <a href="#" className="hover:text-fg transition-colors">
+          <a href="/privacy" className="hover:text-fg transition-colors">
             Privacidad
           </a>
         </footer>

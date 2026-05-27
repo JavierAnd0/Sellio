@@ -201,7 +201,7 @@ export function RegisterForm() {
 
       <p className="mt-4 text-center text-xs text-muted">
         {t('terms')}{' '}
-        <a href="#" className="underline hover:text-fg transition-colors">
+        <a href="/terms" className="underline hover:text-fg transition-colors">
           {t('termsLink')}
         </a>
         .

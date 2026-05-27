@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@sellio/db/admin';
+import * as Sentry from '@sentry/nextjs';
 import { updateGoogleWalletPass } from '@/lib/wallet-updates';
 
 export type CheckInResult =
@@ -105,7 +106,13 @@ export async function checkInAction(orgSlug: string, formData: FormData): Promis
     .eq('id', membership.id);
 
   // Fire-and-forget wallet update (no bloquea la respuesta al usuario)
-  updateGoogleWalletPass(membership.slug, newPoints, card.points_for_reward).catch(() => {});
+  updateGoogleWalletPass(membership.slug, newPoints, card.points_for_reward).catch((err) => {
+    console.warn('[check-in] Google Wallet update failed', { membershipSlug: membership.slug });
+    Sentry.captureException(err, {
+      tags: { integration: 'google-wallet' },
+      extra: { membershipSlug: membership.slug, cardId: card.id },
+    });
+  });
 
   return {
     ok: true,

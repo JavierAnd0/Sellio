@@ -49,24 +49,19 @@ export class WompiProvider implements PaymentProvider {
     const currency = 'COP';
     const reference = `${input.orgId}_${Date.now()}`;
 
-    // Calcular firma de integridad (obligatorio para Wompi Webcheckout)
-    let integritySignature = '';
-    if (this.config.integritySecret) {
-      const concatenated = `${reference}${amountInCents}${currency}${this.config.integritySecret}`;
-      integritySignature = createHash('sha256').update(concatenated).digest('hex');
+    if (!this.config.integritySecret) {
+      throw new Error('WOMPI_INTEGRITY_SECRET is required to sign checkouts');
     }
 
-    // Construir la URL segura de Webcheckout con query params
+    const concatenated = `${reference}${amountInCents}${currency}${this.config.integritySecret}`;
+    const integritySignature = createHash('sha256').update(concatenated).digest('hex');
+
     const url = new URL('https://checkout.wompi.co/p/');
     url.searchParams.set('public-key', this.config.publicKey);
     url.searchParams.set('currency', currency);
     url.searchParams.set('amount-in-cents', String(amountInCents));
     url.searchParams.set('reference', reference);
-    
-    if (integritySignature) {
-      url.searchParams.set('signature:integrity', integritySignature);
-    }
-    
+    url.searchParams.set('signature:integrity', integritySignature);
     url.searchParams.set('redirect-url', input.successUrl);
 
     return {

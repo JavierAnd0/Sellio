@@ -3,10 +3,16 @@ import crypto from 'crypto';
 // ─── Apple auth token ─────────────────────────────────────────────────────────
 // Token determinístico por membership slug, verificado en el web service de Apple
 
-const WALLET_SECRET = process.env.WALLET_AUTH_SECRET ?? 'dev-wallet-secret';
+function getWalletSecret(): string {
+  const secret = process.env.WALLET_AUTH_SECRET;
+  if (!secret) {
+    throw new Error('WALLET_AUTH_SECRET is required');
+  }
+  return secret;
+}
 
 export function generateAppleAuthToken(slug: string): string {
-  return crypto.createHmac('sha256', WALLET_SECRET).update(slug).digest('hex').slice(0, 32);
+  return crypto.createHmac('sha256', getWalletSecret()).update(slug).digest('hex').slice(0, 32);
 }
 
 export function verifyAppleAuthToken(slug: string, token: string): boolean {

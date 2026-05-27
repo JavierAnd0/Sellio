@@ -8,7 +8,7 @@ on:
 
 jobs:
   ci:
-    name: Typecheck · Lint · Test
+    name: Verify
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -30,13 +30,38 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Typecheck, lint & test
-        run: pnpm turbo typecheck lint test --filter=[origin/main]
+      - name: Validate environment stubs
+        run: pnpm env:check
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://stub.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: stub-anon-key-for-ci
+          SUPABASE_SERVICE_ROLE_KEY: stub-service-role-key-for-ci
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+          NEXT_PUBLIC_CARDS_URL: http://localhost:3001
+          QR_SIGNING_SECRET: stub-qr-secret-for-ci
+          WOMPI_PUBLIC_KEY: pub_test_stub
+          WOMPI_PRIVATE_KEY: prv_test_stub
+          WOMPI_EVENTS_SECRET: stub-events-secret
+          WOMPI_INTEGRITY_SECRET: stub-integrity-secret
+          RESEND_API_KEY: re_stub
+          SENTRY_DSN: https://examplePublicKey@o0.ingest.sentry.io/0
+          NEXT_PUBLIC_SENTRY_DSN: https://examplePublicKey@o0.ingest.sentry.io/0
+
+      - name: Lint, typecheck, test & build
+        run: pnpm turbo run lint typecheck test build --filter=[origin/main]
         env:
           TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
           TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-          # Stubs para typecheck/build (no se conectan a Supabase real)
           NEXT_PUBLIC_SUPABASE_URL: https://stub.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: stub-anon-key-for-ci
+          SUPABASE_SERVICE_ROLE_KEY: stub-service-role-key-for-ci
           NEXT_PUBLIC_APP_URL: http://localhost:3000
           NEXT_PUBLIC_CARDS_URL: http://localhost:3001
+          QR_SIGNING_SECRET: stub-qr-secret-for-ci
+          WOMPI_PUBLIC_KEY: pub_test_stub
+          WOMPI_PRIVATE_KEY: prv_test_stub
+          WOMPI_EVENTS_SECRET: stub-events-secret
+          WOMPI_INTEGRITY_SECRET: stub-integrity-secret
+          RESEND_API_KEY: re_stub
+          SENTRY_DSN: https://examplePublicKey@o0.ingest.sentry.io/0
+          NEXT_PUBLIC_SENTRY_DSN: https://examplePublicKey@o0.ingest.sentry.io/0

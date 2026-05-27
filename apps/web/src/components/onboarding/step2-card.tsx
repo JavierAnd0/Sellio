@@ -249,12 +249,11 @@ export function Step2Card({
   return (
     <div className="mx-auto w-full max-w-[1400px] overflow-hidden rounded-2xl border border-white/10 bg-[#0D0B09] text-[#F5F0EB] shadow-2xl">
       <style jsx>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap');
         .font-display-custom {
-          font-family: '${selectedFont.display}', 'Syne', sans-serif;
+          font-family: '${selectedFont.display}', var(--font-display), sans-serif;
         }
         .font-body-custom {
-          font-family: '${selectedFont.body}', 'Space Grotesk', sans-serif;
+          font-family: '${selectedFont.body}', var(--font-sans), sans-serif;
         }
       `}</style>
 

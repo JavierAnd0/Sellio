@@ -231,15 +231,17 @@ export function ImportCustomersModal({ cardId }: ImportCustomersModalProps) {
       {/* Modal Overlay */}
       {isOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div 
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="import-customers-title"
             className="bg-surface border border-border/40 rounded-[28px] max-w-lg w-full overflow-hidden shadow-2xl flex flex-col max-h-[85vh] animate-in fade-in zoom-in duration-200"
-            onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
             <div className="px-6 py-5 border-b border-border/10 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Users className="text-[#E8341A]" size={20} />
-                <h3 className="font-display text-lg font-bold text-fg tracking-tight">
+                <h3 id="import-customers-title" className="font-display text-lg font-bold text-fg tracking-tight">
                   Importar Clientes desde CSV
                 </h3>
               </div>
@@ -261,12 +263,12 @@ export function ImportCustomersModal({ cardId }: ImportCustomersModalProps) {
                   </p>
 
                   {/* Drag Zone */}
-                  <div
+                  <label
+                    htmlFor="customer-csv-file"
                     onDragEnter={handleDrag}
                     onDragOver={handleDrag}
                     onDragLeave={handleDrag}
                     onDrop={handleDrop}
-                    onClick={() => fileInputRef.current?.click()}
                     className={cn(
                       "border-2 border-dashed rounded-[20px] p-8 text-center flex flex-col items-center justify-center gap-3 cursor-pointer transition-all",
                       dragActive 
@@ -286,13 +288,14 @@ export function ImportCustomersModal({ cardId }: ImportCustomersModalProps) {
                       </p>
                     </div>
                     <input
+                      id="customer-csv-file"
                       ref={fileInputRef}
                       type="file"
                       accept=".csv"
                       onChange={handleFileChange}
                       className="hidden"
                     />
-                  </div>
+                  </label>
 
                   {/* Instructions / Examples */}
                   <div className="bg-surface-2/50 border border-border/10 rounded-xl p-4 text-xs font-medium">
