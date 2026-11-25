@@ -10,7 +10,10 @@
     "./server": "./src/server.ts",
     "./admin": "./src/admin.ts",
     "./types": "./src/types.ts",
-    "./repositories": "./src/repositories/index.ts"
+    "./repositories": "./src/repositories/index.ts",
+    "./apple-wallet": "./src/apple-wallet.ts",
+    "./google-wallet": "./src/google-wallet.ts",
+    "./wallet-campaigns": "./src/wallet-campaigns.ts"
   },
   "scripts": {
     "lint": "eslint src --ext .ts",
@@ -25,11 +28,13 @@
   "dependencies": {
     "@sellio/domain": "workspace:*",
     "@supabase/ssr": "^0.10.2",
-    "@supabase/supabase-js": "^2.103.3"
+    "@supabase/supabase-js": "^2.103.3",
+    "node-forge": "^1.4.0"
   },
   "devDependencies": {
     "@sellio/config": "workspace:*",
     "@types/node": "^20.16.11",
+    "@types/node-forge": "^1.3.14",
     "next": "^16.2.4",
     "supabase": "^1.207.9",
     "tsx": "^4.19.1",

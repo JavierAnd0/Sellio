@@ -1,7 +1,10 @@
 'use server';
 
+import { after } from 'next/server';
 import { z } from 'zod';
 
+import { notifyAppleWalletPassUpdated } from '@sellio/db/apple-wallet';
+import { updateGoogleWalletPass } from '@sellio/db/google-wallet';
 import { createClient } from '@sellio/db/server';
 import {
   SupabaseCardRepository,
@@ -10,7 +13,6 @@ import {
   SupabaseOrganizationRepository,
 } from '@sellio/db/repositories';
 import type { Membership } from '@sellio/domain';
-import { updateGoogleWalletPass } from '@/lib/wallet-updates';
 
 const PHONE_RE = /^\+?[0-9\s\-().]{7,20}$/;
 
@@ -66,7 +68,13 @@ export async function addPointsAction(
     );
 
     if (membershipRow.slug) {
-      updateGoogleWalletPass(membershipRow.slug, newPoints, card.pointsForReward).catch(() => {});
+      const slug = membershipRow.slug;
+      updateGoogleWalletPass(slug, newPoints, card.pointsForReward).catch(() => {});
+      after(() =>
+        notifyAppleWalletPassUpdated(slug).catch((err) => {
+          console.warn('[addPoints] Apple Wallet push failed', { membershipSlug: slug, err });
+        }),
+      );
     }
 
     return { ok: true, newPoints };

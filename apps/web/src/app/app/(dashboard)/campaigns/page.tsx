@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createClient } from '@sellio/db/server';
 import { SupabaseOrganizationRepository } from '@sellio/db/repositories';
+import { aggregateReach, getWalletReach } from '@sellio/db/wallet-campaigns';
 import { CampaignsClient } from './campaigns-client';
 
 export const metadata: Metadata = { title: 'Campañas' };
@@ -18,10 +19,10 @@ export default async function CampaignsPage() {
     redirect('/app/analytics');
   }
 
-  const [campaignsRes, cardsRes] = await Promise.all([
+  const [campaignsRes, cardsRes, reach] = await Promise.all([
     db
       .from('campaigns')
-      .select('id, title, message, status, sent_at, created_at, card_id, cards(name)')
+      .select('id, title, message, status, sent_at, created_at, card_id, wallet_devices, wallet_google, wallet_delivery, cards(name)')
       .eq('org_id', org.id)
       .order('created_at', { ascending: false }),
     db
@@ -29,6 +30,9 @@ export default async function CampaignsPage() {
       .select('id, name')
       .eq('org_id', org.id)
       .eq('active', true),
+    // Alcance (clientes y dispositivos Apple Wallet) para confirmar antes de enviar.
+    // Usa service role, acotado a la org del usuario ya autenticado.
+    getWalletReach(org.id).catch(() => aggregateReach([], [], [])),
   ]);
 
   const campaigns = (campaignsRes.data ?? []).map((c) => ({
@@ -41,6 +45,7 @@ export default async function CampaignsPage() {
       campaigns={campaigns}
       cards={cardsRes.data ?? []}
       orgName={org.name}
+      reach={reach}
     />
   );
 }

@@ -104,7 +104,7 @@ function SourceBar({ label, value, total, color }: { label: string; value: numbe
   const width = total === 0 ? 0 : Math.max(2, (value / total) * 100);
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-      <div style={{ width: 80, fontSize: 11, color: '#6B6560', fontWeight: 500, flexShrink: 0 }}>{label}</div>
+      <div style={{ width: 80, fontSize: 11, color: '#88827D', fontWeight: 500, flexShrink: 0 }}>{label}</div>
       <div style={{ flex: 1, height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
         <div style={{ width: `${width}%`, height: '100%', background: color, borderRadius: 3 }} />
       </div>
@@ -186,7 +186,7 @@ function LockedAnalytics() {
           position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(15,13,11,0.8)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 18px' }}>
-            <Lock size={14} color="#6B6560" />
+            <Lock size={14} color="#88827D" />
             <span style={{ fontSize: 12, color: '#8A8480', fontWeight: 600 }}>Requiere Plan Elite</span>
           </div>
         </div>
@@ -300,7 +300,7 @@ function EnterpriseSection({ isEnterprise }: { isEnterprise: boolean }) {
               <div style={{ fontSize: 15, fontWeight: 800, color: '#F5F0EB', marginBottom: 6 }}>
                 Integración POS y seguimiento de ventas reales
               </div>
-              <div style={{ fontSize: 13, color: '#6B6560', lineHeight: 1.6, marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: '#88827D', lineHeight: 1.6, marginBottom: 16 }}>
                 Con el plan Enterprise conectas tu sistema de punto de venta para ver el impacto real de tu programa de lealtad en los ingresos — ticket promedio, ROI, frecuencia de compra y cohortes de retención.
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>

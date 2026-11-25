@@ -1,226 +1,255 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import { Send, Trash2, Plus, Megaphone, Clock, CheckCircle2 } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { AlertTriangle, CheckCircle2, Clock, Megaphone, Plus, X } from 'lucide-react';
+
+import { deleteCampaignAction, sendCampaignAction } from '@/actions/campaigns/campaign.actions';
+
+import { CampaignComposer, type SentOutcome } from './campaign-composer';
+import { CampaignRow } from './campaign-row';
 import {
-  createCampaignAction,
-  sendCampaignAction,
-  deleteCampaignAction,
-} from '@/actions/campaigns/campaign.actions';
-
-interface Campaign {
-  id: string;
-  title: string;
-  message: string;
-  status: string;
-  sent_at: string | null;
-  created_at: string;
-  card_id: string | null;
-  cardName: string | null;
-}
-
-interface Card {
-  id: string;
-  name: string;
-}
+  btnGhost,
+  btnPrimary,
+  plural,
+  reachFor,
+  walletBreakdown,
+  type Campaign,
+  type CardOption,
+  type ReachSummary,
+} from './campaign-ui';
 
 interface Props {
   campaigns: Campaign[];
-  cards: Card[];
+  cards: CardOption[];
   orgName: string;
+  reach: ReachSummary;
 }
 
-export function CampaignsClient({ campaigns: initial, cards, orgName }: Props) {
-  const [campaigns, setCampaigns] = useState(initial);
-  const [showForm, setShowForm] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
-  const [sendingId, setSendingId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+type Composer = { mode: 'new' } | { mode: 'edit'; draft: Campaign } | null;
 
-  const handleCreate = (formData: FormData) => {
-    setFormError(null);
+const UNDO_MS = 5000;
+
+export function CampaignsClient({ campaigns: initial, cards, orgName, reach }: Props) {
+  const router = useRouter();
+  const [campaigns, setCampaigns] = useState(initial);
+  // Tras router.refresh() llegan props nuevas del servidor.
+  useEffect(() => setCampaigns(initial), [initial]);
+
+  const [composer, setComposer] = useState<Composer>(null);
+  const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [sendingId, setSendingId] = useState<string | null>(null);
+  const [rowError, setRowError] = useState<{ id: string; message: string } | null>(null);
+  const [outcome, setOutcome] = useState<SentOutcome | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Campaign | null>(null);
+  const [, startTransition] = useTransition();
+  const deleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bannerRef = useRef<HTMLDivElement>(null);
+  const newButtonRef = useRef<HTMLButtonElement>(null);
+
+  const showOutcome = (result: SentOutcome) => {
+    setOutcome(result);
+    // Esperar al render del banner antes de desplazarlo a la vista.
+    requestAnimationFrame(() => bannerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+  };
+
+  const closeComposer = () => {
+    setComposer(null);
+    requestAnimationFrame(() => newButtonRef.current?.focus());
+  };
+
+  const handleSendDraft = (c: Campaign) => {
+    setSendingId(c.id);
+    setRowError(null);
     startTransition(async () => {
-      const result = await createCampaignAction(formData);
+      const result = await sendCampaignAction(c.id);
+      setSendingId(null);
       if (!result.ok) {
-        setFormError(result.error);
+        setRowError({ id: c.id, message: result.error });
         return;
       }
-      setShowForm(false);
-      // Refresh via server refetch would be ideal, but since we're client-side
-      // we rely on revalidatePath + Next.js cache busting on next navigation
-      window.location.reload();
+      setReviewingId(null);
+      showOutcome({ ...result, title: c.title });
+      router.refresh();
     });
   };
 
-  const handleSend = (id: string) => {
-    setSendingId(id);
+  // Eliminar con deshacer: la fila se oculta y el borrado real ocurre a los 5 s.
+  const commitDelete = useCallback((c: Campaign) => {
     startTransition(async () => {
-      await sendCampaignAction(id);
-      setSendingId(null);
-      window.location.reload();
+      const result = await deleteCampaignAction(c.id);
+      setPendingDelete((current) => (current?.id === c.id ? null : current));
+      if (!result.ok) {
+        setRowError({ id: c.id, message: result.error });
+        return;
+      }
+      setCampaigns((prev) => prev.filter((x) => x.id !== c.id));
     });
+  }, []);
+
+  const handleDelete = (c: Campaign) => {
+    if (deleteTimer.current && pendingDelete) {
+      clearTimeout(deleteTimer.current);
+      commitDelete(pendingDelete); // confirmar el anterior antes de empezar otro
+    }
+    setReviewingId(null);
+    setRowError(null);
+    setPendingDelete(c);
+    deleteTimer.current = setTimeout(() => {
+      deleteTimer.current = null;
+      commitDelete(c);
+    }, UNDO_MS);
   };
 
-  const handleDelete = (id: string) => {
-    setDeletingId(id);
-    startTransition(async () => {
-      await deleteCampaignAction(id);
-      setDeletingId(null);
-      setCampaigns((prev) => prev.filter((c) => c.id !== id));
-    });
+  const undoDelete = () => {
+    if (deleteTimer.current) clearTimeout(deleteTimer.current);
+    deleteTimer.current = null;
+    setPendingDelete(null);
   };
 
-  const drafts = campaigns.filter((c) => c.status === 'draft');
-  const sent = campaigns.filter((c) => c.status === 'sent');
+  useEffect(
+    () => () => {
+      if (deleteTimer.current) clearTimeout(deleteTimer.current);
+    },
+    [],
+  );
+
+  const visible = campaigns.filter((c) => c.id !== pendingDelete?.id);
+  const drafts = visible.filter((c) => c.status === 'draft');
+  const sent = visible.filter((c) => c.status === 'sent');
 
   return (
-    <div className="max-w-3xl mx-auto pb-16">
-      {/* Header */}
-      <div className="flex items-start justify-between mb-8">
+    <div className="mx-auto max-w-3xl pb-16">
+      <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted mb-1">
-            {orgName}
-          </p>
-          <h1 className="font-display text-3xl font-extrabold tracking-tight text-fg">
-            Campañas
-          </h1>
-          <p className="text-sm text-muted mt-1">
-            Envía mensajes a todos los clientes de una tarjeta
+          <h1 className="font-display text-3xl font-extrabold tracking-tight text-fg">Campañas</h1>
+          <p className="mt-1 max-w-md text-pretty text-sm text-muted">
+            Tus clientes reciben el mensaje como notificación en el celular, desde la tarjeta de {orgName} en su
+            Apple Wallet o Google Wallet.
           </p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#E8341A] text-white text-sm font-bold hover:bg-[#D02B13] transition-colors shadow-lg shadow-coral/20"
-        >
-          <Plus size={16} />
-          Nueva campaña
-        </button>
+        {!composer && (
+          <button
+            ref={newButtonRef}
+            type="button"
+            onClick={() => {
+              setOutcome(null);
+              setComposer({ mode: 'new' });
+            }}
+            className={`${btnPrimary} shrink-0 self-start`}
+          >
+            <Plus size={16} />
+            Nueva campaña
+          </button>
+        )}
+      </header>
+
+      {/* Resultado del envío: región viva para lectores de pantalla. */}
+      <div ref={bannerRef} aria-live="polite" role="status">
+        {outcome && <OutcomeBanner outcome={outcome} onDismiss={() => setOutcome(null)} />}
       </div>
 
-      {/* Create form */}
-      {showForm && (
-        <div className="rounded-2xl border border-border bg-surface p-6 mb-8">
-          <h2 className="font-display text-lg font-bold text-fg mb-5">Nueva campaña</h2>
-          <form action={handleCreate} className="flex flex-col gap-4">
-            <div>
-              <label htmlFor="campaign-title" className="block text-[11px] font-bold uppercase tracking-widest text-muted mb-1.5">
-                Título
-              </label>
-              <input
-                id="campaign-title"
-                name="title"
-                required
-                placeholder="Ej: Promo del fin de semana"
-                className="w-full rounded-xl border border-border bg-surface-2 px-4 py-2.5 text-sm text-fg placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-[#E8341A]/30"
-              />
-            </div>
-            <div>
-              <label htmlFor="campaign-message" className="block text-[11px] font-bold uppercase tracking-widest text-muted mb-1.5">
-                Mensaje
-              </label>
-              <textarea
-                id="campaign-message"
-                name="message"
-                required
-                rows={3}
-                placeholder="Escribe tu mensaje aquí..."
-                className="w-full rounded-xl border border-border bg-surface-2 px-4 py-2.5 text-sm text-fg placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-[#E8341A]/30 resize-none"
-              />
-            </div>
-            {cards.length > 0 && (
-              <div>
-                <label htmlFor="campaign-card-id" className="block text-[11px] font-bold uppercase tracking-widest text-muted mb-1.5">
-                  Tarjeta (opcional — deja en blanco para todas)
-                </label>
-                <select
-                  id="campaign-card-id"
-                  name="card_id"
-                  className="w-full rounded-xl border border-border bg-surface-2 px-4 py-2.5 text-sm text-fg focus:outline-none focus:ring-2 focus:ring-[#E8341A]/30"
-                >
-                  <option value="">Todos los clientes</option>
-                  {cards.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-            {formError && (
-              <p className="text-sm text-red-400 font-medium">{formError}</p>
-            )}
-            <div className="flex gap-3 pt-1">
-              <button
-                type="submit"
-                disabled={isPending}
-                className="px-5 py-2.5 rounded-xl bg-[#E8341A] text-white text-sm font-bold disabled:opacity-50 hover:bg-[#D02B13] transition-colors"
-              >
-                {isPending ? 'Guardando...' : 'Guardar borrador'}
-              </button>
-              <button
-                type="button"
-                onClick={() => { setShowForm(false); setFormError(null); }}
-                className="px-5 py-2.5 rounded-xl border border-border text-sm font-medium text-muted hover:text-fg transition-colors"
-              >
-                Cancelar
-              </button>
-            </div>
-          </form>
+      {composer && (
+        <CampaignComposer
+          key={composer.mode === 'edit' ? composer.draft.id : 'new'}
+          orgName={orgName}
+          cards={cards}
+          reach={reach}
+          draft={composer.mode === 'edit' ? composer.draft : undefined}
+          onClose={closeComposer}
+          onSaved={() => {
+            setComposer(null);
+            router.refresh();
+          }}
+          onSent={(result) => {
+            setComposer(null);
+            showOutcome(result);
+            router.refresh();
+          }}
+        />
+      )}
+
+      {pendingDelete && (
+        <div className="mb-6 flex items-center justify-between gap-3 rounded-[20px] border border-border/10 bg-surface-2 px-5 py-2 text-sm text-fg">
+          <span>
+            Borrador <strong className="font-semibold">“{pendingDelete.title}”</strong> eliminado.
+          </span>
+          <button
+            type="button"
+            onClick={undoDelete}
+            className={`${btnGhost} font-semibold text-fg underline underline-offset-4`}
+          >
+            Deshacer
+          </button>
         </div>
       )}
 
-      {/* Drafts */}
       {drafts.length > 0 && (
-        <section className="mb-8">
-          <h2 className="text-[10px] font-bold uppercase tracking-widest text-muted mb-3 flex items-center gap-2">
-            <Clock size={11} />
+        <section aria-labelledby="drafts-heading" className="mb-10">
+          <h2
+            id="drafts-heading"
+            className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted"
+          >
+            <Clock size={12} aria-hidden />
             Borradores
           </h2>
           <div className="flex flex-col gap-3">
             {drafts.map((c) => (
-              <CampaignCard
+              <CampaignRow
                 key={c.id}
+                orgName={orgName}
                 campaign={c}
-                onSend={() => handleSend(c.id)}
-                onDelete={() => handleDelete(c.id)}
-                isSending={sendingId === c.id}
-                isDeleting={deletingId === c.id}
+                reach={reachFor(c.card_id, reach)}
+                reviewing={reviewingId === c.id}
+                sending={sendingId === c.id}
+                error={rowError?.id === c.id ? rowError.message : null}
+                onReview={() => {
+                  setRowError(null);
+                  setOutcome(null);
+                  setReviewingId(c.id);
+                }}
+                onCancelReview={() => setReviewingId(null)}
+                onSend={() => handleSendDraft(c)}
+                onEdit={() => {
+                  setReviewingId(null);
+                  setOutcome(null);
+                  setComposer({ mode: 'edit', draft: c });
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onDelete={() => handleDelete(c)}
               />
             ))}
           </div>
         </section>
       )}
 
-      {/* Sent */}
       {sent.length > 0 && (
-        <section>
-          <h2 className="text-[10px] font-bold uppercase tracking-widest text-muted mb-3 flex items-center gap-2">
-            <CheckCircle2 size={11} />
+        <section aria-labelledby="sent-heading">
+          <h2
+            id="sent-heading"
+            className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted"
+          >
+            <CheckCircle2 size={12} aria-hidden />
             Enviadas
           </h2>
           <div className="flex flex-col gap-3">
             {sent.map((c) => (
-              <CampaignCard key={c.id} campaign={c} />
+              <CampaignRow key={c.id} orgName={orgName} campaign={c} reach={reachFor(c.card_id, reach)} />
             ))}
           </div>
         </section>
       )}
 
-      {/* Empty state */}
-      {campaigns.length === 0 && !showForm && (
-        <div className="rounded-2xl border border-dashed border-border/60 p-12 text-center">
-          <div className="mx-auto mb-4 w-12 h-12 rounded-2xl bg-surface-2 flex items-center justify-center">
-            <Megaphone size={22} className="text-muted/50" />
+      {visible.length === 0 && !composer && (
+        <div className="rounded-[20px] border border-dashed border-border/15 p-12 text-center">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-surface-2">
+            <Megaphone size={22} className="text-muted" aria-hidden />
           </div>
-          <h3 className="font-display text-lg font-bold text-fg mb-2">
-            Sin campañas aún
-          </h3>
-          <p className="text-sm text-muted mb-6 max-w-xs mx-auto">
-            Crea tu primera campaña para notificar a tus clientes sobre promociones o novedades.
+          <h2 className="mb-2 font-display text-lg font-bold text-fg">Sin campañas aún</h2>
+          <p className="mx-auto mb-6 max-w-xs text-sm text-muted">
+            Avisa a tus clientes de promociones o novedades directo en su celular.
           </p>
-          <button
-            onClick={() => setShowForm(true)}
-            className="px-5 py-2.5 rounded-xl bg-[#E8341A] text-white text-sm font-bold hover:bg-[#D02B13] transition-colors"
-          >
+          <button type="button" onClick={() => setComposer({ mode: 'new' })} className={btnPrimary}>
             Crear campaña
           </button>
         </div>
@@ -229,67 +258,40 @@ export function CampaignsClient({ campaigns: initial, cards, orgName }: Props) {
   );
 }
 
-function CampaignCard({
-  campaign,
-  onSend,
-  onDelete,
-  isSending,
-  isDeleting,
-}: {
-  campaign: Campaign;
-  onSend?: () => void;
-  onDelete?: () => void;
-  isSending?: boolean;
-  isDeleting?: boolean;
-}) {
-  const isDraft = campaign.status === 'draft';
-  const date = new Date(campaign.sent_at ?? campaign.created_at).toLocaleDateString('es-CO', {
-    day: 'numeric', month: 'short', year: 'numeric',
-  });
+function OutcomeBanner({ outcome, onDismiss }: { outcome: SentOutcome; onDismiss: () => void }) {
+  const phones = outcome.apple + outcome.google;
+  const failed = outcome.status === 'failed';
+
+  let body: string;
+  if (failed) {
+    body =
+      'No pudimos notificar a los iPhone. El mensaje ya está en sus tarjetas y lo verán cuando su Wallet se actualice.';
+  } else if (outcome.status === 'skipped' || phones === 0) {
+    body = 'Nadie tenía la tarjeta en su Wallet, así que nadie recibió notificación.';
+  } else {
+    body = `Llegó a ${plural(phones, 'teléfono', 'teléfonos')} (${walletBreakdown(outcome.apple, outcome.google)}).`;
+  }
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-surface p-5 flex items-start gap-4">
-      <div className={`mt-0.5 w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isDraft ? 'bg-surface-2' : 'bg-green-950/40'}`}>
-        {isDraft
-          ? <Clock size={16} className="text-muted" />
-          : <CheckCircle2 size={16} className="text-green-400" />
-        }
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <p className="font-bold text-sm text-fg truncate">{campaign.title}</p>
-          {campaign.cardName && (
-            <span className="text-[10px] font-semibold text-muted/70 bg-surface-2 border border-border/40 rounded-md px-1.5 py-0.5 shrink-0">
-              {campaign.cardName}
-            </span>
-          )}
-        </div>
-        <p className="text-sm text-muted line-clamp-2 mb-2">{campaign.message}</p>
-        <p className="text-[11px] text-muted/60">
-          {isDraft ? `Creada el ${date}` : `Enviada el ${date}`}
-        </p>
-      </div>
-
-      {isDraft && (
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={onSend}
-            disabled={isSending}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#E8341A] text-white text-xs font-bold disabled:opacity-50 hover:bg-[#D02B13] transition-colors"
-          >
-            <Send size={12} />
-            {isSending ? '...' : 'Enviar'}
-          </button>
-          <button
-            onClick={onDelete}
-            disabled={isDeleting}
-            className="p-1.5 rounded-lg text-muted hover:text-red-400 transition-colors disabled:opacity-50"
-          >
-            <Trash2 size={14} />
-          </button>
-        </div>
+    <div
+      className={`mb-8 flex items-start gap-3 rounded-[20px] border p-4 ${
+        failed ? 'border-red-400/30 bg-red-500/[0.06]' : 'border-green-400/25 bg-green-500/[0.06]'
+      }`}
+    >
+      {failed ? (
+        <AlertTriangle size={18} className="mt-0.5 shrink-0 text-red-400" aria-hidden />
+      ) : (
+        <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-green-400" aria-hidden />
       )}
+      <div className="min-w-0 flex-1 text-sm">
+        <p className="font-semibold text-fg">
+          {failed ? 'Enviada con problemas' : 'Enviada'}: “{outcome.title}”
+        </p>
+        <p className="mt-0.5 text-fg/80">{body}</p>
+      </div>
+      <button type="button" onClick={onDismiss} aria-label="Cerrar aviso" className={`${btnGhost} -my-2 -mr-2 px-2`}>
+        <X size={16} />
+      </button>
     </div>
   );
 }

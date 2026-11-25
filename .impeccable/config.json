@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "space grotesk",
+        "createdAt": "2026-11-24T20:41:23.083Z",
+        "reason": "Brand font: Sellio's established identity is Syne + Space Grotesk, which the project owner set as top priority not to change (project memory feedback-visual-identity)"
+      }
+    ]
+  }
+}

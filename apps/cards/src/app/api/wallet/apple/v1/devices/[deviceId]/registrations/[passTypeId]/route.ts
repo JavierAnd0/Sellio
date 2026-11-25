@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
+
 import { createAdminClient } from '@sellio/db/admin';
+import { passUpdatedAt } from '@sellio/db/wallet-campaigns';
 
 type Params = Promise<{ deviceId: string; passTypeId: string }>;
 
-// List serial numbers (passes) updated since a given tag
+// List serial numbers (passes) updated since a given tag.
+// Un pass cambia por actividad de puntos o por una campaña enviada a su tarjeta.
 export async function GET(req: Request, { params }: { params: Params }) {
   const { deviceId, passTypeId } = await params;
   const { searchParams } = new URL(req.url);
@@ -21,30 +24,48 @@ export async function GET(req: Request, { params }: { params: Params }) {
     return new Response(null, { status: 204 });
   }
 
-  const slugs = registrations.map((r) => r.membership_slug);
-
-  let query = db
+  const { data: memberships } = await db
     .from('memberships')
-    .select('slug, last_activity_at')
-    .in('slug', slugs);
+    .select('slug, card_id, last_activity_at, cards ( org_id )')
+    .in('slug', registrations.map((r) => r.membership_slug));
 
-  if (updatedSince) {
-    query = query.gt('last_activity_at', updatedSince);
-  }
+  const rows = (memberships ?? []).map((m) => ({
+    slug: m.slug,
+    card_id: m.card_id,
+    last_activity_at: m.last_activity_at,
+    org_id: (m.cards as { org_id: string } | null)?.org_id ?? '',
+  }));
 
-  const { data: updated } = await query;
+  const orgIds = [...new Set(rows.map((r) => r.org_id).filter(Boolean))];
+  let campaignsQuery = db
+    .from('campaigns')
+    .select('org_id, card_id, sent_at')
+    .eq('status', 'sent')
+    .in('org_id', orgIds.length ? orgIds : ['00000000-0000-0000-0000-000000000000']);
+  if (updatedSince) campaignsQuery = campaignsQuery.gt('sent_at', updatedSince);
+  const { data: campaignRows } = await campaignsQuery;
+  const campaigns = (campaignRows ?? []).filter(
+    (c): c is { org_id: string; card_id: string | null; sent_at: string } => !!c.sent_at,
+  );
 
-  if (!updated || updated.length === 0) {
+  const updated = rows
+    .map((r) => ({ slug: r.slug, at: passUpdatedAt(r, campaigns) }))
+    .filter((r): r is { slug: string; at: string } => {
+      if (!r.at) return false;
+      return !updatedSince || new Date(r.at) > new Date(updatedSince);
+    });
+
+  if (updated.length === 0) {
     return new Response(null, { status: 204 });
   }
 
   const lastUpdated = updated
-    .map((m) => m.last_activity_at ?? '')
+    .map((u) => new Date(u.at).toISOString())
     .sort()
-    .at(-1) ?? new Date().toISOString();
+    .at(-1)!;
 
   return NextResponse.json({
     lastUpdated,
-    serialNumbers: updated.map((m) => m.slug),
+    serialNumbers: updated.map((u) => u.slug),
   });
 }

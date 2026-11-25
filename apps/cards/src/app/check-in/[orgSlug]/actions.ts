@@ -1,6 +1,9 @@
 'use server';
 
+import { after } from 'next/server';
+
 import { createAdminClient } from '@sellio/db/admin';
+import { notifyAppleWalletPassUpdated } from '@sellio/db/apple-wallet';
 import * as Sentry from '@sentry/nextjs';
 import { updateGoogleWalletPass } from '@/lib/wallet-updates';
 
@@ -112,6 +115,20 @@ export async function checkInAction(orgSlug: string, formData: FormData): Promis
       tags: { integration: 'google-wallet' },
       extra: { membershipSlug: membership.slug, cardId: card.id },
     });
+  });
+
+  // Apple Wallet: push APNs para que el pass se actualice. Corre después de
+  // responder al usuario (after) para no añadir latencia al check-in.
+  after(async () => {
+    try {
+      await notifyAppleWalletPassUpdated(membership.slug);
+    } catch (err) {
+      console.warn('[check-in] Apple Wallet push failed', { membershipSlug: membership.slug });
+      Sentry.captureException(err, {
+        tags: { integration: 'apple-wallet' },
+        extra: { membershipSlug: membership.slug, cardId: card.id },
+      });
+    }
   });
 
   return {

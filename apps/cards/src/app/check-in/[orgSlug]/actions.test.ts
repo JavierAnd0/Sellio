@@ -10,6 +10,10 @@ vi.mock('@/lib/wallet-updates', () => ({
   updateGoogleWalletPass: vi.fn(),
 }));
 
+vi.mock('@sellio/db/apple-wallet', () => ({
+  notifyAppleWalletPassUpdated: vi.fn(),
+}));
+
 describe('checkInAction', () => {
   it('validates the customer name before using the database', async () => {
     const { checkInAction } = await import('./actions');

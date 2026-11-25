@@ -125,7 +125,7 @@ function NavLink({
         padding: '8px 10px',
         borderRadius: 8,
         fontSize: 13,
-        color: '#6B6560',
+        color: '#88827D',
         textDecoration: 'none',
         transition: 'background 0.15s, color 0.15s',
         fontFamily: 'Space Grotesk, sans-serif',
@@ -136,7 +136,7 @@ function NavLink({
       }}
       onMouseLeave={(e) => {
         (e.currentTarget as HTMLAnchorElement).style.background = 'transparent';
-        (e.currentTarget as HTMLAnchorElement).style.color = '#6B6560';
+        (e.currentTarget as HTMLAnchorElement).style.color = '#88827D';
       }}
     >
       <Icon size={15} strokeWidth={1.8} />

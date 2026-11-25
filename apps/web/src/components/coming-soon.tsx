@@ -44,7 +44,7 @@ export function ComingSoon({ feature }: ComingSoonProps) {
       >
         {feature ? `${feature}` : 'Próximamente'}
       </h2>
-      <p style={{ fontSize: 14, color: '#6B6560', maxWidth: 300, lineHeight: 1.7 }}>
+      <p style={{ fontSize: 14, color: '#88827D', maxWidth: 300, lineHeight: 1.7 }}>
         Estamos trabajando en ello. Pronto estará en funcionamiento.
       </p>
     </div>

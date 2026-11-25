@@ -9,7 +9,7 @@
     --surface: 19 17 16;
     --surface-2: 28 24 20;
     --border: 245 240 235;
-    --muted: 107 101 96;
+    --muted: 136 130 125; /* #88827D — AA ≥4.5:1 en bg, surface y surface-2 */
     --subtle: 58 53 48;
   }
 
@@ -20,7 +20,7 @@
       --surface: 237 232 225;
       --surface-2: 227 221 214;
       --border: 0 0 0;
-      --muted: 122 110 102;
+      --muted: 106 94 86; /* #6A5E56 — AA ≥4.5:1 en bg, surface y surface-2 */
       --subtle: 208 200 192;
     }
   }

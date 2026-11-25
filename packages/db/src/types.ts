@@ -623,6 +623,9 @@ export interface Database {
           status: string;
           sent_at: string | null;
           created_at: string;
+          wallet_devices: number;
+          wallet_google: number;
+          wallet_delivery: 'pending' | 'ok' | 'failed' | 'skipped';
         };
         Insert: {
           id?: string;
@@ -633,6 +636,9 @@ export interface Database {
           status?: string;
           sent_at?: string | null;
           created_at?: string;
+          wallet_devices?: number;
+          wallet_google?: number;
+          wallet_delivery?: 'pending' | 'ok' | 'failed' | 'skipped';
         };
         Update: {
           id?: string;
@@ -643,6 +649,9 @@ export interface Database {
           status?: string;
           sent_at?: string | null;
           created_at?: string;
+          wallet_devices?: number;
+          wallet_google?: number;
+          wallet_delivery?: 'pending' | 'ok' | 'failed' | 'skipped';
         };
         Relationships: [
           {

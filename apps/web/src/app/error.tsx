@@ -59,7 +59,7 @@ export default function Error({
       >
         Algo salió mal
       </h1>
-      <p style={{ fontSize: 15, color: '#6B6560', maxWidth: 320, lineHeight: 1.6, marginBottom: 36 }}>
+      <p style={{ fontSize: 15, color: '#88827D', maxWidth: 320, lineHeight: 1.6, marginBottom: 36 }}>
         Ups. Tuvimos un error inesperado. Inténtalo de nuevo o vuelve al inicio.
       </p>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>

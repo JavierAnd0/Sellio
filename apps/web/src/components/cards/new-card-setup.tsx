@@ -29,7 +29,7 @@ const LABEL: React.CSSProperties = {
   display: 'block',
   fontSize: 11,
   fontWeight: 600,
-  color: '#6B6560',
+  color: '#88827D',
   letterSpacing: '0.08em',
   textTransform: 'uppercase',
   marginBottom: 6,
@@ -114,9 +114,9 @@ export function NewCardSetup({ orgName, primaryColor }: NewCardSetupProps) {
       <div style={{ display: 'flex', flexDirection: 'column', background: '#0D0B09', color: '#F5F0EB', height: '100vh', fontFamily: 'Space Grotesk, sans-serif' }}>
         {/* Top bar */}
         <div style={{ height: 48, background: '#111009', borderBottom: '1px solid rgba(245,240,235,0.07)', display: 'flex', alignItems: 'center', padding: '0 20px', gap: 16, flexShrink: 0 }}>
-          <Link href="/app/cards" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#6B6560', textDecoration: 'none' }}
+          <Link href="/app/cards" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#88827D', textDecoration: 'none' }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = '#F5F0EB'; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = '#6B6560'; }}>
+            onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.color = '#88827D'; }}>
             <ChevronLeft size={14} /> Salir
           </Link>
           <div style={{ width: 1, height: 24, background: 'rgba(245,240,235,0.12)' }} />
@@ -125,7 +125,7 @@ export function NewCardSetup({ orgName, primaryColor }: NewCardSetupProps) {
             <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 15 }}>Sellio<span style={{ color: primaryColor }}>.</span></span>
           </div>
           <div style={{ width: 1, height: 24, background: 'rgba(245,240,235,0.12)' }} />
-          <span style={{ fontSize: 12, color: '#6B6560' }}>Nueva tarjeta · Paso 1 de 2</span>
+          <span style={{ fontSize: 12, color: '#88827D' }}>Nueva tarjeta · Paso 1 de 2</span>
         </div>
 
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px 20px' }}>
@@ -133,7 +133,7 @@ export function NewCardSetup({ orgName, primaryColor }: NewCardSetupProps) {
             <h1 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 28, color: '#F5F0EB', marginBottom: 8, letterSpacing: '-0.02em' }}>
               ¿Cómo funciona tu tarjeta?
             </h1>
-            <p style={{ fontSize: 14, color: '#6B6560', lineHeight: 1.6, marginBottom: 36 }}>
+            <p style={{ fontSize: 14, color: '#88827D', lineHeight: 1.6, marginBottom: 36 }}>
               Esta decisión es permanente. Define cómo tus clientes acumulan beneficios.
             </p>
 
@@ -168,7 +168,7 @@ export function NewCardSetup({ orgName, primaryColor }: NewCardSetupProps) {
                 </div>
                 <div>
                   <div style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 18, color: '#F5F0EB', marginBottom: 6 }}>Sellos</div>
-                  <div style={{ fontSize: 13, color: '#6B6560', lineHeight: 1.6 }}>
+                  <div style={{ fontSize: 13, color: '#88827D', lineHeight: 1.6 }}>
                     El cliente acumula <strong style={{ color: '#F5F0EB' }}>1 sello por visita</strong> hasta completar la tarjeta.
                   </div>
                 </div>
@@ -210,7 +210,7 @@ export function NewCardSetup({ orgName, primaryColor }: NewCardSetupProps) {
                 </div>
                 <div>
                   <div style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 18, color: '#F5F0EB', marginBottom: 6 }}>Puntos</div>
-                  <div style={{ fontSize: 13, color: '#6B6560', lineHeight: 1.6 }}>
+                  <div style={{ fontSize: 13, color: '#88827D', lineHeight: 1.6 }}>
                     El cliente acumula <strong style={{ color: '#F5F0EB' }}>puntos por compra</strong> y los canjea por recompensas.
                   </div>
                 </div>
@@ -241,9 +241,9 @@ export function NewCardSetup({ orgName, primaryColor }: NewCardSetupProps) {
         <button
           type="button"
           onClick={() => setCardType(null)}
-          style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#6B6560', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+          style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#88827D', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#F5F0EB'; }}
-          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#6B6560'; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#88827D'; }}
         >
           <ChevronLeft size={14} /> Volver
         </button>
@@ -257,7 +257,7 @@ export function NewCardSetup({ orgName, primaryColor }: NewCardSetupProps) {
           <div style={{ padding: '2px 8px', borderRadius: 5, background: isStamps ? `${primaryColor}20` : 'rgba(167,139,250,0.12)', border: `1px solid ${isStamps ? `${primaryColor}40` : 'rgba(167,139,250,0.25)'}`, fontSize: 10, fontWeight: 700, color: isStamps ? primaryColor : '#A78BFA', letterSpacing: '0.06em' }}>
             {isStamps ? 'SELLOS' : 'PUNTOS'}
           </div>
-          <span style={{ fontSize: 12, color: '#6B6560' }}>Paso 2 de 2</span>
+          <span style={{ fontSize: 12, color: '#88827D' }}>Paso 2 de 2</span>
         </div>
       </div>
 
@@ -267,7 +267,7 @@ export function NewCardSetup({ orgName, primaryColor }: NewCardSetupProps) {
             <h1 style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 26, color: '#F5F0EB', marginBottom: 8, letterSpacing: '-0.02em' }}>
               Configura tu tarjeta de {isStamps ? 'sellos' : 'puntos'}
             </h1>
-            <p style={{ fontSize: 14, color: '#6B6560', lineHeight: 1.6 }}>
+            <p style={{ fontSize: 14, color: '#88827D', lineHeight: 1.6 }}>
               Define cómo funciona el programa. Podrás personalizar el diseño en el siguiente paso.
             </p>
           </div>
@@ -367,7 +367,7 @@ export function NewCardSetup({ orgName, primaryColor }: NewCardSetupProps) {
                         <button type="button" onClick={() => { setStampConfirmed(true); setShowStampWarning(false); }} style={{ width: '100%', background: '#E8341A', border: 'none', borderRadius: 11, padding: '13px 0', fontSize: 14, fontWeight: 700, color: '#fff', cursor: 'pointer', fontFamily: 'Syne,sans-serif', letterSpacing: '0.01em' }}>
                           Confirmar {stampCount} sellos
                         </button>
-                        <button type="button" onClick={() => setShowStampWarning(false)} style={{ width: '100%', background: 'transparent', border: '1px solid rgba(245,240,235,0.1)', borderRadius: 11, padding: '12px 0', fontSize: 13, fontWeight: 600, color: '#6B6560', cursor: 'pointer', fontFamily: 'Space Grotesk,sans-serif' }}>
+                        <button type="button" onClick={() => setShowStampWarning(false)} style={{ width: '100%', background: 'transparent', border: '1px solid rgba(245,240,235,0.1)', borderRadius: 11, padding: '12px 0', fontSize: 13, fontWeight: 600, color: '#88827D', cursor: 'pointer', fontFamily: 'Space Grotesk,sans-serif' }}>
                           Cancelar
                         </button>
                       </div>
@@ -408,7 +408,7 @@ export function NewCardSetup({ orgName, primaryColor }: NewCardSetupProps) {
             )}
 
             {/* Live logic preview */}
-            <div style={{ background: '#111009', border: '1px solid rgba(245,240,235,0.07)', borderRadius: 10, padding: '12px 16px', fontSize: 12, color: '#6B6560', lineHeight: 1.8 }}>
+            <div style={{ background: '#111009', border: '1px solid rgba(245,240,235,0.07)', borderRadius: 10, padding: '12px 16px', fontSize: 12, color: '#88827D', lineHeight: 1.8 }}>
               {isStamps ? (
                 <>
                   <span style={{ color: '#F5F0EB', fontWeight: 600 }}>Lógica:</span>{' '}
@@ -451,7 +451,7 @@ export function NewCardSetup({ orgName, primaryColor }: NewCardSetupProps) {
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 background: isPending || (isStamps && !stampConfirmed) ? '#3A3530' : isStamps ? primaryColor : '#A78BFA',
-                color: isPending || (isStamps && !stampConfirmed) ? '#6B6560' : '#fff',
+                color: isPending || (isStamps && !stampConfirmed) ? '#88827D' : '#fff',
                 border: 'none', borderRadius: 10, padding: '14px 24px',
                 fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: 15,
                 cursor: isPending || (isStamps && !stampConfirmed) ? 'not-allowed' : 'pointer', transition: 'background 0.15s', marginTop: 4,

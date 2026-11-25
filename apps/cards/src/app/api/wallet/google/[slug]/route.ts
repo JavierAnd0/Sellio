@@ -1,24 +1,11 @@
-import crypto from 'crypto';
 import { NextResponse } from 'next/server';
 
 import { createAdminClient } from '@sellio/db/admin';
-
-const ISSUER_ID = process.env.GOOGLE_WALLET_ISSUER_ID ?? '';
-const CLASS_SUFFIX = process.env.GOOGLE_WALLET_CLASS_ID ?? 'sellio_loyalty';
-const SA_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL ?? '';
-const SA_PRIVATE_KEY = (process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY ?? '').replace(/\\n/g, '\n');
-
-function signJwt(payload: object, privateKey: string): string {
-  const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
-  const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
-  const data = `${header}.${body}`;
-  const signer = crypto.createSign('RSA-SHA256');
-  signer.update(data);
-  return `${data}.${signer.sign(privateKey, 'base64url')}`;
-}
+import { getGoogleWalletConfig, googleObjectId, signGoogleJwt } from '@sellio/db/google-wallet';
 
 export async function GET(_req: Request, { params }: { params: Promise<{ slug: string }> }) {
-  if (!ISSUER_ID || !SA_EMAIL || !SA_PRIVATE_KEY) {
+  const config = getGoogleWalletConfig();
+  if (!config) {
     return NextResponse.json(
       { error: 'Google Wallet not configured. Set GOOGLE_WALLET_ISSUER_ID, GOOGLE_SERVICE_ACCOUNT_EMAIL, and GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.' },
       { status: 503 },
@@ -63,11 +50,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
   const cardUrl = `${cardsBase}/${slug}`;
   const checkInUrl = org?.slug ? `${cardsBase}/check-in/${org.slug}` : cardUrl;
 
-  const classId = `${ISSUER_ID}.${CLASS_SUFFIX}`;
-  const objectId = `${ISSUER_ID}.${slug.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+  const classId = `${config.issuerId}.${process.env.GOOGLE_WALLET_CLASS_ID ?? 'sellio_loyalty'}`;
+  const objectId = googleObjectId(config.issuerId, slug);
 
   const jwtPayload = {
-    iss: SA_EMAIL,
+    iss: config.saEmail,
     aud: 'google',
     typ: 'savetowallet',
     iat: Math.floor(Date.now() / 1000),
@@ -126,6 +113,19 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
     },
   };
 
-  const token = signJwt(jwtPayload, SA_PRIVATE_KEY);
+  // Registrar que este pass se guardó en Google Wallet (para contar el alcance
+  // de las campañas). Google no confirma el guardado: cuenta la intención.
+  // device_library_id es null → la constraint única no deduplica: comprobamos antes.
+  const { data: existing } = await db
+    .from('wallet_registrations')
+    .select('id')
+    .eq('platform', 'google')
+    .eq('membership_slug', membership.slug)
+    .maybeSingle();
+  if (!existing) {
+    await db.from('wallet_registrations').insert({ membership_slug: membership.slug, platform: 'google' });
+  }
+
+  const token = signGoogleJwt(jwtPayload, config.saPrivateKey);
   return NextResponse.redirect(`https://pay.google.com/gp/v/save/${token}`);
 }
